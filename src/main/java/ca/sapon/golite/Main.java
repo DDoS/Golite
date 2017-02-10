@@ -10,7 +10,10 @@ import tiny.node.Start;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        final BufferedReader in = new BufferedReader(new FileReader("/Users/aleksi/Desktop/test_valid_2.tiny"));
+        if (args.length < 1) {
+            throw new RuntimeException("Expected the source file path as an argument");
+        }
+        final BufferedReader in = new BufferedReader(new FileReader(args[0]));
         final Lexer lexer = new Lexer(new PushbackReader(in));
         final Parser parser = new Parser(lexer);
         final Start ast = parser.parse();
