@@ -1,0 +1,99 @@
+// Default tasks
+defaultTasks 'build'
+
+// Apply plugins
+apply plugin: 'application'
+apply plugin: 'java'
+apply plugin: 'sablecc-gradle-plugin'
+
+// Basic project information
+group = 'ca.sapon'
+archivesBaseName = 'golite'
+version = '0.0.1-SNAPSHOT'
+mainClassName = "ca.sapon.golite.Main"
+
+// Extended project information
+ext.projectName = 'GoLite'
+ext.inceptionYear = '2017'
+ext.currentYear = '2017'
+ext.packaging = 'jar'
+ext.url = 'https://github.com/Sable/comp520-2017-09'
+ext.description = 'GoLite project for COMP 520'
+ext.author = 'Aleksi Sapon, Rohit Verma, Ayesha Krishnamurthy'
+
+// Minimum version of Java required
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+// Define variables
+ext.buildNumber = project.hasProperty("buildNumber") ? buildNumber : '0'
+ext.ciSystem = project.hasProperty("ciSystem") ? ciSystem : 'unknown'
+ext.commit = project.hasProperty("commit") ? commit : 'unknown'
+
+// Plugin repositories and dependencies
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        flatDir dirs: 'gradle/plugins'
+    }
+    dependencies {
+        classpath 'ca.sapon:sablecc-gradle-plugin:0.0.1-SNAPSHOT'
+    }
+}
+
+// Non-plugin repositories and dependencies
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+dependencies {
+    compile 'com.peterlavalle:sablecc-maven.sablecc:3.7'
+}
+
+// Source compiler configuration
+configure([compileJava, compileTestJava]) {
+    options.compilerArgs << '-Xlint:all'
+    options.compilerArgs << '-Xlint:-path'
+    options.deprecation = true
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
+}
+
+task sourceJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourceJar
+    archives javadocJar
+}
+
+// JAR manifest configuration
+jar {
+    manifest {
+        attributes "Main-Class": mainClassName,
+            "Built-By": System.properties['user.name'],
+            "Created-By": System.properties['java.vm.version'] + " (" + System.properties['java.vm.vendor'] + ")",
+            "Implementation-Title": name,
+            "Implementation-Version": version + "+" + ciSystem + "-b" + buildNumber + ".git-" + commit,
+            "Implementation-Vendor": url
+    }
+}
+
+run {
+    standardInput = System.in
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.3'
+}

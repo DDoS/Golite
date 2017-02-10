@@ -1,0 +1,92 @@
+# Build #
+#########
+MANIFEST.MF
+dependency-reduced-pom.xml
+
+# Compiled #
+############
+bin
+build
+dist
+lib
+out
+run
+target
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Databases #
+#############
+*.db
+*.sql
+*.sqlite
+
+# Packages #
+############
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Repository #
+##############
+.git
+
+# Logging #
+###########
+/logs
+*.log
+
+# Misc #
+########
+*.bak
+
+# System #
+##########
+.DS_Store
+ehthumbs.db
+Thumbs.db
+
+# Project #
+###########
+.classpath
+.externalToolBuilders
+.gradle
+gradle-app.setting
+gradletasknamecache
+.idea
+.project
+.settings
+nbproject
+atlassian-ide-plugin.xml
+build.xml
+nb-configuration.xml
+*.iml
+*.ipr
+*.iws
+
+# Runtime #
+###########
+/cache
+/config
+/data
+/eclipse
+/natives
+/update
+/updates
+config.yml
+/.nb-gradle/profiles/private/
+/.nb-gradle/private/
+
+# Exceptions #
+##############
+!gradle-wrapper.jar
+!gradle/plugins/sablecc-gradle-plugin-0.0.1-SNAPSHOT.jar
