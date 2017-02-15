@@ -1,56 +1,216 @@
-Package tiny;
+Package golite ;
 
 Helpers
-  tab   = 9;
-  cr    = 13;
-  lf    = 10;
-  digit = ['0'..'9'];
-  lowercase = ['a'..'z'];
-  uppercase = ['A'..'Z'];
-  letter  = lowercase | uppercase;
-  idletter = letter | '_';
-  idchar  = letter | '_' | digit;
+    
+    //CHARACTERS
+    
+   //Some Symbols
+    hyphen = '_';
+    slash = '\';
+    star = '*';
+    dot = '.';
+    
+    
+    //Universal Character Set
+    ch_set = [0 .. 0xFFFF]; 
+
+    tab = 9;
+    newln = 10 ; 
+    carrret = 13;
+
+    endln = carrret newln | carrret | newln;  
+    not_endln = [ch_set - [carrret + newln]];
+
+    // Alphabets
+    alpha = ['A' .. 'Z'] | ['a' .. 'z'];
+
+    //Numeric Characters
+    
+    zero = '0';
+    num_ch = ['0' .. '9'] ;
+    oct_num_ch = ['0' .. '7'];
+
+    nozero = [num_ch - '0'];
+    hex_num_ch = num_ch | alpha;
+    
+    sp =' ';
+    single_quot = ''';
+    double_quot = '"';
+    back_q = '`';
+
+    // Escape Sequence
+    escapes = '\' ('\'| 'a' | 'b' | 'f' | 'n' | 'r' | 't' | 'v' );
+    escape_squote = '\' ''';
+    escape_dquote = '\"';
+
+    no_carr_nl = [ch_set - [carrret + newln]] ;
+    no_carr_nl_sl = [no_carr_nl - slash];
+    
+    alpha_hyphen = alpha | hyphen;
+    alpha_numch = alpha_hyphen | num_ch ;
+    
+
 
 Tokens
-  eol   = cr | lf | cr lf;
-  blank = ' ' | tab;
-  star  = '*';
-  slash = '/';
-  plus  = '+';
-  minus = '-';
-  l_par = '(';
-  r_par = ')';
-  number  = '0'| [digit-'0'] digit*;
-  id    = idletter idchar*;
+
+    star = star;
+    slash = slash;
+    
+    //Blanks & WhiteSpace
+    endln = carrret newln | carrret | newln;
+    wht_sp = (sp | endln | tab) +;
+
+    kw_break = 'break';
+    kw_case = 'case';
+    kw_chan = 'chan';
+    kw_const = 'const';
+    kw_continue = 'continue';
+    kw_default = 'default';
+    kw_defer = 'defer';
+    kw_else = 'else';
+    kw_fallthrough = 'fallthrough';
+    kw_for = 'for';
+    kw_func = 'func';
+    kw_go = 'go';
+    kw_goto = 'goto';
+    kw_if = 'if';
+    kw_import = 'import';
+    kw_interface = 'interface';
+    kw_map = 'map';
+    kw_package = 'package';
+    kw_range = 'range';
+    kw_return = 'return';
+    kw_select = 'select';
+    kw_struct = 'struct';
+    kw_switch = 'switch';
+    kw_type = 'type';
+    kw_var = 'var';    
+
+    print = 'print';
+    println = 'println';
+    append = 'append';
+    
+    // Data Types
+    int = 'int';
+    float64 = 'float64';
+    bool = 'bool';
+    rune = 'rune';
+    string = 'string';
+
+    //Operators
+
+    plus = '+';
+    minus = '-';
+    
+
+    mod = '%';
+    ampr = '&';
+    pipe = '|';
+    crt = '^';
+    lshift = '<<';
+    rshift = '>>';
+    ampr_crt = '&^';
+    plus_eql = '+=';
+    minus_eql = '-=';
+    star_eql = '*=';
+    slash_eql = '/=';
+    mod_eql = '%=';
+    ampr_eql = '&=';
+    pipe_eql = '|=';
+    crt_eql = '^=';
+    lshift_eql = '<<=';
+    rshift_eql = '>>=';
+    ampr_crt_eql = '&^=';
+    dbl_ampr = '&&';
+    dbl_pipe = '||';
+    inp = '<-';
+    dbl_plus = '++';
+    dbl_minus = '--';
+    dbl_eql = '==';
+    less_than = '<';
+    greatr_than = '>';
+    eql = '=';
+    not = '!';
+    not_eql = '!=';
+    less_than_eql = '<=';
+    greatr_than_eql = '>=';
+    col_eql = ':=';
+    ellipsis = '...';
+ 
+    lf_param = '(';
+    lf_square = '[';
+    lf_brace = '{';
+    comma = ',';
+    dot = dot;
+
+    rht_param = ')';
+    rht_square = ']';
+    rht_brace = '}';
+
+    semi = ';';
+    coln = ':';
+
+    hyphen = hyphen;        
+
+    //COMMENTS
+
+    comment = '//' not_endln * | '/*' ([ch_set - star] | star [ch_set - slash])* '*/';
+
+    // IDENTIFIER
+    //idenf = alpha alpha_num* | underscore alpha_num+ ;
+    
+    idenf = alpha alpha_numch* | hyphen alpha_numch+;
+
+    // DataTypes
+
+    // Int
+    int_dtype = zero | num_ch num_ch*;
+    oct_dtype = zero oct_num_ch+;
+    hex_dtype = zero ['x' + 'X'] hex_num_ch+;
+
+    // Float
+    float_dtype = num_ch* dot num_ch* | dot num_ch+;
+
+    /* String literals */
+   
+    // "hello\n" // Interpreted string, \n is transformed into newline
+    interpreted_string_dtype = double_quot ([no_carr_nl_sl - single_quot] | escape_dquote| escapes)* double_quot;
+
+    //‘hello\n‘ // Raw string, \n appears as a ’\’ followed by ’n’
+    raw_string_dtype = back_q [ch_set - back_q]* back_q;
+
+    rune_dtype = single_quot ([no_carr_nl_sl - single_quot] | escape_squote| escapes) single_quot;
+
 
 Ignored Tokens
-  blank, eol;
+    comment,
+    white_space;
 
 Productions
-cst_exp {-> exp} =
-  {cst_plus}    cst_exp plus factor
-                {-> New exp.plus(cst_exp.exp,factor.exp)}
-| {cst_minus}   cst_exp minus factor
-	              {-> New exp.minus(cst_exp.exp,factor.exp)}
-| {factor}      factor {-> factor.exp};
+    
+    //Program
+    prog {-> prog} = pck_dcl {-> New prog.prog(pck_dcl.idenf)};
 
-factor {-> exp} =
-  {cst_mult}    factor star term
-                {-> New exp.mult(factor.exp,term.exp)}
-| {cst_divd}    factor slash term
-                {-> New exp.divd(factor.exp,term.exp)}
-| {term}        term {-> term.exp};
+    pck_dcl {-> idenf} = kw_package idenf semi {-> idenf};
 
-term {-> exp} =
-  {paren}       l_par cst_exp r_par {-> cst_exp.exp}
-| {cst_id}      id {-> New exp.id(id)}
-| {cst_number}  number {-> New exp.number(number)};
 
 Abstract Syntax Tree
-exp =
-  {plus}     [l]:exp [r]:exp
-| {minus}    [l]:exp [r]:exp
-| {mult}     [l]:exp [r]:exp
-| {divd}     [l]:exp [r]:exp
-| {id}       id
-| {number}   number;
+
+    prog = {prog} idenf ;
+
+    decl = {vardec} var*  | {typedec} type*;
+
+    var = {varspec} idenf+ ;
+
+    type = {typespec} idenf expr;
+        
+     expr =
+          {bool} bool
+        | {int} int
+        | {float} float64
+        | {rune} rune
+        | {string} string ;
+        
+
+
+  
