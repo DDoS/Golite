@@ -191,11 +191,11 @@ Productions
 
     expr = expr_binary_one;
 
-    expr_atom = {ident} idenf
-            | {lit_int_dec} int_dtype | {lit_int_octal} oct_dtype | {lit_int_hex} hex_dtype
-            | {lit_float} float_dtype
-            | {lit_rune} rune_dtype
-            | {lit_string_intr} interpreted_string_dtype | {lit_string_raw} raw_string_dtype
+    expr_atom = {expr_ident} idenf
+            | {expr_int_dec} int_dtype | {expr_int_octal} oct_dtype | {expr_int_hex} hex_dtype
+            | {expr_float} float_dtype
+            | {expr_rune} rune_dtype
+            | {expr_string_intr} interpreted_string_dtype | {expr_string_raw} raw_string_dtype
             | {expr_paren} lf_param expr rht_param;
 
     // Arguments are comma separated
