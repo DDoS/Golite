@@ -1,12 +1,12 @@
 package ca.sapon.golite;
 
-import java.io.FileReader;
-import java.io.BufferedReader;
-import java.io.PushbackReader;
+import golite.lexer.Lexer;
+import golite.node.Start;
+import golite.parser.Parser;
 
-import tiny.lexer.Lexer;
-import tiny.parser.Parser;
-import tiny.node.Start;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.PushbackReader;
 
 public class Main {
     public static void main(String[] args) throws Exception {

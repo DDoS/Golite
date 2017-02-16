@@ -4,9 +4,10 @@ Helpers
 
     //CHARACTERS
 
-   //Some Symbols
+    //Some Symbols
     hyphen = '_';
-    slash = '\';
+    slash = '/';
+    backslash = '\';
     star = '*';
     dot = '.';
 
@@ -33,7 +34,7 @@ Helpers
     nozero = [num_ch - '0'];
     hex_num_ch = num_ch | alpha;
 
-    sp =' ';
+    sp = ' ';
     single_quot = ''';
     double_quot = '"';
     back_q = '`';
@@ -44,7 +45,7 @@ Helpers
     escape_dquote = '\"';
 
     no_carr_nl = [ch_set - [carrret + newln]] ;
-    no_carr_nl_sl = [no_carr_nl - slash];
+    no_carr_nl_sl = [no_carr_nl - backslash];
 
     alpha_hyphen = alpha | hyphen;
     alpha_numch = alpha_hyphen | num_ch ;
@@ -188,25 +189,58 @@ Ignored Tokens
 
 Productions
 
-    //Program
-    prog {-> prog} = pck_dcl {-> New prog.prog(pck_dcl.idenf)};
+    expr = expr_binary_one;
 
-    pck_dcl {-> idenf} = kw_package idenf semi {-> idenf};
+    expr_atom = {ident} idenf
+            | {lit_int_dec} int_dtype | {lit_int_octal} oct_dtype | {lit_int_hex} hex_dtype
+            | {lit_float} float_dtype
+            | {lit_rune} rune_dtype
+            | {lit_string_intr} interpreted_string_dtype | {lit_string_raw} raw_string_dtype
+            | {expr_paren} lf_param expr rht_param;
 
+    // Arguments are comma separated
+    args = {single} expr | {multiple} expr comma args;
+    // An argument list is between () and can be empty
+    args_list = lf_param args? rht_param;
 
-Abstract Syntax Tree
+    // TODO: casts
+    // TODO: appends
+    expr_primary = {expr_atom} expr_atom
+            | {expr_select} expr_primary dot idenf
+            | {expr_index} expr_primary lf_square expr rht_square
+            | {expr_call} expr_primary args_list;
 
-    prog = {prog} idenf ;
+    expr_unary = {expr_primary} expr_primary
+            | {expr_logic_not} not expr_unary
+            | {expr_reaffirm} plus expr_unary
+            | {expr_negate} minus expr_unary
+            | {expr_bit_not} crt expr_unary;
 
-    decl = {vardec} var*  | {typedec} type*;
+    expr_binary_five = {expr_unary} expr_unary
+            | {expr_mul} expr_binary_five star expr_unary
+            | {expr_div} expr_binary_five slash expr_unary
+            | {expr_rem} expr_binary_five mod expr_unary
+            | {expr_lshift} expr_binary_five lshift expr_unary
+            | {expr_rshift} expr_binary_five rshift expr_unary
+            | {expr_and} expr_binary_five ampr expr_unary
+            | {expr_and_not} expr_binary_five ampr_crt expr_unary;
 
-    var = {varspec} idenf+ ;
+    expr_binary_four = {expr_binary_five} expr_binary_five
+            | {expr_add} expr_binary_four plus expr_binary_five
+            | {expr_sub} expr_binary_four minus expr_binary_five
+            | {expr_bit_or} expr_binary_four pipe expr_binary_five
+            | {expr_bit_xor} expr_binary_four crt expr_binary_five;
 
-    type = {typespec} idenf expr;
+    expr_binary_three = {expr_binary_four} expr_binary_four
+            | {expr_eq} expr_binary_three dbl_eql expr_binary_four
+            | {expr_neq} expr_binary_three not_eql expr_binary_four
+            | {expr_less} expr_binary_three less_than expr_binary_four
+            | {expr_less_eq} expr_binary_three less_than_eql expr_binary_four
+            | {expr_great} expr_binary_three greatr_than expr_binary_four
+            | {expr_great_eq} expr_binary_three greatr_than_eql expr_binary_four;
 
-     expr =
-          {bool} bool
-        | {int} int
-        | {float} float64
-        | {rune} rune
-        | {string} string ;
+    expr_binary_two = {expr_binary_three} expr_binary_three
+            | {expr_logic_and} expr_binary_two dbl_ampr expr_binary_three;
+
+    expr_binary_one = {expr_binary_two} expr_binary_two
+                | {expr_logic_or} expr_binary_one dbl_pipe expr_binary_two;
