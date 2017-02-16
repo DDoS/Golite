@@ -207,12 +207,12 @@ Productions
     // An argument list is between () and can be empty
     args_list = lf_param args? rht_param;
 
-    // TODO: casts
-    // TODO: appends
     expr_primary = {expr_atom} expr_atom
             | {expr_select} expr_primary dot idenf
             | {expr_index} expr_primary lf_square expr rht_square
-            | {expr_call} expr_primary args_list;
+            | {expr_call} expr_primary args_list
+            | {expr_cast} type_basic lf_param expr rht_param
+            | {expr_append} append lf_param [arg1]:expr comma [arg2]:expr rht_param;
 
     expr_unary = {expr_primary} expr_primary
             | {expr_logic_not} not expr_unary
