@@ -1,38 +1,38 @@
 Package golite ;
 
 Helpers
-    
+
     //CHARACTERS
-    
+
    //Some Symbols
     hyphen = '_';
     slash = '\';
     star = '*';
     dot = '.';
-    
-    
+
+
     //Universal Character Set
-    ch_set = [0 .. 0xFFFF]; 
+    ch_set = [0 .. 0xFFFF];
 
     tab = 9;
-    newln = 10 ; 
+    newln = 10 ;
     carrret = 13;
 
-    endln = carrret newln | carrret | newln;  
+    endln = carrret newln | carrret | newln;
     not_endln = [ch_set - [carrret + newln]];
 
     // Alphabets
-    alpha = ['A' .. 'Z'] | ['a' .. 'z']; 
+    alpha = ['A' .. 'Z'] | ['a' .. 'z'];
 
     //Numeric Characters
-    
+
     zero = '0';
     num_ch = ['0' .. '9'] ;
     oct_num_ch = ['0' .. '7'];
 
     nozero = [num_ch - '0'];
     hex_num_ch = num_ch | alpha;
-    
+
     sp =' ';
     single_quot = ''';
     double_quot = '"';
@@ -45,17 +45,17 @@ Helpers
 
     no_carr_nl = [ch_set - [carrret + newln]] ;
     no_carr_nl_sl = [no_carr_nl - slash];
-    
+
     alpha_hyphen = alpha | hyphen;
     alpha_numch = alpha_hyphen | num_ch ;
-    
+
 
 
 Tokens
 
     star = star;
     slash = slash;
-    
+
     //Blanks & WhiteSpace
     endln = carrret newln | carrret | newln;
     wht_sp = (sp | endln | tab) +;
@@ -84,12 +84,12 @@ Tokens
     kw_struct = 'struct';
     kw_switch = 'switch';
     kw_type = 'type';
-    kw_var = 'var';    
+    kw_var = 'var';
 
     print = 'print';
     println = 'println';
     append = 'append';
-    
+
     // Data Types
     int = 'int';
     float64 = 'float64';
@@ -101,7 +101,7 @@ Tokens
 
     plus = '+';
     minus = '-';
-    
+
 
     mod = '%';
     ampr = '&';
@@ -136,7 +136,7 @@ Tokens
     greatr_than_eql = '>=';
     col_eql = ':=';
     ellipsis = '...';
- 
+
     lf_param = '(';
     lf_square = '[';
     lf_brace = '{';
@@ -150,7 +150,7 @@ Tokens
     semi = ';';
     coln = ':';
 
-    hyphen = hyphen;        
+    hyphen = hyphen;
 
     //COMMENTS
 
@@ -158,7 +158,7 @@ Tokens
 
     // IDENTIFIER
     //idenf = alpha alpha_num* | underscore alpha_num+ ;
-    
+
     idenf = alpha alpha_numch* | hyphen alpha_numch+;
 
     // DataTypes
@@ -172,11 +172,11 @@ Tokens
     float_dtype = num_ch* dot num_ch* | dot num_ch+;
 
     /* String literals */
-   
+
     // "hello\n" // Interpreted string, \n is transformed into newline
     interpreted_string_dtype = double_quot ([no_carr_nl_sl - single_quot] | escape_dquote| escapes)* double_quot;
 
-    //‘hello\n‘ // Raw string, \n appears as a ’\’ followed by ’n’
+    // `hello\n` // Raw string, \n appears as a `\` followed by `n`
     raw_string_dtype = back_q [ch_set - back_q]* back_q;
 
     rune_dtype = single_quot ([no_carr_nl_sl - single_quot] | escape_squote| escapes) single_quot;
@@ -184,10 +184,10 @@ Tokens
 
 Ignored Tokens
     comment,
-    white_space;
+    wht_sp;
 
 Productions
-    
+
     //Program
     prog {-> prog} = pck_dcl {-> New prog.prog(pck_dcl.idenf)};
 
@@ -203,14 +203,10 @@ Abstract Syntax Tree
     var = {varspec} idenf+ ;
 
     type = {typespec} idenf expr;
-        
+
      expr =
           {bool} bool
         | {int} int
         | {float} float64
         | {rune} rune
         | {string} string ;
-        
-
-
-  
