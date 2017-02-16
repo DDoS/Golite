@@ -189,13 +189,17 @@ Ignored Tokens
 
 Productions
 
+    // EXPRESSIONS
     expr = expr_binary_one;
 
+    expr_int = {expr_int_dec} int_dtype | {expr_int_octal} oct_dtype | {expr_int_hex} hex_dtype;
+    expr_string = {expr_string_intr} interpreted_string_dtype | {expr_string_raw} raw_string_dtype;
+
     expr_atom = {expr_ident} idenf
-            | {expr_int_dec} int_dtype | {expr_int_octal} oct_dtype | {expr_int_hex} hex_dtype
+            | {expr_int} expr_int
             | {expr_float} float_dtype
             | {expr_rune} rune_dtype
-            | {expr_string_intr} interpreted_string_dtype | {expr_string_raw} raw_string_dtype
+            | {expr_string} expr_string
             | {expr_paren} lf_param expr rht_param;
 
     // Arguments are comma separated
@@ -244,3 +248,17 @@ Productions
 
     expr_binary_one = {expr_binary_two} expr_binary_two
                 | {expr_logic_or} expr_binary_one dbl_pipe expr_binary_two;
+
+    // TYPES
+    type = {type_basic} type_basic | {type_slice} type_slice | {type_array} type_array | {type_struct} type_struct;
+
+    type_basic = {type_int} int | {type_float64} float64 | {type_bool} bool | {type_rune} rune | {type_string} string;
+
+    type_slice = lf_square rht_square type;
+
+    type_array = lf_square expr_int rht_square type;
+
+    idenfs = {single} idenf | {multiple} idenf comma idenfs;
+    field = idenfs type semi;
+
+    type_struct = kw_struct lf_brace field* rht_brace;
