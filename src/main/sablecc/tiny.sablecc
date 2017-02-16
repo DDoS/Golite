@@ -22,7 +22,7 @@ Helpers
     not_endln = [ch_set - [carrret + newln]];
 
     // Alphabets
-    alpha = ['A' .. 'Z'] | ['a' .. 'z'];
+    alpha = ['A' .. 'Z'] | ['a' .. 'z']; 
 
     //Numeric Characters
     
