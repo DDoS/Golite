@@ -1,1 +1,2 @@
-./gradlew build
+#!/usr/bin/env bash
+./gradlew clean build
