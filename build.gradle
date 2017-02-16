@@ -1,5 +1,5 @@
 // Default tasks
-defaultTasks 'build'
+defaultTasks 'clean', 'build'
 
 // Apply plugins
 apply plugin: 'application'
