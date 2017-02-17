@@ -198,12 +198,17 @@ Productions
     // Declarations
     decl = {var_decl} var_decl | {type_decl} type_decl | {func_decl} func_decl;
 
+    // only type and variable declarations are statements
+    decl_stmt = {var} var_decl 
+            | {type} type_decl;
+
     // Package declaration
     pack_decl = kw_package idenf semi;
 
     // Variable declarations
     var_decl = {single} kw_var spec_var semi
-            | {distributed} kw_var lf_paren spec_var_stmt* rht_paren semi;
+            | {distributed} kw_var lf_paren spec_var_stmt* rht_paren semi
+            | {short} idenf_opt_list col_eql exprs_list;
 
     spec_var_stmt = spec_var semi;
 
@@ -235,7 +240,18 @@ Productions
     param_type_spec = idenf_list type_spec;
 
     // For testing until real statements are done
-    stmt = {empty} raw_string_dtype semi | interpreted_string_dtype  semi;
+    //stmt = {empty} raw_string_dtype semi | interpreted_string_dtype  semi;
+
+    //Assign - restrict lvalue to identifier(s), array(s), etc.
+    stmt = {empty}
+            | {decl} decl_stmt
+            | {incr} expr dbl_plus
+            | {decr} expr dbl_minus
+            | {print} print lf_paren exprs_list rht_paren
+            | {println} println lf_paren exprs_list rht_paren
+            | {return} kw_return
+            | {return_exp} kw_return expr;
+
 
     // EXPRESSIONS
     expr {-> expr} = expr_binary_one {-> expr_binary_one.expr};
