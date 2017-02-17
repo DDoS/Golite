@@ -205,8 +205,8 @@ Productions
     spec_var_stmt  = spec_var semi ;
 
     spec_var  = {type} idenf_opt_list type            
-        | {expr} idenf_opt eql expr_list            
-        | {typeandexpr} idenf_opt_list type eql expr_list;
+        | {expr} idenf_opt eql exprs_list            
+        | {typeandexpr} idenf_opt_list type eql exprs_list;
 
     //Type declarations
     type_decl   =    {single} kw_type type_spec semi            
@@ -241,9 +241,9 @@ Productions
             | {expr_paren} lf_paren expr rht_paren;
 
     // Arguments are comma separated
-   // arg_list = {single} expr | {multiple} expr comma arg_list;
+    args = {single} expr | {multiple} expr comma args;
     // An argument list is between () and can be empty
-    args_list = lf_paren arg_list? rht_paren;
+    args_list = lf_paren args? rht_paren;
 
     expr_primary = {expr_atom} expr_atom
             | {expr_select} expr_primary dot idenf
@@ -308,8 +308,8 @@ Productions
     idenf_opt = {empty} underscore
            | {idenf} idenf ;
      
-    expr_list  =  {empty}
-       | {expr_list} expr_comma* expr ;
+    exprs_list  =  {empty}
+       | {exprs_list} expr_comma* expr ;
 
     expr_comma = expr comma;
 
