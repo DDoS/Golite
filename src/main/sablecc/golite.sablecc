@@ -189,44 +189,54 @@ Ignored Tokens
 
 Productions
 
+    // JUST FOR TESTING
+    start = expr;
+
     // Program
-    prog = pack_dec dec* ;
+    prog = pack_decl decl*;
 
-    //Declarations
-    dec = {var_decl} var_decl | {type_decl} type_decl | {func_decl} func_decl ;
+    // Declarations
+    decl = {var_decl} var_decl | {type_decl} type_decl | {func_decl} func_decl;
 
-    //Package declaration
-    pack_dec = kw_package idenf semi;
+    // Package declaration
+    pack_decl = kw_package idenf semi;
 
-    //Variable declarations
-    var_decl  =   {single} kw_var spec_var semi            
-              | {distributed} kw_var lf_paren spec_var_stmt* rht_paren semi ;
+    // Variable declarations
+    var_decl = {single} kw_var spec_var semi
+            | {distributed} kw_var lf_paren spec_var_stmt* rht_paren semi;
 
-    spec_var_stmt  = spec_var semi ;
+    spec_var_stmt = spec_var semi;
 
-    spec_var  = {type} idenf_opt_list type            
-        | {expr} idenf_opt eql exprs_list            
-        | {typeandexpr} idenf_opt_list type eql exprs_list;
+    spec_var = {type} idenf_opt_list type
+            | {expr} idenf_opt_list eql exprs_list
+            | {typeandexpr} idenf_opt_list type eql exprs_list;
 
-    //Type declarations
-    type_decl   =    {single} kw_type type_spec semi            
-        	   | {distributed} kw_type lf_paren type_spec_stmt* rht_paren semi ;
+    // Type declarations
+    type_decl = {single} kw_type type_spec semi
+            | {distributed} kw_type lf_paren type_spec_stmt* rht_paren semi;
 
-    type_spec_stmt = type_spec semi ;
+    type_spec_stmt = type_spec semi;
 
-    type_spec = idenf_opt type_basic ;
+    type_spec = idenf_opt type;
 
-    //Function declarations
+    // Function declarations
+    func_decl = {return} kw_func idenf lf_paren param_list rht_paren type_basic block semi
+            | {no_return} kw_func idenf lf_paren param_list rht_paren block semi;
 
-    func_decl = {return} kw_func idenf lf_paren arg_list rht_paren type_basic block semi            
-          | {no_return} kw_func idenf lf_paren arg_list rht_paren block semi;
-   
-    block  = lf_brace stmt* rht_brace;
+    block = lf_brace stmt* rht_brace;
 
-   // For testing until real statements are done
+    idenf_opt_list = {singleopt} idenf_opt
+            | {multipleopt} idenf_opt comma idenf_opt_list;
+
+    idenf_opt = {empty} underscore | {idenf} idenf;
+
+    param_list = {empty} | {param_list} param_start* param_type_spec;
+    param_start = param_type_spec comma;
+    param_type_spec = idenf_list type_spec;
+
+    // For testing until real statements are done
     stmt = {empty} raw_string_dtype semi | interpreted_string_dtype  semi;
-   
-   
+
     // EXPRESSIONS
     expr = expr_binary_one;
 
@@ -241,9 +251,9 @@ Productions
             | {expr_paren} lf_paren expr rht_paren;
 
     // Arguments are comma separated
-    args = {single} expr | {multiple} expr comma args;
+    exprs_list = {single} expr | {multiple} expr comma exprs_list;
     // An argument list is between () and can be empty
-    args_list = lf_paren args? rht_paren;
+    args_list = lf_paren exprs_list? rht_paren;
 
     expr_primary = {expr_atom} expr_atom
             | {expr_select} expr_primary dot idenf
@@ -285,10 +295,10 @@ Productions
             | {expr_logic_and} expr_binary_two dbl_ampr expr_binary_three;
 
     expr_binary_one = {expr_binary_two} expr_binary_two
-                | {expr_logic_or} expr_binary_one dbl_pipe expr_binary_two;
+            | {expr_logic_or} expr_binary_one dbl_pipe expr_binary_two;
 
 
-       // TYPES
+    // TYPES
     type = {type_basic} type_basic | {type_slice} type_slice | {type_array} type_array | {type_struct} type_struct;
 
     type_basic = {type_int} int | {type_float64} float64 | {type_bool} bool | {type_rune} rune | {type_string} string;
@@ -301,19 +311,3 @@ Productions
     field = idenf_list type semi;
 
     type_struct = kw_struct lf_brace field* rht_brace;
-
-    idenf_opt_list  = {singleopt} idenf_opt
-                     | {multipleopt} idenf_opt comma idenf_opt_list ;
-
-    idenf_opt = {empty} underscore
-           | {idenf} idenf ;
-     
-    exprs_list  =  {empty}
-       | {exprs_list} expr_comma* expr ;
-
-    expr_comma = expr comma;
-
-    arg_list   = {empty} | {arg_list} args_start* args_type_spec;
-
-    args_start   = args_type_spec comma;
-    args_type_spec  = idenf_list type_spec;
