@@ -7,6 +7,15 @@ TODO: fix these lexer bugs
 2. ("1") doesn't parse, it should
 3. append + 1 doesn't parse, it should since append is not a keyword
 4. rune + 1 doesn't parse, it should since basic type names are not keywords
+5. _ is a valid identifier and should not be treated specially in the syntax
+
+
+TODO: weeding of
+
+1. Assignment LHS
+2. Append function
+3. Basic type casts
+4. Return, break and continue? Need to ask prof
 */
 
 Helpers
