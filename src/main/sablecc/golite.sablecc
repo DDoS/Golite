@@ -208,7 +208,7 @@ Productions
     decl = {var_decl} var_decl | {type_decl} type_decl | {func_decl} func_decl;
 
     // only type and variable declarations are statements
-    decl_stmt = {var} var_decl 
+    decl_stmt = {var} var_decl
             | {type} type_decl;
 
     // Package declaration
@@ -265,29 +265,29 @@ Productions
     // EXPRESSIONS
     expr {-> expr} = expr_binary_one {-> expr_binary_one.expr};
 
-    expr_int {-> expr} = {expr_int_dec} int_dtype
+    expr_int {-> expr} = {int_dec} int_dtype
                     {-> New expr.int_dec(int_dtype)}
-            | {expr_int_octal} oct_dtype
+            | {int_octal} oct_dtype
                     {-> New expr.int_oct(oct_dtype)}
-            | {expr_int_hex} hex_dtype
+            | {int_hex} hex_dtype
                     {-> New expr.int_hex(hex_dtype)};
 
-    expr_string {-> expr} = {expr_string_intr} interpreted_string_dtype
+    expr_string {-> expr} = {string_intr} interpreted_string_dtype
                     {-> New expr.string_intr(interpreted_string_dtype)}
-            | {expr_string_raw} raw_string_dtype
+            | {string_raw} raw_string_dtype
                     {-> New expr.string_raw(raw_string_dtype)};
 
-    expr_atom {-> expr} = {expr_ident} idenf
+    expr_atom {-> expr} = {ident} idenf
                     {-> New expr.ident(idenf)}
-            | {expr_int} expr_int
+            | {int} expr_int
                     {-> expr_int.expr}
-            | {expr_float} float_dtype
+            | {float} float_dtype
                     {-> New expr.float(float_dtype)}
-            | {expr_rune} rune_dtype
+            | {rune} rune_dtype
                     {-> New expr.rune(rune_dtype)}
-            | {expr_string} expr_string
+            | {string} expr_string
                     {-> expr_string.expr}
-            | {expr_paren} lf_paren expr rht_paren
+            | {paren} lf_paren expr rht_paren
                     {-> expr.expr};
 
     // Arguments are comma separated
@@ -299,102 +299,102 @@ Productions
     args_list {-> expr*} = lf_paren exprs_list? rht_paren
                     {-> [exprs_list.expr]};
 
-    expr_primary {-> expr} = {expr_atom} expr_atom
+    expr_primary {-> expr} = {atom} expr_atom
                     {-> expr_atom.expr}
-            | {expr_select} expr_primary dot idenf
+            | {select} expr_primary dot idenf
                     {-> New expr.select(expr_primary.expr, idenf)}
-            | {expr_index} expr_primary lf_sq_paren expr rht_sq_paren
+            | {index} expr_primary lf_sq_paren expr rht_sq_paren
                     {-> New expr.index(expr_primary.expr, expr.expr)}
-            | {expr_call} expr_primary args_list
+            | {call} expr_primary args_list
                     {-> New expr.call(expr_primary.expr, [args_list.expr])}
-            | {expr_cast} type_basic lf_paren expr rht_paren
+            | {cast} type_basic lf_paren expr rht_paren
                     {-> New expr.cast(type_basic.type, expr.expr)}
-            | {expr_append} append lf_paren [arg1]:expr comma [arg2]:expr rht_paren
+            | {append} append lf_paren [arg1]:expr comma [arg2]:expr rht_paren
                     {-> New expr.append(arg1.expr, arg2.expr)};
 
-    expr_unary {-> expr} = {expr_primary} expr_primary
+    expr_unary {-> expr} = {primary} expr_primary
                     {-> expr_primary.expr}
-            | {expr_logic_not} not expr_unary
+            | {logic_not} not expr_unary
                     {-> New expr.logic_not(expr_unary.expr)}
-            | {expr_reaffirm} plus expr_unary
+            | {reaffirm} plus expr_unary
                     {-> New expr.reaffirm(expr_unary.expr)}
-            | {expr_negate} minus expr_unary
+            | {negate} minus expr_unary
                     {-> New expr.negate(expr_unary.expr)}
-            | {expr_bit_not} crt expr_unary
+            | {bit_not} crt expr_unary
                     {-> New expr.bit_not(expr_unary.expr)};
 
-    expr_binary_five {-> expr} = {expr_unary} expr_unary
+    expr_binary_five {-> expr} = {unary} expr_unary
                     {-> expr_unary.expr}
-            | {expr_mul} expr_binary_five star expr_unary
+            | {mul} expr_binary_five star expr_unary
                     {-> New expr.mul(expr_binary_five.expr, expr_unary.expr)}
-            | {expr_div} expr_binary_five slash expr_unary
+            | {div} expr_binary_five slash expr_unary
                     {-> New expr.div(expr_binary_five.expr, expr_unary.expr)}
-            | {expr_rem} expr_binary_five mod expr_unary
+            | {rem} expr_binary_five mod expr_unary
                     {-> New expr.rem(expr_binary_five.expr, expr_unary.expr)}
-            | {expr_lshift} expr_binary_five lshift expr_unary
+            | {lshift} expr_binary_five lshift expr_unary
                     {-> New expr.lshift(expr_binary_five.expr, expr_unary.expr)}
-            | {expr_rshift} expr_binary_five rshift expr_unary
+            | {rshift} expr_binary_five rshift expr_unary
                     {-> New expr.rshift(expr_binary_five.expr, expr_unary.expr)}
-            | {expr_bit_and} expr_binary_five ampr expr_unary
+            | {bit_and} expr_binary_five ampr expr_unary
                     {-> New expr.bit_and(expr_binary_five.expr, expr_unary.expr)}
-            | {expr_bit_and_not} expr_binary_five ampr_crt expr_unary
+            | {bit_and_not} expr_binary_five ampr_crt expr_unary
                     {-> New expr.bit_and_not(expr_binary_five.expr, expr_unary.expr)};
 
-    expr_binary_four {-> expr} = {expr_binary_five} expr_binary_five
+    expr_binary_four {-> expr} = {binary_five} expr_binary_five
                     {-> expr_binary_five.expr}
-            | {expr_add} expr_binary_four plus expr_binary_five
+            | {add} expr_binary_four plus expr_binary_five
                     {-> New expr.add(expr_binary_four.expr, expr_binary_five.expr)}
-            | {expr_sub} expr_binary_four minus expr_binary_five
+            | {sub} expr_binary_four minus expr_binary_five
                     {-> New expr.sub(expr_binary_four.expr, expr_binary_five.expr)}
-            | {expr_bit_or} expr_binary_four pipe expr_binary_five
+            | {bit_or} expr_binary_four pipe expr_binary_five
                     {-> New expr.bit_or(expr_binary_four.expr, expr_binary_five.expr)}
-            | {expr_bit_xor} expr_binary_four crt expr_binary_five
+            | {bit_xor} expr_binary_four crt expr_binary_five
                     {-> New expr.bit_xor(expr_binary_four.expr, expr_binary_five.expr)};
 
-    expr_binary_three {-> expr} = {expr_binary_four} expr_binary_four
+    expr_binary_three {-> expr} = {binary_four} expr_binary_four
                     {-> expr_binary_four.expr}
-            | {expr_eq} expr_binary_three dbl_eql expr_binary_four
+            | {eq} expr_binary_three dbl_eql expr_binary_four
                     {-> New expr.eq(expr_binary_three.expr, expr_binary_four.expr)}
-            | {expr_neq} expr_binary_three not_eql expr_binary_four
+            | {neq} expr_binary_three not_eql expr_binary_four
                     {-> New expr.neq(expr_binary_three.expr, expr_binary_four.expr)}
-            | {expr_less} expr_binary_three less_than expr_binary_four
+            | {less} expr_binary_three less_than expr_binary_four
                     {-> New expr.less(expr_binary_three.expr, expr_binary_four.expr)}
-            | {expr_less_eq} expr_binary_three less_than_eql expr_binary_four
+            | {less_eq} expr_binary_three less_than_eql expr_binary_four
                     {-> New expr.less_eq(expr_binary_three.expr, expr_binary_four.expr)}
-            | {expr_great} expr_binary_three greatr_than expr_binary_four
+            | {great} expr_binary_three greatr_than expr_binary_four
                     {-> New expr.great(expr_binary_three.expr, expr_binary_four.expr)}
-            | {expr_great_eq} expr_binary_three greatr_than_eql expr_binary_four
+            | {great_eq} expr_binary_three greatr_than_eql expr_binary_four
                     {-> New expr.great_eq(expr_binary_three.expr, expr_binary_four.expr)};
 
-    expr_binary_two {-> expr} = {expr_binary_three} expr_binary_three
+    expr_binary_two {-> expr} = {binary_three} expr_binary_three
                     {-> expr_binary_three.expr}
-            | {expr_logic_and} expr_binary_two dbl_ampr expr_binary_three
+            | {logic_and} expr_binary_two dbl_ampr expr_binary_three
                     {-> New expr.logic_and(expr_binary_two.expr, expr_binary_three.expr)};
 
-    expr_binary_one {-> expr} = {expr_binary_two} expr_binary_two
+    expr_binary_one {-> expr} = {binary_two} expr_binary_two
                     {-> expr_binary_two.expr}
-            | {expr_logic_or} expr_binary_one dbl_pipe expr_binary_two
+            | {logic_or} expr_binary_one dbl_pipe expr_binary_two
                     {-> New expr.logic_or(expr_binary_one.expr, expr_binary_two.expr)};
 
     // TYPES
-    type {-> type} = {type_basic} type_basic
+    type {-> type} = {basic} type_basic
                     {-> type_basic.type}
-            | {type_slice} type_slice
+            | {slice} type_slice
                     {-> type_slice.type}
-            | {type_array} type_array
+            | {array} type_array
                     {-> type_array.type}
-            | {type_struct} type_struct
+            | {struct} type_struct
                     {-> type_struct.type};
 
-    type_basic {-> type} = {type_int} int
+    type_basic {-> type} = {int} int
                     {-> New type.int(int)}
-            | {type_float64} float64
+            | {float64} float64
                     {-> New type.float64(float64)}
-            | {type_bool} bool
+            | {bool} bool
                     {-> New type.bool(bool)}
-            | {type_rune} rune
+            | {rune} rune
                     {-> New type.rune(rune)}
-            | {type_string} string
+            | {string} string
                     {-> New type.string(string)};
 
     type_slice {-> type} = lf_sq_paren rht_sq_paren type
