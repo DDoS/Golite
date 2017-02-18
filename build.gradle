@@ -58,26 +58,6 @@ configure([compileJava, compileTestJava]) {
     options.deprecation = true
 }
 
-javadoc {
-    options.encoding = 'UTF-8'
-    options.charSet = 'UTF-8'
-}
-
-task sourceJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
-
-artifacts {
-    archives sourceJar
-    archives javadocJar
-}
-
 // JAR manifest configuration
 jar {
     manifest {
