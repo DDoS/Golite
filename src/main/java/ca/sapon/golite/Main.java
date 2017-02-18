@@ -1,12 +1,13 @@
 package ca.sapon.golite;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.FileReader;
+import java.io.PushbackReader;
+
 import golite.lexer.Lexer;
 import golite.node.Start;
 import golite.parser.Parser;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.PushbackReader;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -17,6 +18,9 @@ public class Main {
         final Lexer lexer = new Lexer(new PushbackReader(in));
         final Parser parser = new Parser(lexer);
         final Start ast = parser.parse();
-        System.out.println(ast);
+        final ByteArrayOutputStream output = new ByteArrayOutputStream();
+        final PrettyPrinter printer = new PrettyPrinter(output);
+        ast.apply(printer);
+        System.out.println(output.toString());
     }
 }
