@@ -20,7 +20,6 @@ Helpers
     star = '*';
     dot = '.';
 
-
     //Universal Character Set
     ch_set = [0 .. 0xFFFF];
 
@@ -58,8 +57,6 @@ Helpers
 
     alpha_hyphen = alpha | underscore;
     alpha_numch = alpha_hyphen | num_ch ;
-
-
 
 Tokens
 
@@ -111,7 +108,6 @@ Tokens
 
     plus = '+';
     minus = '-';
-
 
     mod = '%';
     ampr = '&';
@@ -191,7 +187,6 @@ Tokens
 
     rune_dtype = single_quot ([no_carr_nl_sl - single_quot] | escape_squote| escapes) single_quot;
 
-
 Ignored Tokens
     comment,
     wht_sp;
@@ -202,65 +197,60 @@ Productions
     start {-> expr} = expr {-> expr.expr};
 
     // Program
-    prog = pack_decl decl*;
+    prog = decl_pack decl*;
 
-    // Declarations
-    decl = {var_decl} var_decl | {type_decl} type_decl | {func_decl} func_decl;
+    // DECLARATIONS
+    decl = {var} decl_var | {type} decl_type | {func} decl_func;
 
-    // only type and variable declarations are statements
-    decl_stmt = {var} var_decl
-            | {type} type_decl;
+    // Type and variable declarations are also statements
+    stmt_decl = {var} decl_var
+            | {type} decl_type;
 
     // Package declaration
-    pack_decl = kw_package idenf semi;
+    decl_pack = kw_package idenf semi;
 
     // Variable declarations
-    var_decl = {single} kw_var spec_var semi
-            | {distributed} kw_var lf_paren spec_var_stmt* rht_paren semi
-            | {short} idenf_opt_list col_eql exprs_list;
+    decl_var = {single} kw_var spec_var_semi
+            | {distributed} kw_var lf_paren spec_var_semi* rht_paren semi
+            | {short} idenf_list col_eql exprs_list;
 
-    spec_var_stmt = spec_var semi;
+    spec_var_semi = spec_var semi;
+    spec_var = {type} idenf_list type
+            | {expr} idenf_list eql exprs_list
+            | {typeandexpr} idenf_list type eql exprs_list;
 
-    spec_var = {type} idenf_opt_list type
-            | {expr} idenf_opt_list eql exprs_list
-            | {typeandexpr} idenf_opt_list type eql exprs_list;
+    // A list of identifiers. The blank identifier isn't special in the syntax!
+    idenf_list {-> idenf*} = {single} idenf
+                    {-> [idenf]}
+            | {multiple} idenf comma idenf_list
+                    {-> [idenf, idenf_list.idenf]};
 
     // Type declarations
-    type_decl = {single} kw_type type_spec semi
-            | {distributed} kw_type lf_paren type_spec_stmt* rht_paren semi;
+    decl_type = {single} kw_type field_type_semi
+            | {distributed} kw_type lf_paren field_type_semi* rht_paren semi;
 
-    type_spec_stmt = type_spec semi;
-
-    type_spec = idenf_opt type;
+    // A field in a type declaration, ending in a semicolon
+    field_type_semi = idenf type semi;
 
     // Function declarations
-    func_decl = {return} kw_func idenf lf_paren param_list rht_paren type_basic block semi
+    decl_func = {return} kw_func idenf lf_paren param_list rht_paren type block semi
             | {no_return} kw_func idenf lf_paren param_list rht_paren block semi;
+
+    param_list = {empty} | {param_list} param_list_element* param_spec;
+    param_list_element = param_spec comma;
+    param_spec = idenf_list type;
 
     block = lf_brace stmt* rht_brace;
 
-    idenf_opt_list = {singleopt} idenf_opt
-            | {multipleopt} idenf_opt comma idenf_opt_list;
-
-    idenf_opt = {empty} underscore | {idenf} idenf;
-
-    param_list = {empty} | {param_list} param_start* param_type_spec;
-    param_start = param_type_spec comma;
-    param_type_spec = idenf_list type_spec;
-
-    // For testing until real statements are done
-    //stmt = {empty} raw_string_dtype semi | interpreted_string_dtype  semi;
-
-    //Assign - restrict lvalue to identifier(s), array(s), etc.
+    // STATEMENTS
     stmt = {empty}
-            | {decl} decl_stmt
+            | {decl} stmt_decl
             | {incr} expr dbl_plus
             | {decr} expr dbl_minus
             | {print} print lf_paren exprs_list rht_paren
             | {println} println lf_paren exprs_list rht_paren
             | {return} kw_return
             | {return_exp} kw_return expr;
-
 
     // EXPRESSIONS
     expr {-> expr} = expr_binary_one {-> expr_binary_one.expr};
@@ -402,11 +392,6 @@ Productions
 
     type_array {-> type} = lf_sq_paren expr_int rht_sq_paren type
                     {-> New type.array(type.type, expr_int.expr)};
-
-    idenf_list {-> idenf*} = {single} idenf
-                    {-> [idenf]}
-            | {multiple} idenf comma idenf_list
-                    {-> [idenf, idenf_list.idenf]};
 
     struct_field {-> struct_field} = idenf_list type semi
                     {-> New struct_field(type.type, [idenf_list.idenf])};
