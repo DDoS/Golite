@@ -26,10 +26,10 @@ Helpers
 
     tab = 9;
     newln = 10 ;
-    carrret = 13;
+    carriage = 13;
 
-    endln = carrret newln | carrret | newln;
-    not_endln = [ch_set - [carrret + newln]];
+    endln = carriage newln | carriage | newln;
+    not_endln = [ch_set - [carriage + newln]];
 
     // Alphabets
     alpha = ['A' .. 'Z'] | ['a' .. 'z'];
@@ -53,7 +53,7 @@ Helpers
     escape_squote = '\' ''';
     escape_dquote = '\"';
 
-    no_carr_nl = [ch_set - [carrret + newln]] ;
+    no_carr_nl = [ch_set - [carriage + newln]] ;
     no_carr_nl_sl = [no_carr_nl - backslash];
 
     alpha_hyphen = alpha | underscore;
@@ -67,7 +67,7 @@ Tokens
     slash = slash;
 
     //Blanks & WhiteSpace
-    endln = carrret newln | carrret | newln;
+    endln = carriage newln | carriage | newln;
     wht_sp = (sp | endln | tab) +;
 
     kw_break = 'break';
