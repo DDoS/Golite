@@ -8,6 +8,7 @@ TODO: fix these lexer bugs
 3. append + 1 doesn't parse, it should since append is not a keyword
 4. rune + 1 doesn't parse, it should since basic type names are not keywords
 5. _ is a valid identifier and should not be treated specially in the syntax
+6. Automatic semicolon insertion
 
 
 TODO: weeding of
