@@ -15,7 +15,7 @@ public class Main {
             throw new RuntimeException("Expected the source file path as an argument");
         }
         final BufferedReader in = new BufferedReader(new FileReader(args[0]));
-        final Lexer lexer = new Lexer(new PushbackReader(in));
+        final Lexer lexer = new Lexer(new PushbackReader(in, 4096));
         final Parser parser = new Parser(lexer);
         final Start ast = parser.parse();
         final ByteArrayOutputStream output = new ByteArrayOutputStream();

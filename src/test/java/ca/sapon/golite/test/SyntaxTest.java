@@ -37,7 +37,7 @@ public class SyntaxTest {
     }
 
     private static String prettyPrint(Reader programSource) throws Exception {
-        final Lexer lexer = new Lexer(new PushbackReader(programSource));
+        final Lexer lexer = new Lexer(new PushbackReader(programSource, 4096));
         final Parser parser = new Parser(lexer);
         final Start ast = parser.parse();
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
