@@ -1,16 +1,8 @@
 Package golite ;
 
 /*
-TODO: fix these lexer bugs
-
+TODO:
 6. Automatic semicolon insertion
-
-
-TODO: weeding of
-
-1. Assignment LHS
-4. Break and continue
-5. Return? Need to ask prof
 */
 
 Helpers
@@ -202,9 +194,10 @@ Productions
 
     // Variable declarations
     decl_var = {single} kw_var spec_var_semi
-            | {distributed} kw_var lf_paren spec_var_semi* rht_paren semi;
+            | {distributed} kw_var lf_paren spec_var_semi* rht_paren semi
+            | {short} decl_var_short;
 
-    decl_var_short = {short} idenf_list col_eql exprs_list;
+    decl_var_short = idenf_list col_eql exprs_list semi;
 
     spec_var_semi = spec_var semi;
     spec_var = {type} idenf_list type
@@ -232,51 +225,44 @@ Productions
     param_list_element = param_spec comma;
     param_spec = idenf_list type;
 
-    block = lf_brace stmt_list* rht_brace;
+    block = lf_brace stmt* rht_brace;
 
     // STATEMENTS
-    stmt_list = stmt semi;
+    stmt = {empty} semi
+            | {simple} simple_stmt
+            | {print} print lf_paren exprs_list rht_paren semi
+            | {println} println lf_paren exprs_list rht_paren semi
+            | {return} kw_return semi
+            | {return_exp} kw_return expr semi
+            | {break} kw_break
+            | {continue} kw_continue
+            | {if} kw_if expr_with_stmt block else
+            | {switch} kw_switch expr_with_stmt lf_brace switch_case* rht_brace
+            | {for} kw_for for_condition block;
 
-    stmt = {empty}
-            | simple_stmt
-            | {print} print lf_paren exprs_list rht_paren
-            | {println} println lf_paren exprs_list rht_paren
-            | {return} kw_return
-            | {return_exp} kw_return expr
-            | {if} kw_if if_cond block else
-            | {switch} kw_switch optional_switch lf_brace switch_case* rht_brace
-            | {for} kw_for optional_for block;
-
-    if_cond = {stmt} simple_stmt semi
+    expr_with_stmt = {stmt} simple_stmt
             | {expr} expr
-            | {stmt_expr} simple_stmt semi expr;
+            | {stmt_expr} simple_stmt expr;
 
     else = {else} kw_else block
-            | {elseif} kw_else kw_if expr block
+            | {elseif} kw_else kw_if expr_with_stmt block else
             | {empty};
 
-    simple_stmt = {empty}
-            | {expr} expr
-            | {incr} expr dbl_plus
-            | {decr} expr dbl_minus
+    simple_stmt = {empty} semi
+            | {expr} expr semi
+            | {incr} expr dbl_plus semi
+            | {decr} expr dbl_minus semi
             | {short_decl} decl_var_short
-            | {assign} [left]:exprs_list eql [right]:exprs_list;
+            | {assign} [left]:exprs_list eql [right]:exprs_list semi;
 
-    optional_switch = {stmt} simple_stmt semi
-            | {expr} expr
-            | {stmt_exp} simple_stmt semi expr;
+    switch_case = expr_switch_case coln stmt*;
 
-    switch_case = {clause} expr_switch_case coln stmt_list*;
+    expr_switch_case = {exprs} kw_case exprs_list
+            | {default} kw_default;
 
-    expr_switch_case = {exprs} kw_case exprs_list | {default} kw_default;
-
-    optional_for = {empty}
+    for_condition = {empty}
             | {condition} expr
-            |  {clause} [init]:for_stmt [cond]:for_stmt post_stmt;
-
-    for_stmt = {stmt} simple_stmt semi| {empty} semi;
-
-    post_stmt = {stmt} simple_stmt | {empty};
+            | {clause} [init]:simple_stmt [cond]:expr [post]:simple_stmt;
 
     // EXPRESSIONS
     expr {-> expr} = expr_binary_one {-> expr_binary_one.expr};
