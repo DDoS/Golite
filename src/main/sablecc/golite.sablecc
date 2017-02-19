@@ -107,13 +107,6 @@ Tokens
     println = 'println';
     append = 'append';
 
-    // Data Types
-    int = 'int';
-    float64 = 'float64';
-    bool = 'bool';
-    rune = 'rune';
-    string = 'string';
-
     //Operators
 
     plus = '+';
@@ -342,8 +335,6 @@ Productions
                     {-> New expr.index(expr_primary.expr, expr.expr)}
             | {call} expr_primary args_list
                     {-> New expr.call(expr_primary.expr, [args_list.expr])}
-            | {cast} type_basic lf_paren expr rht_paren
-                    {-> New expr.cast(type_basic.type, expr.expr)}
             | {append} append lf_paren [arg1]:expr comma [arg2]:expr rht_paren
                     {-> New expr.append(arg1.expr, arg2.expr)};
 
@@ -412,8 +403,8 @@ Productions
                     {-> New expr.logic_or(expr_binary_one.expr, expr_binary_two.expr)};
 
     // TYPES
-    type {-> type} = {basic} type_basic
-                    {-> type_basic.type}
+    type {-> type} = {basic} type_name
+                    {-> type_name.type}
             | {slice} type_slice
                     {-> type_slice.type}
             | {array} type_array
@@ -421,16 +412,8 @@ Productions
             | {struct} type_struct
                     {-> type_struct.type};
 
-    type_basic {-> type} = {int} int
-                    {-> New type.int(int)}
-            | {float64} float64
-                    {-> New type.float64(float64)}
-            | {bool} bool
-                    {-> New type.bool(bool)}
-            | {rune} rune
-                    {-> New type.rune(rune)}
-            | {string} string
-                    {-> New type.string(string)};
+    type_name {-> type} = idenf
+                    {-> New type.name(idenf)};
 
     type_slice {-> type} = lf_sq_paren rht_sq_paren type
                     {-> New type.slice(type.type)};
@@ -485,11 +468,7 @@ Abstract Syntax Tree
             | {logic_or} [left]:expr [right]:expr;
 
     // TYPES
-    type = {int} int
-            | {float64} float64
-            | {bool} bool
-            | {rune} rune
-            | {string} string
+    type = {name} idenf
             | {slice} type
             | {array} type expr
             | {struct} [fields]:struct_field*;

@@ -12,12 +12,10 @@ import golite.node.ABitAndNotExpr;
 import golite.node.ABitNotExpr;
 import golite.node.ABitOrExpr;
 import golite.node.ABitXorExpr;
-import golite.node.ABoolType;
 import golite.node.ACallExpr;
 import golite.node.ACastExpr;
 import golite.node.ADivExpr;
 import golite.node.AEqExpr;
-import golite.node.AFloat64Type;
 import golite.node.AFloatExpr;
 import golite.node.AGreatEqExpr;
 import golite.node.AGreatExpr;
@@ -26,7 +24,6 @@ import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
-import golite.node.AIntType;
 import golite.node.ALessEqExpr;
 import golite.node.ALessExpr;
 import golite.node.ALogicAndExpr;
@@ -34,18 +31,17 @@ import golite.node.ALogicNotExpr;
 import golite.node.ALogicOrExpr;
 import golite.node.ALshiftExpr;
 import golite.node.AMulExpr;
+import golite.node.ANameType;
 import golite.node.ANegateExpr;
 import golite.node.ANeqExpr;
 import golite.node.AReaffirmExpr;
 import golite.node.ARemExpr;
 import golite.node.ARshiftExpr;
 import golite.node.ARuneExpr;
-import golite.node.ARuneType;
 import golite.node.ASelectExpr;
 import golite.node.ASliceType;
 import golite.node.AStringIntrExpr;
 import golite.node.AStringRawExpr;
-import golite.node.AStringType;
 import golite.node.AStructField;
 import golite.node.AStructType;
 import golite.node.ASubExpr;
@@ -349,28 +345,8 @@ public class PrettyPrinter extends AnalysisAdapter {
     }
 
     @Override
-    public void caseAIntType(AIntType node) {
-        printer.print(node.getInt().getText());
-    }
-
-    @Override
-    public void caseAFloat64Type(AFloat64Type node) {
-        printer.print(node.getFloat64().getText());
-    }
-
-    @Override
-    public void caseABoolType(ABoolType node) {
-        printer.print(node.getBool().getText());
-    }
-
-    @Override
-    public void caseARuneType(ARuneType node) {
-        printer.print(node.getRune().getText());
-    }
-
-    @Override
-    public void caseAStringType(AStringType node) {
-        printer.print(node.getString().getText());
+    public void caseANameType(ANameType node) {
+        printer.print(node.getIdenf().getText());
     }
 
     @Override
