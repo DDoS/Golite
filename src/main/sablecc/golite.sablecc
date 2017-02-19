@@ -9,9 +9,8 @@ TODO: fix these lexer bugs
 TODO: weeding of
 
 1. Assignment LHS
-2. Append function
-3. Basic type casts
-4. Return, break and continue? Need to ask prof
+4. Break and continue
+5. Return? Need to ask prof
 */
 
 Helpers
