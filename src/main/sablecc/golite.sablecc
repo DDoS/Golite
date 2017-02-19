@@ -162,22 +162,22 @@ Tokens
 
     // LITERALS
     // Int
-    int_dtype = zero | num_ch num_ch*;
-    oct_dtype = zero oct_num_ch+;
-    hex_dtype = zero ['x' + 'X'] hex_num_ch+;
+    int_lit = zero | num_ch num_ch*;
+    oct_lit = zero oct_num_ch+;
+    hex_lit = zero ['x' + 'X'] hex_num_ch+;
 
     // Float
-    float_dtype = num_ch+ dot num_ch* | dot num_ch+;
+    float_lit = num_ch+ dot num_ch* | dot num_ch+;
 
     // String
     // "hello\n" // Interpreted string, \n is transformed into newline
-    interpreted_string_dtype = double_quot ([no_carr_nl_sl - single_quot] | escape_dquote | escapes)* double_quot;
+    interpreted_string_lit = double_quot ([no_carr_nl_sl - single_quot] | escape_dquote | escapes)* double_quot;
 
     // `hello\n` // Raw string, \n appears as a `\` followed by `n`
-    raw_string_dtype = back_q [ch_set - back_q]* back_q;
+    raw_string_lit = back_q [ch_set - back_q]* back_q;
 
     // Rune
-    rune_dtype = single_quot ([no_carr_nl_sl - single_quot] | escape_squote | escapes) single_quot;
+    rune_lit = single_quot ([no_carr_nl_sl - single_quot] | escape_squote | escapes) single_quot;
 
 Ignored Tokens
     comment,
@@ -282,26 +282,26 @@ Productions
     // EXPRESSIONS
     expr {-> expr} = expr_binary_one {-> expr_binary_one.expr};
 
-    expr_int {-> expr} = {int_dec} int_dtype
-                    {-> New expr.int_dec(int_dtype)}
-            | {int_octal} oct_dtype
-                    {-> New expr.int_oct(oct_dtype)}
-            | {int_hex} hex_dtype
-                    {-> New expr.int_hex(hex_dtype)};
+    expr_int {-> expr} = {int_dec} int_lit
+                    {-> New expr.int_dec(int_lit)}
+            | {int_octal} oct_lit
+                    {-> New expr.int_oct(oct_lit)}
+            | {int_hex} hex_lit
+                    {-> New expr.int_hex(hex_lit)};
 
-    expr_string {-> expr} = {string_intr} interpreted_string_dtype
-                    {-> New expr.string_intr(interpreted_string_dtype)}
-            | {string_raw} raw_string_dtype
-                    {-> New expr.string_raw(raw_string_dtype)};
+    expr_string {-> expr} = {string_intr} interpreted_string_lit
+                    {-> New expr.string_intr(interpreted_string_lit)}
+            | {string_raw} raw_string_lit
+                    {-> New expr.string_raw(raw_string_lit)};
 
     expr_atom {-> expr} = {ident} idenf
                     {-> New expr.ident(idenf)}
             | {int} expr_int
                     {-> expr_int.expr}
-            | {float} float_dtype
-                    {-> New expr.float(float_dtype)}
-            | {rune} rune_dtype
-                    {-> New expr.rune(rune_dtype)}
+            | {float} float_lit
+                    {-> New expr.float(float_lit)}
+            | {rune} rune_lit
+                    {-> New expr.rune(rune_lit)}
             | {string} expr_string
                     {-> expr_string.expr}
             | {paren} lf_paren expr rht_paren
@@ -420,13 +420,13 @@ Abstract Syntax Tree
 
     // EXPRESSIONS
     expr = {ident} idenf
-            | {int_dec} int_dtype
-            | {int_oct} oct_dtype
-            | {int_hex} hex_dtype
-            | {float} float_dtype
-            | {rune} rune_dtype
-            | {string_intr} interpreted_string_dtype
-            | {string_raw} raw_string_dtype
+            | {int_dec} int_lit
+            | {int_oct} oct_lit
+            | {int_hex} hex_lit
+            | {float} float_lit
+            | {rune} rune_lit
+            | {string_intr} interpreted_string_lit
+            | {string_raw} raw_string_lit
             | {select} [value]:expr idenf
             | {index} [value]:expr [index]:expr
             | {call} [value]:expr [args]:expr*

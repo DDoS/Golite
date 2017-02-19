@@ -71,37 +71,37 @@ public class PrettyPrinter extends AnalysisAdapter {
 
     @Override
     public void caseAIntDecExpr(AIntDecExpr node) {
-        printer.print(node.getIntDtype().getText());
+        printer.print(node.getIntLit().getText());
     }
 
     @Override
     public void caseAIntOctExpr(AIntOctExpr node) {
-        printer.print(node.getOctDtype().getText());
+        printer.print(node.getOctLit().getText());
     }
 
     @Override
     public void caseAIntHexExpr(AIntHexExpr node) {
-        printer.print(node.getHexDtype().getText());
+        printer.print(node.getHexLit().getText());
     }
 
     @Override
     public void caseAFloatExpr(AFloatExpr node) {
-        printer.print(node.getFloatDtype().getText());
+        printer.print(node.getFloatLit().getText());
     }
 
     @Override
     public void caseARuneExpr(ARuneExpr node) {
-        printer.print(node.getRuneDtype().getText());
+        printer.print(node.getRuneLit().getText());
     }
 
     @Override
     public void caseAStringIntrExpr(AStringIntrExpr node) {
-        printer.print(node.getInterpretedStringDtype().getText());
+        printer.print(node.getInterpretedStringLit().getText());
     }
 
     @Override
     public void caseAStringRawExpr(AStringRawExpr node) {
-        printer.print(node.getRawStringDtype().getText());
+        printer.print(node.getRawStringLit().getText());
     }
 
     @Override
