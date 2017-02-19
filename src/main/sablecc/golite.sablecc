@@ -252,11 +252,9 @@ Productions
     param_spec = idenf_list type;
 
     block = lf_brace stmt_list* rht_brace;
-    loop_block = lf_brace loop_stmt_list* rht_brace;
 
     // STATEMENTS
     stmt_list = stmt semi;
-    loop_stmt_list = loop_stmt semi;
 
     stmt = {empty}
             | simple_stmt
@@ -266,7 +264,7 @@ Productions
             | {return_exp} kw_return expr
             | {if} kw_if if_cond block else
             | {switch} kw_switch optional_switch lf_brace switch_case* rht_brace
-            | {for} kw_for optional_for loop_block;
+            | {for} kw_for optional_for block;
 
     if_cond = {stmt} simple_stmt semi
             | {expr} expr
@@ -283,16 +281,11 @@ Productions
             | {short_decl} decl_var_short
             | {assign} [left]:exprs_list eql [right]:exprs_list;
 
-    loop_stmt = {empty}
-            | {break} kw_break
-            | {continue} kw_continue
-            | {stmt} stmt;
-
     optional_switch = {stmt} simple_stmt semi
             | {expr} expr
             | {stmt_exp} simple_stmt semi expr;
 
-    switch_case = {clause} expr_switch_case coln loop_stmt_list*;
+    switch_case = {clause} expr_switch_case coln stmt_list*;
 
     expr_switch_case = {exprs} kw_case exprs_list | {default} kw_default;
 
