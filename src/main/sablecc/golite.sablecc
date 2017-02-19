@@ -251,24 +251,37 @@ Productions
     param_list_element = param_spec comma;
     param_spec = idenf_list type;
 
-    block = lf_brace loop_stmt* rht_brace;
+    block = lf_brace stmt_list* rht_brace;
+    loop_block = lf_brace loop_stmt_list* rht_brace;
 
     // STATEMENTS
+    stmt_list = stmt semi;
+    loop_stmt_list = loop_stmt semi;
+
     stmt = {empty}
             | simple_stmt
             | {print} print lf_paren exprs_list rht_paren
             | {println} println lf_paren exprs_list rht_paren
             | {return} kw_return
             | {return_exp} kw_return expr
-            | {if} kw_if expr lf_brace stmt* rht_brace else
+            | {if} kw_if if_cond block else
             | {switch} kw_switch optional_switch lf_brace switch_case* rht_brace
-            | {for} kw_for optional_for block;
+            | {for} kw_for optional_for loop_block;
+
+    if_cond = {stmt} simple_stmt semi
+            | {expr} expr
+            | {stmt_expr} simple_stmt semi expr;
+
+    else = {else} kw_else block
+            | {elseif} kw_else kw_if expr block
+            | {empty};
 
     simple_stmt = {empty}
             | {expr} expr
             | {incr} expr dbl_plus
             | {decr} expr dbl_minus
-            | {short_decl} decl_var_short;
+            | {short_decl} decl_var_short
+            | {assign} [left]:exprs_list eql [right]:exprs_list;
 
     loop_stmt = {empty}
             | {break} kw_break
@@ -279,24 +292,17 @@ Productions
             | {expr} expr
             | {stmt_exp} simple_stmt semi expr;
 
-    switch_case = {clause} expr_switch_case coln loop_stmt*;
+    switch_case = {clause} expr_switch_case coln loop_stmt_list*;
 
     expr_switch_case = {exprs} kw_case exprs_list | {default} kw_default;
 
     optional_for = {empty}
             | {condition} expr
-            |  {clause} init_stmt cond_stmt post_stmt;
+            |  {clause} [init]:for_stmt [cond]:for_stmt post_stmt;
 
-    init_stmt = {stmt} simple_stmt semi| {empty} semi;
-
-    cond_stmt = {stmt} simple_stmt semi| {empty} semi;
+    for_stmt = {stmt} simple_stmt semi| {empty} semi;
 
     post_stmt = {stmt} simple_stmt | {empty};
-            
-
-    else = {else} kw_else lf_brace stmt* rht_brace
-            | {elseif} kw_else kw_if expr lf_brace stmt* rht_brace
-            | {empty};
 
     // EXPRESSIONS
     expr {-> expr} = expr_binary_one {-> expr_binary_one.expr};
