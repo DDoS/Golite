@@ -3,10 +3,7 @@ Package golite ;
 /*
 TODO: fix these lexer bugs
 
-1. Any source line must end with a space. This is wrong
-2. ("1") doesn't parse, it should
 3. append + 1 doesn't parse, it should since append is not a keyword
-4. rune + 1 doesn't parse, it should since basic type names are not keywords
 5. _ is a valid identifier and should not be treated specially in the syntax
 6. Automatic semicolon insertion
 
