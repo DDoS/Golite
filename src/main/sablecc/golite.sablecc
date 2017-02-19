@@ -74,7 +74,7 @@ Tokens
     slash = slash;
 
     //Blanks & WhiteSpace
-    endln = carriage newln | carriage | newln;
+ 
     wht_sp = (sp | endln | tab) +;
 
     kw_break = 'break';
