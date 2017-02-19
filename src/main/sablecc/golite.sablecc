@@ -167,7 +167,7 @@ Tokens
     hex_dtype = zero ['x' + 'X'] hex_num_ch+;
 
     // Float
-    float_dtype = num_ch* dot num_ch* | dot num_ch+;
+    float_dtype = num_ch+ dot num_ch* | dot num_ch+;
 
     // String
     // "hello\n" // Interpreted string, \n is transformed into newline
