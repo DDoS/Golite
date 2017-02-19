@@ -180,135 +180,135 @@ public class PrettyPrinter extends AnalysisAdapter {
 
     @Override
     public void caseAMulExpr(AMulExpr node) {
-        printExpr(printer, AMulExpr.class, node.getLeft());
+        printExprLeft(printer, AMulExpr.class, node.getLeft());
         printer.print(" * ");
-        printExpr(printer, AMulExpr.class, node.getRight());
+        printExprRight(printer, AMulExpr.class, node.getRight());
     }
 
     @Override
     public void caseADivExpr(ADivExpr node) {
-        printExpr(printer, ADivExpr.class, node.getLeft());
+        printExprLeft(printer, ADivExpr.class, node.getLeft());
         printer.print(" / ");
-        printExpr(printer, ADivExpr.class, node.getRight());
+        printExprRight(printer, ADivExpr.class, node.getRight());
     }
 
     @Override
     public void caseARemExpr(ARemExpr node) {
-        printExpr(printer, ARemExpr.class, node.getLeft());
+        printExprLeft(printer, ARemExpr.class, node.getLeft());
         printer.print(" % ");
-        printExpr(printer, ARemExpr.class, node.getRight());
+        printExprRight(printer, ARemExpr.class, node.getRight());
     }
 
     @Override
     public void caseALshiftExpr(ALshiftExpr node) {
-        printExpr(printer, ALshiftExpr.class, node.getLeft());
+        printExprLeft(printer, ALshiftExpr.class, node.getLeft());
         printer.print(" << ");
-        printExpr(printer, ALshiftExpr.class, node.getRight());
+        printExprRight(printer, ALshiftExpr.class, node.getRight());
     }
 
     @Override
     public void caseARshiftExpr(ARshiftExpr node) {
-        printExpr(printer, ARshiftExpr.class, node.getLeft());
+        printExprLeft(printer, ARshiftExpr.class, node.getLeft());
         printer.print(" >> ");
-        printExpr(printer, ARshiftExpr.class, node.getRight());
+        printExprRight(printer, ARshiftExpr.class, node.getRight());
     }
 
     @Override
     public void caseABitAndExpr(ABitAndExpr node) {
-        printExpr(printer, ABitAndExpr.class, node.getLeft());
+        printExprLeft(printer, ABitAndExpr.class, node.getLeft());
         printer.print(" & ");
-        printExpr(printer, ABitAndExpr.class, node.getRight());
+        printExprRight(printer, ABitAndExpr.class, node.getRight());
     }
 
     @Override
     public void caseABitAndNotExpr(ABitAndNotExpr node) {
-        printExpr(printer, ABitAndNotExpr.class, node.getLeft());
+        printExprLeft(printer, ABitAndNotExpr.class, node.getLeft());
         printer.print(" &^ ");
-        printExpr(printer, ABitAndNotExpr.class, node.getRight());
+        printExprRight(printer, ABitAndNotExpr.class, node.getRight());
     }
 
     @Override
     public void caseAAddExpr(AAddExpr node) {
-        printExpr(printer, AAddExpr.class, node.getLeft());
+        printExprLeft(printer, AAddExpr.class, node.getLeft());
         printer.print(" + ");
-        printExpr(printer, AAddExpr.class, node.getRight());
+        printExprRight(printer, AAddExpr.class, node.getRight());
     }
 
     @Override
     public void caseASubExpr(ASubExpr node) {
-        printExpr(printer, ASubExpr.class, node.getLeft());
+        printExprLeft(printer, ASubExpr.class, node.getLeft());
         printer.print(" - ");
-        printExpr(printer, ASubExpr.class, node.getRight());
+        printExprRight(printer, ASubExpr.class, node.getRight());
     }
 
     @Override
     public void caseABitOrExpr(ABitOrExpr node) {
-        printExpr(printer, ABitOrExpr.class, node.getLeft());
+        printExprLeft(printer, ABitOrExpr.class, node.getLeft());
         printer.print(" | ");
-        printExpr(printer, ABitOrExpr.class, node.getRight());
+        printExprRight(printer, ABitOrExpr.class, node.getRight());
     }
 
     @Override
     public void caseABitXorExpr(ABitXorExpr node) {
-        printExpr(printer, ABitXorExpr.class, node.getLeft());
+        printExprLeft(printer, ABitXorExpr.class, node.getLeft());
         printer.print(" ^ ");
-        printExpr(printer, ABitXorExpr.class, node.getRight());
+        printExprRight(printer, ABitXorExpr.class, node.getRight());
     }
 
     @Override
     public void caseAEqExpr(AEqExpr node) {
-        printExpr(printer, AEqExpr.class, node.getLeft());
+        printExprLeft(printer, AEqExpr.class, node.getLeft());
         printer.print(" == ");
-        printExpr(printer, AEqExpr.class, node.getRight());
+        printExprRight(printer, AEqExpr.class, node.getRight());
     }
 
     @Override
     public void caseANeqExpr(ANeqExpr node) {
-        printExpr(printer, ANeqExpr.class, node.getLeft());
+        printExprLeft(printer, ANeqExpr.class, node.getLeft());
         printer.print(" != ");
-        printExpr(printer, ANeqExpr.class, node.getRight());
+        printExprRight(printer, ANeqExpr.class, node.getRight());
     }
 
     @Override
     public void caseALessExpr(ALessExpr node) {
-        printExpr(printer, ALessExpr.class, node.getLeft());
+        printExprLeft(printer, ALessExpr.class, node.getLeft());
         printer.print(" < ");
-        printExpr(printer, ALessExpr.class, node.getRight());
+        printExprRight(printer, ALessExpr.class, node.getRight());
     }
 
     @Override
     public void caseALessEqExpr(ALessEqExpr node) {
-        printExpr(printer, ALessEqExpr.class, node.getLeft());
+        printExprLeft(printer, ALessEqExpr.class, node.getLeft());
         printer.print(" <= ");
-        printExpr(printer, ALessEqExpr.class, node.getRight());
+        printExprRight(printer, ALessEqExpr.class, node.getRight());
     }
 
     @Override
     public void caseAGreatExpr(AGreatExpr node) {
-        printExpr(printer, AGreatExpr.class, node.getLeft());
+        printExprLeft(printer, AGreatExpr.class, node.getLeft());
         printer.print(" > ");
-        printExpr(printer, AGreatExpr.class, node.getRight());
+        printExprRight(printer, AGreatExpr.class, node.getRight());
     }
 
     @Override
     public void caseAGreatEqExpr(AGreatEqExpr node) {
-        printExpr(printer, AGreatEqExpr.class, node.getLeft());
+        printExprLeft(printer, AGreatEqExpr.class, node.getLeft());
         printer.print(" >= ");
-        printExpr(printer, AGreatEqExpr.class, node.getRight());
+        printExprRight(printer, AGreatEqExpr.class, node.getRight());
     }
 
     @Override
     public void caseALogicAndExpr(ALogicAndExpr node) {
-        printExpr(printer, ALogicAndExpr.class, node.getLeft());
+        printExprLeft(printer, ALogicAndExpr.class, node.getLeft());
         printer.print(" && ");
-        printExpr(printer, ALogicAndExpr.class, node.getRight());
+        printExprRight(printer, ALogicAndExpr.class, node.getRight());
     }
 
     @Override
     public void caseALogicOrExpr(ALogicOrExpr node) {
-        printExpr(printer, ALogicOrExpr.class, node.getLeft());
+        printExprLeft(printer, ALogicOrExpr.class, node.getLeft());
         printer.print(" || ");
-        printExpr(printer, ALogicOrExpr.class, node.getRight());
+        printExprRight(printer, ALogicOrExpr.class, node.getRight());
     }
 
     @Override
@@ -354,8 +354,23 @@ public class PrettyPrinter extends AnalysisAdapter {
         printer.print(";");
     }
 
-    public void printExpr(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child) {
-        final boolean needParenthesis = lowerPrecedence(child.getClass(), parent);
+    public void printExprLeft(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child) {
+        printExpr(printer, parent, child, false);
+    }
+
+    public void printExprRight(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child) {
+        printExpr(printer, parent, child, true);
+    }
+
+    public void printExpr(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child, boolean right) {
+        final int parentPrecedence = EXPR_PRECEDENCE.getOrDefault(parent, 0);
+        if (parentPrecedence <= 0) {
+            throw new IllegalStateException();
+        }
+        final int childPrecedence = EXPR_PRECEDENCE.getOrDefault(child.getClass(), 0);
+        // Add parenthesis around lower precedence children
+        // If the children is on the right, also do so for the same precedence to respect left associativity
+        final boolean needParenthesis = right ? childPrecedence >= parentPrecedence : childPrecedence > parentPrecedence;
         if (needParenthesis) {
             printer.print("(");
         }
@@ -390,14 +405,5 @@ public class PrettyPrinter extends AnalysisAdapter {
                 ALogicOrExpr.class
         ).collect(Collectors.toMap(key -> key, value -> 5)));
         EXPR_PRECEDENCE = Collections.unmodifiableMap(precedences);
-    }
-
-    public static boolean lowerPrecedence(Class<? extends PExpr> from, Class<? extends PExpr> to) {
-        final int fromPrecedence = EXPR_PRECEDENCE.getOrDefault(from, 0);
-        final int toPrecedence = EXPR_PRECEDENCE.getOrDefault(to, 0);
-        if (toPrecedence <= 0) {
-            throw new IllegalStateException();
-        }
-        return fromPrecedence > toPrecedence;
     }
 }
