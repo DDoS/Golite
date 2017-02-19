@@ -68,11 +68,13 @@ Tokens
 
     star = star;
     slash = slash;
+    underscore = underscore;
 
-    //Blanks & WhiteSpace
- 
+    // WHITESPACE
     wht_sp = (sp | endln | tab) +;
 
+    // KEYWORDS
+    // Go keywords
     kw_break = 'break';
     kw_case = 'case';
     kw_chan = 'chan';
@@ -99,12 +101,12 @@ Tokens
     kw_type = 'type';
     kw_var = 'var';
 
+    // Golite additional keywords
     print = 'print';
     println = 'println';
     append = 'append';
 
     //Operators
-
     plus = '+';
     minus = '-';
 
@@ -155,19 +157,13 @@ Tokens
     semi = ';';
     coln = ':';
 
-    underscore = underscore;
-
-    //COMMENTS
-
+    // COMMENTS
     comment = '//' not_endln * | '/*' ([ch_set - star] | star [ch_set - slash])* '*/';
 
-    // IDENTIFIER
-    //idenf = alpha alpha_num* | underscore alpha_num+ ;
-
+    // IDENTIFIERS
     idenf = alpha alpha_numch* | underscore alpha_numch+;
 
-    // DataTypes
-
+    // LITERALS
     // Int
     int_dtype = zero | num_ch num_ch*;
     oct_dtype = zero oct_num_ch+;
@@ -176,14 +172,14 @@ Tokens
     // Float
     float_dtype = num_ch* dot num_ch* | dot num_ch+;
 
-    /* String literals */
-
+    // String
     // "hello\n" // Interpreted string, \n is transformed into newline
     interpreted_string_dtype = double_quot ([no_carr_nl_sl - single_quot] | escape_dquote| escapes)* double_quot;
 
     // `hello\n` // Raw string, \n appears as a `\` followed by `n`
     raw_string_dtype = back_q [ch_set - back_q]* back_q;
 
+    // Rune
     rune_dtype = single_quot ([no_carr_nl_sl - single_quot] | escape_squote| escapes) single_quot;
 
 Ignored Tokens
@@ -217,7 +213,7 @@ Productions
     spec_var_semi = spec_var semi;
     spec_var = {type} idenf_list type
             | {expr} idenf_list eql exprs_list
-            | {typeandexpr} idenf_list type eql exprs_list;
+            | {type_and_expr} idenf_list type eql exprs_list;
 
     // A list of identifiers. The blank identifier isn't special in the syntax!
     idenf_list {-> idenf*} = {single} idenf
