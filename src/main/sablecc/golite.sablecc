@@ -16,16 +16,16 @@ TODO: weeding of
 
 Helpers
 
-    //CHARACTERS
+    // CHARACTERS
 
-    //Some Symbols
+    // Some Symbols
     underscore = '_';
     slash = '/';
     backslash = '\';
     star = '*';
     dot = '.';
 
-    //Universal Character Set
+    // Universal Character Set
     ch_set = [0 .. 0xFFFF];
 
     tab = 9;
@@ -38,8 +38,7 @@ Helpers
     // Alphabets
     alpha = ['A' .. 'Z'] | ['a' .. 'z'];
 
-    //Numeric Characters
-
+    // Numeric Characters
     zero = '0';
     num_ch = ['0' .. '9'] ;
     oct_num_ch = ['0' .. '7'];
@@ -156,7 +155,7 @@ Tokens
     coln = ':';
 
     // COMMENTS
-    comment = '//' not_endln * | '/*' ([ch_set - star] | star [ch_set - slash])* '*/';
+    comment = '//' not_endln* | '/*' ([ch_set - star] | star [ch_set - slash])* '*/';
 
     // IDENTIFIERS
     idenf = letter alpha_num*;
@@ -172,13 +171,13 @@ Tokens
 
     // String
     // "hello\n" // Interpreted string, \n is transformed into newline
-    interpreted_string_dtype = double_quot ([no_carr_nl_sl - single_quot] | escape_dquote| escapes)* double_quot;
+    interpreted_string_dtype = double_quot ([no_carr_nl_sl - single_quot] | escape_dquote | escapes)* double_quot;
 
     // `hello\n` // Raw string, \n appears as a `\` followed by `n`
     raw_string_dtype = back_q [ch_set - back_q]* back_q;
 
     // Rune
-    rune_dtype = single_quot ([no_carr_nl_sl - single_quot] | escape_squote| escapes) single_quot;
+    rune_dtype = single_quot ([no_carr_nl_sl - single_quot] | escape_squote | escapes) single_quot;
 
 Ignored Tokens
     comment,
