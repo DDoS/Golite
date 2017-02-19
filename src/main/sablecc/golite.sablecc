@@ -3,7 +3,6 @@ Package golite ;
 /*
 TODO: fix these lexer bugs
 
-5. _ is a valid identifier and should not be treated specially in the syntax
 6. Automatic semicolon insertion
 
 
@@ -61,14 +60,13 @@ Helpers
     no_carr_nl = [ch_set - [carriage + newln]] ;
     no_carr_nl_sl = [no_carr_nl - backslash];
 
-    alpha_hyphen = alpha | underscore;
-    alpha_numch = alpha_hyphen | num_ch ;
+    letter = alpha | underscore;
+    alpha_num = letter | num_ch ;
 
 Tokens
 
     star = star;
     slash = slash;
-    underscore = underscore;
 
     // WHITESPACE
     wht_sp = (sp | endln | tab) +;
@@ -161,7 +159,7 @@ Tokens
     comment = '//' not_endln * | '/*' ([ch_set - star] | star [ch_set - slash])* '*/';
 
     // IDENTIFIERS
-    idenf = alpha alpha_numch* | underscore alpha_numch+;
+    idenf = letter alpha_num*;
 
     // LITERALS
     // Int
