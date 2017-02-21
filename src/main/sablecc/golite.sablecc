@@ -194,10 +194,7 @@ Productions
 
     // Variable declarations
     decl_var = {single} kw_var spec_var_semi
-            | {distributed} kw_var lf_paren spec_var_semi* rht_paren semi
-            | {short} decl_var_short;
-
-    decl_var_short = idenf_list col_eql exprs_list semi;
+            | {distributed} kw_var lf_paren spec_var_semi* rht_paren semi;
 
     spec_var_semi = spec_var semi;
     spec_var = {type} idenf_list type
@@ -252,8 +249,8 @@ Productions
             | {expr} expr semi
             | {incr} expr dbl_plus semi
             | {decr} expr dbl_minus semi
-            | {short_decl} decl_var_short
-            | {assign} [left]:exprs_list eql [right]:exprs_list semi;
+            | {decl_var_short} idenf_list col_eql exprs_list semi
+            | {assign} [left]:exprs_list eql [right]:exprs_list semi
             | {assign_mul} [left]:expr star_eql [right]:expr semi
             | {assign_div} [left]:expr slash_eql [right]:expr semi
             | {assign_rem} [left]:expr mod_eql [right]:expr semi
