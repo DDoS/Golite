@@ -59,7 +59,8 @@ Tokens
     slash = slash;
 
     // WHITESPACE
-    wht_sp = (sp | endln | tab) +;
+    space = (sp | tab)+;
+    endln = endln;
 
     // KEYWORDS
     // Go keywords
@@ -171,8 +172,7 @@ Tokens
     rune_lit = single_quot ([no_carr_nl_sl - single_quot] | escape_squote | escapes) single_quot;
 
 Ignored Tokens
-    comment,
-    wht_sp;
+    comment, space, endln;
 
 Productions
 
