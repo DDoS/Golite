@@ -1,6 +1,6 @@
 package ca.sapon.golite;
 
-import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.io.PushbackReader;
 import java.io.Reader;
 
@@ -26,14 +26,11 @@ public final class Golite {
         }
     }
 
-    public static String prettyPrint(Reader source) {
-        return prettyPrint(parse(source));
+    public static void prettyPrint(Reader source, OutputStream pretty) {
+        prettyPrint(parse(source), pretty);
     }
 
-    public static String prettyPrint(Start ast) {
-        final ByteArrayOutputStream output = new ByteArrayOutputStream();
-        final PrettyPrinter printer = new PrettyPrinter(output);
-        ast.apply(printer);
-        return output.toString();
+    public static void prettyPrint(Start ast, OutputStream pretty) {
+        ast.apply(new PrettyPrinter(pretty));
     }
 }

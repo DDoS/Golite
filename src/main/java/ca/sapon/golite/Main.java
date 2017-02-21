@@ -1,6 +1,7 @@
 package ca.sapon.golite;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileReader;
 
 public final class Main {
@@ -13,6 +14,8 @@ public final class Main {
             throw new RuntimeException("Expected the source file path as an argument");
         }
         final BufferedReader source = new BufferedReader(new FileReader(args[0]));
-        System.out.println(Golite.prettyPrint(source));
+        final ByteArrayOutputStream pretty = new ByteArrayOutputStream();
+        Golite.prettyPrint(source, pretty);
+        System.out.println(pretty.toString());
     }
 }
