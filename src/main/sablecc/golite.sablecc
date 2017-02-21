@@ -15,6 +15,7 @@ Helpers
     backslash = '\';
     star = '*';
     dot = '.';
+    sp = ' ';
 
     // Universal Character Set
     ch_set = [0 .. 0xFFFF];
@@ -24,34 +25,45 @@ Helpers
     carriage = 13;
 
     endln = carriage newln | carriage | newln;
+    //NOTs
     not_endln = [ch_set - [carriage + newln]];
+    not_star = [ch_set - star];
+    not_slash = [ch_set - slash];
+    not_star_not_slash = [ch_set - [star + slash]];
 
     // Alphabets
-    alpha = ['A' .. 'Z'] | ['a' .. 'z'];
+    alpha_lower = ['a' .. 'z']; 
+    alpha_upper = ['A' .. 'Z'];
+    alpha = alpha_lower | alpha_upper;
 
     // Numeric Characters
-    zero = '0';
     num_ch = ['0' .. '9'] ;
     oct_num_ch = ['0' .. '7'];
-
+    
+    zero = '0';
     nozero = [num_ch - '0'];
-    hex_num_ch = num_ch | alpha;
 
-    sp = ' ';
+    hex_num_ch = num_ch | alpha;
     single_quot = ''';
     double_quot = '"';
     back_q = '`';
 
     // Escape Sequence
-    escapes = '\' ('\'| 'a' | 'b' | 'f' | 'n' | 'r' | 't' | 'v' );
-    escape_squote = '\' ''';
-    escape_dquote = '\"';
+    escapes = '\\'| '\a' | '\b' | '\f' | '\n' | '\r' | '\t' | '\v' ;
+
 
     no_carr_nl = [ch_set - [carriage + newln]] ;
-    no_carr_nl_sl = [no_carr_nl - backslash];
+    no_carr_nl_bsl = [no_carr_nl - backslash];
+    no_carr_nl_sl_dlq = [no_carr_nl_bsl - double_quot];
+    no_back_q = [ch_set - back_q];
 
     letter = alpha | underscore;
     alpha_num = letter | num_ch ;
+    comment_singleln = '//' not_endln* endln;
+    comment_multiln = '/*' not_star* '*'+ (not_star_not_slash not_star* '*'+)* '/';
+
+    string_ch= no_carr_nl_sl_dlq | backslash double_quot | escapes;
+    string_ch_sequence = string_ch+;
 
 Tokens
 
@@ -147,7 +159,7 @@ Tokens
     coln = ':';
 
     // COMMENTS
-    comment = '//' not_endln* | '/*' ([ch_set - star] | star [ch_set - slash])* '*/';
+    comment = comment_singleln | comment_multiln;
 
     // IDENTIFIERS
     idenf = letter alpha_num*;
@@ -159,17 +171,17 @@ Tokens
     hex_lit = zero ['x' + 'X'] hex_num_ch+;
 
     // Float
-    float_lit = num_ch+ dot num_ch* | dot num_ch+;
+    float_lit = num_ch+ dot num_ch* | dot num_ch num_ch*;
 
     // String
     // "hello\n" // Interpreted string, \n is transformed into newline
-    interpreted_string_lit = double_quot ([no_carr_nl_sl - single_quot] | escape_dquote | escapes)* double_quot;
+    interpreted_string_lit = double_quot string_ch_sequence? double_quot;
 
     // `hello\n` // Raw string, \n appears as a `\` followed by `n`
-    raw_string_lit = back_q [ch_set - back_q]* back_q;
+    raw_string_lit = back_q no_back_q* back_q;
 
     // Rune
-    rune_lit = single_quot ([no_carr_nl_sl - single_quot] | escape_squote | escapes) single_quot;
+     rune_lit = single_quot ( no_carr_nl_bsl | escapes |  backslash single_quot) single_quot;
 
 Ignored Tokens
     comment, space, endln;
