@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,6 +23,7 @@ import golite.node.ACastExpr;
 import golite.node.ADivExpr;
 import golite.node.AEqExpr;
 import golite.node.AFloatExpr;
+import golite.node.AFuncDecl;
 import golite.node.AGreatEqExpr;
 import golite.node.AGreatExpr;
 import golite.node.AIdentExpr;
@@ -39,6 +41,9 @@ import golite.node.AMulExpr;
 import golite.node.ANameType;
 import golite.node.ANegateExpr;
 import golite.node.ANeqExpr;
+import golite.node.AParam;
+import golite.node.APkg;
+import golite.node.AProg;
 import golite.node.AReaffirmExpr;
 import golite.node.ARemExpr;
 import golite.node.ARshiftExpr;
@@ -50,7 +55,13 @@ import golite.node.AStringRawExpr;
 import golite.node.AStructField;
 import golite.node.AStructType;
 import golite.node.ASubExpr;
+import golite.node.ATypeDecl;
+import golite.node.AVarDecl;
+import golite.node.PDecl;
 import golite.node.PExpr;
+import golite.node.PParam;
+import golite.node.PStmtStub;
+import golite.node.PStructField;
 import golite.node.Start;
 import golite.node.TIdenf;
 
@@ -67,6 +78,71 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseStart(Start node) {
         node.getPProg().apply(this);
+    }
+
+    @Override
+    public void caseAProg(AProg node) {
+        node.getPkg().apply(this);
+        for (PDecl decl : node.getDecl()) {
+            printer.newLine();
+            decl.apply(this);
+        }
+    }
+
+    @Override
+    public void caseAPkg(APkg node) {
+        printer.print("package ").print(node.getIdenf().getText()).print(";").newLine();
+    }
+
+    @Override
+    public void caseAVarDecl(AVarDecl node) {
+        printer.print("var ");
+        printIdenfList(node.getIdenf());
+        if (node.getType() != null) {
+            printer.print(" ");
+            node.getType().apply(this);
+        }
+        if (!node.getExpr().isEmpty()) {
+            printer.print(" = ");
+            printExprList(node.getExpr());
+        }
+        printer.print(";").newLine();
+    }
+
+    @Override
+    public void caseATypeDecl(ATypeDecl node) {
+        printer.print("type ").print(node.getIdenf().getText()).print(" ");
+        node.getType().apply(this);
+        printer.print(";").newLine();
+    }
+
+    @Override
+    public void caseAFuncDecl(AFuncDecl node) {
+        printer.print("func ").print(node.getIdenf().getText()).print("(");
+        final LinkedList<PParam> param = node.getParam();
+        for (int i = 0, paramSize = param.size(); i < paramSize; i++) {
+           param.get(i).apply(this);
+           if (i < paramSize - 1) {
+               printer.print(", ");
+           }
+        }
+        printer.print(")");
+        if (node.getType() != null) {
+            printer.print(" ");
+            node.getType().apply(this);
+        }
+        printer.print(" {").newLine().indent();
+        for (PStmtStub stmt : node.getStmtStub()) {
+            stmt.apply(this);
+        }
+        printer.dedent().print("}").newLine();
+    }
+
+    @Override
+    public void caseAParam(AParam node) {
+        printIdenfList(node.getIdenf());
+        printer.print(" ");
+        node.getType().apply(this);
     }
 
     @Override
@@ -127,13 +203,7 @@ public class PrettyPrinter extends AnalysisAdapter {
     public void caseACallExpr(ACallExpr node) {
         node.getValue().apply(this);
         printer.print("(");
-        final LinkedList<PExpr> args = node.getArgs();
-        for (int i = 0, argsSize = args.size(); i < argsSize; i++) {
-            args.get(i).apply(this);
-            if (i < argsSize - 1) {
-                printer.print(", ");
-            }
-        }
+        printExprList(node.getArgs());
         printer.print(")");
     }
 
@@ -332,37 +402,53 @@ public class PrettyPrinter extends AnalysisAdapter {
 
     @Override
     public void caseAStructType(AStructType node) {
-        printer.print("struct {").newLine().indent();
-        node.getFields().forEach(field -> {
-            field.apply(this);
-            printer.newLine();
-        });
-        printer.dedent().print("}");
+        printer.print("struct {");
+        final LinkedList<PStructField> fields = node.getFields();
+        for (int i = 0, fieldsSize = fields.size(); i < fieldsSize; i++) {
+            fields.get(i).apply(this);
+            if (i < fieldsSize - 1) {
+                printer.print(" ");
+
+            }
+        }
+        printer.print("}");
     }
 
     @Override
     public void caseAStructField(AStructField node) {
-        final LinkedList<TIdenf> names = node.getNames();
-        for (int i = 0, namesSize = names.size(); i < namesSize; i++) {
-            printer.print(names.get(i).getText());
-            if (i < namesSize - 1) {
-                printer.print(", ");
-            }
-        }
+        printIdenfList(node.getNames());
         printer.print(" ");
         node.getType().apply(this);
         printer.print(";");
     }
 
-    public void printExprLeft(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child) {
+    private void printIdenfList(List<TIdenf> idenfs) {
+        for (int i = 0, idenfsSize = idenfs.size(); i < idenfsSize; i++) {
+            printer.print(idenfs.get(i).getText());
+            if (i < idenfsSize - 1) {
+                printer.print(", ");
+            }
+        }
+    }
+
+    private void printExprList(List<PExpr> exprs) {
+        for (int i = 0, exprsSize = exprs.size(); i < exprsSize; i++) {
+            exprs.get(i).apply(this);
+            if (i < exprsSize - 1) {
+                printer.print(", ");
+            }
+        }
+    }
+
+    private void printExprLeft(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child) {
         printExpr(printer, parent, child, false);
     }
 
-    public void printExprRight(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child) {
+    private void printExprRight(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child) {
         printExpr(printer, parent, child, true);
     }
 
-    public void printExpr(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child, boolean right) {
+    private void printExpr(SourcePrinter printer, Class<? extends PExpr> parent, PExpr child, boolean right) {
         final int parentPrecedence = EXPR_PRECEDENCE.getOrDefault(parent, 0);
         if (parentPrecedence <= 0) {
             throw new IllegalStateException();
