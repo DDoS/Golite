@@ -223,7 +223,7 @@ Productions
     param_list {-> param*} = {empty}
                     {-> []}
             | {multiple} param_list_element* param_spec
-                    {-> [param_list_element.param]};
+                    {-> [param_list_element.param, param_spec.param]};
 
     param_list_element {-> param} = param_spec comma {-> param_spec.param};
     param_spec {-> param} = idenf_list type {-> New param(type, [idenf_list.idenf])};
