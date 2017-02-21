@@ -11,10 +11,14 @@ var gf, fd int = lol(), 4;
 
 var lol int = (_ + 42) * (.42 * 4.2) * 42. * gh("lol") && h().u6 * (-+5.4) || append('l' &^ float64(g.h), rune << 4);
 
-type Point struct {
-    x, y, z float64;
-    inr rune;
-};
+type (
+    Point struct {
+        x, y, z float64;
+        inr rune;
+    };
+    float float64;
+    chars []rune;
+);
 
 func hey(a, b int) {
 
