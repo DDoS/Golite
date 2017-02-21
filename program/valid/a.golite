@@ -18,7 +18,7 @@ type Point struct {
 
 func hey(a, b int) {
 
-}
+} // TODO: is there a semicolon here?
 
 func omn(a bool, b int) [4][]stuff {
 
