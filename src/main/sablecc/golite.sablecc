@@ -2,7 +2,7 @@ Package golite ;
 
 /*
 TODO:
-6. Automatic semicolon insertion
+6. Fallthrough statement?
 */
 
 Helpers
