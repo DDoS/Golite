@@ -176,53 +176,68 @@ Ignored Tokens
 
 Productions
 
-    // JUST FOR TESTING
-    start {-> expr} = expr {-> expr.expr};
 
-    // Program
-    prog = decl_pack decl*;
 
-    // DECLARATIONS
-    decl = {var} decl_var | {type} decl_type | {func} decl_func;
-
-    // Type and variable declarations are also statements
-    stmt_decl = {var} decl_var
-            | {type} decl_type;
+    // PROGRAM
+    prog {-> prog} = pkg decl* {-> New prog(pkg.pkg, [decl.decl])};
 
     // Package declaration
-    decl_pack = kw_package idenf semi;
+    pkg {-> pkg} = kw_package idenf semi {-> New pkg(idenf)};
+
+    // DECLARATIONS
+    decl {-> decl*} = {var} decl_var
+                    {-> [decl_var.decl]}
+            | {type} decl_type
+                    {-> [decl_type.decl]}
+            | {func} decl_func
+                    {-> [decl_func.decl]};
 
     // Variable declarations
-    decl_var = {single} kw_var spec_var_semi
-            | {distributed} kw_var lf_paren spec_var_semi* rht_paren semi;
+    decl_var {-> decl*} = {single} kw_var spec_var_semi
+                    {-> [spec_var_semi.decl]}
+            | {distributed} kw_var lf_paren spec_var_semi* rht_paren semi
+                    {-> [spec_var_semi.decl]};
 
-    spec_var_semi = spec_var semi;
-    spec_var = {type} idenf_list type
+    spec_var_semi {-> decl} = spec_var semi {-> spec_var.decl};
+
+    spec_var {-> decl} = {type} idenf_list type
+                    {-> New decl.var(type, [idenf_list.idenf], [])}
             | {expr} idenf_list eql exprs_list
-            | {type_and_expr} idenf_list type eql exprs_list;
+                    {-> New decl.var(Null, [idenf_list.idenf], [exprs_list.expr])}
+            | {type_and_expr} idenf_list type eql exprs_list
+                    {-> New decl.var(type, [idenf_list.idenf], [exprs_list.expr])};
 
-    // A list of identifiers. The blank identifier isn't special in the syntax!
+    // Type declarations
+    decl_type {-> decl*} = {single} kw_type field_type_semi
+                    {-> [field_type_semi.decl]}
+            | {distributed} kw_type lf_paren field_type_semi* rht_paren semi
+                    {-> [field_type_semi.decl]};
+
+    // A field in a type declaration, ending in a semicolon
+    field_type_semi {-> decl} = idenf type semi {-> New decl.type(type, idenf)};
+
+    // Function declarations
+    decl_func {-> decl} = {return} kw_func idenf lf_paren param_list rht_paren type block
+                    {-> New decl.func(type, idenf, [param_list.param], [block.stmt_stub])}
+            | {no_return} kw_func idenf lf_paren param_list rht_paren block
+                    {-> New decl.func(Null, idenf, [param_list.param], [block.stmt_stub])};
+
+    param_list {-> param*} = {empty}
+                    {-> []}
+            | {multiple} param_list_element* param_spec
+                    {-> [param_list_element.param]};
+
+    param_list_element {-> param} = param_spec comma {-> param_spec.param};
+    param_spec {-> param} = idenf_list type {-> New param(type, [idenf_list.idenf])};
+
+    // block {-> stmt*} = lf_brace stmt* rht_brace {-> [stmt.stmt]}; // TODO: stmt AST
+    block {-> stmt_stub*} = lf_brace rht_brace {-> []};
+
+    // A list of identifiers
     idenf_list {-> idenf*} = {single} idenf
                     {-> [idenf]}
             | {multiple} idenf comma idenf_list
                     {-> [idenf, idenf_list.idenf]};
-
-    // Type declarations
-    decl_type = {single} kw_type field_type_semi
-            | {distributed} kw_type lf_paren field_type_semi* rht_paren semi;
-
-    // A field in a type declaration, ending in a semicolon
-    field_type_semi = idenf type semi;
-
-    // Function declarations
-    decl_func = {return} kw_func idenf lf_paren param_list rht_paren type block semi
-            | {no_return} kw_func idenf lf_paren param_list rht_paren block semi;
-
-    param_list = {empty} | {param_list} param_list_element* param_spec;
-    param_list_element = param_spec comma;
-    param_spec = idenf_list type;
-
-    block = lf_brace stmt* rht_brace;
 
     // STATEMENTS
     stmt = {empty} semi
@@ -244,6 +259,9 @@ Productions
     else = {else} kw_else block
             | {elseif} kw_else kw_if expr_with_stmt block else
             | {empty};
+    // Type and variable declarations are also statements
+    stmt_decl = {var} decl_var
+            | {type} decl_type;
 
     simple_stmt = {empty} semi
             | {expr} expr semi
@@ -411,6 +429,20 @@ Productions
 
 Abstract Syntax Tree
 
+    // PROGRAM
+    prog = pkg decl*;
+
+    pkg = idenf;
+
+    // DECLARATIONS
+    decl = {var} type? idenf* expr*
+            | {type} type idenf
+            | {func} type? idenf param* stmt_stub*;
+
+    param = type idenf*;
+
+    // STATEMENTS
+    stmt_stub = ; // TODO: stub
     // EXPRESSIONS
     expr = {ident} idenf
             | {int_dec} int_lit
