@@ -15,19 +15,17 @@ type (
         inr rune
     }
     float float64
-    chars []rune
+    chars ([]rune)
 )
 
 func hey(a, b int) {
 
 }
 
-func omn(a bool, b int) [4][]stuff {
+func omn(a (bool), b int) ([4][]stuff) {
 
 }
 
 func hh() struct {x int;} {
 
 }
-
-// TODO: types in ()

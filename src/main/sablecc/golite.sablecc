@@ -314,7 +314,7 @@ Productions
                     {-> New expr.rune(rune_lit)}
             | {string} expr_string
                     {-> expr_string.expr}
-            | {paren} lf_paren expr rht_paren
+            | {enclosed} lf_paren expr rht_paren
                     {-> expr.expr};
 
     // Arguments are comma separated
@@ -402,7 +402,9 @@ Productions
                     {-> New expr.logic_or(expr_binary_one.expr, expr_binary_two.expr)};
 
     // TYPES
-    type {-> type} = {basic} type_name
+    type {-> type} = {enclosed} lf_paren type rht_paren
+                    {-> type.type}
+            | {basic} type_name
                     {-> type_name.type}
             | {slice} type_slice
                     {-> type_slice.type}
