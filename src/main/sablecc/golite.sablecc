@@ -215,9 +215,9 @@ Productions
     field_type_semi {-> decl} = idenf type semi {-> New decl.type(type, idenf)};
 
     // Function declarations
-    decl_func {-> decl} = {return} kw_func idenf lf_paren param_list rht_paren type block
+    decl_func {-> decl} = {return} kw_func idenf lf_paren param_list rht_paren type block semi
                     {-> New decl.func(type, idenf, [param_list.param], [block.stmt_stub])}
-            | {no_return} kw_func idenf lf_paren param_list rht_paren block
+            | {no_return} kw_func idenf lf_paren param_list rht_paren block semi
                     {-> New decl.func(Null, idenf, [param_list.param], [block.stmt_stub])};
 
     param_list {-> param*} = {empty}
