@@ -66,7 +66,7 @@ public class PrettyPrinter extends AnalysisAdapter {
 
     @Override
     public void caseStart(Start node) {
-        node.getPExpr().apply(this);
+        node.getPProg().apply(this);
     }
 
     @Override

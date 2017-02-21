@@ -176,8 +176,6 @@ Ignored Tokens
 
 Productions
 
-
-
     // PROGRAM
     prog {-> prog} = pkg decl* {-> New prog(pkg.pkg, [decl.decl])};
 
@@ -259,6 +257,7 @@ Productions
     else = {else} kw_else block
             | {elseif} kw_else kw_if expr_with_stmt block else
             | {empty};
+
     // Type and variable declarations are also statements
     stmt_decl = {var} decl_var
             | {type} decl_type;
@@ -443,6 +442,7 @@ Abstract Syntax Tree
 
     // STATEMENTS
     stmt_stub = ; // TODO: stub
+
     // EXPRESSIONS
     expr = {ident} idenf
             | {int_dec} int_lit
