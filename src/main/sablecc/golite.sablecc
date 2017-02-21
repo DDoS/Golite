@@ -254,6 +254,17 @@ Productions
             | {decr} expr dbl_minus semi
             | {short_decl} decl_var_short
             | {assign} [left]:exprs_list eql [right]:exprs_list semi;
+            | {assign_mul} [left]:expr star_eql [right]:expr semi
+            | {assign_div} [left]:expr slash_eql [right]:expr semi
+            | {assign_rem} [left]:expr mod_eql [right]:expr semi
+            | {assign_lshift} [left]:expr lshift_eql [right]:expr semi
+            | {assign_rshift} [left]:expr rshift_eql [right]:expr semi
+            | {assign_bit_and} [left]:expr ampr_eql [right]:expr semi
+            | {assign_bit_and_not} [left]:expr ampr_crt_eql [right]:expr semi
+            | {assign_add} [left]:expr plus_eql [right]:expr semi
+            | {assign_sub} [left]:expr minus_eql [right]:expr semi
+            | {assign_bit_or} [left]:expr pipe_eql [right]:expr semi
+            | {assign_bit_xor} [left]:expr crt_eql [right]:expr semi;
 
     switch_case = expr_switch_case coln stmt*;
 
