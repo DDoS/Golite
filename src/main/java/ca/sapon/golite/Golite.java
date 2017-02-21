@@ -17,7 +17,7 @@ public final class Golite {
     }
 
     public static Start parse(Reader source) {
-        final Lexer lexer = new Lexer(new PushbackReader(source, 4096));
+        final Lexer lexer = new GoliteLexer(new PushbackReader(source, 4096));
         final Parser parser = new Parser(lexer);
         try {
             return parser.parse();
