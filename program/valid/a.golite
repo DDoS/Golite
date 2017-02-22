@@ -24,7 +24,12 @@ type (
 
 func hey(a, b int) {
     a, b := 0
-    b = 2;
+    b = 2
+    var (
+        g = 4
+        gh, fd = 45, "l"
+    )
+    type stuff [0xaF]Point
 }
 
 func omn(a (bool), b int) ([4][]stuff) {

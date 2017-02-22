@@ -268,7 +268,10 @@ Productions
                     {-> New stmt.switch(expr_with_stmt.expr_with_stmt, [case.case])}
             | {for} kw_for for_condition block semi
                     {-> New stmt.for(for_condition.for_condition, [block.stmt])}
-                    ;
+            | {var} decl_var
+                    {-> New stmt.decl([decl_var.decl])}
+            | {type} decl_type
+                    {-> New stmt.decl([decl_type.decl])};
 
     expr_with_stmt {-> expr_with_stmt} = {expr} expr
                     {-> New expr_with_stmt(Null, expr.expr)}
@@ -293,10 +296,6 @@ Productions
                     {-> New for_condition.expr(expr.expr)}
             | {clause} [init]:simple_stmt [semi1]:semi [cond]:expr [semi2]:semi [post]:simple_stmt
                     {-> New for_condition.clause(init.stmt, cond.expr, post.stmt)};
-
-    // Type and variable declarations are also statements
-    stmt_decl = {var} decl_var semi
-            | {type} decl_type semi;
 
     simple_stmt {-> stmt} = {empty} semi
                     {-> New stmt.empty()}
@@ -496,6 +495,7 @@ Abstract Syntax Tree
             | {if} expr_with_stmt stmt* else
             | {switch} expr_with_stmt case*
             | {for} for_condition stmt*
+            | {decl} decl*
             | {expr} expr
             | {incr} expr
             | {decr} expr

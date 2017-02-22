@@ -9,7 +9,6 @@ import golite.analysis.DepthFirstAdapter;
  * 3. Expression statements
  * 4. Default case
  * 5. Break and continue
- * 6. Declaration statements (no funcs)
  */
 public class Weeder extends DepthFirstAdapter {
 }
