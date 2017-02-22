@@ -415,7 +415,7 @@ Productions
     // TYPES
     type {-> type} = {enclosed} lf_paren type rht_paren
                     {-> type.type}
-            | {basic} type_name
+            | {name} type_name
                     {-> type_name.type}
             | {slice} type_slice
                     {-> type_slice.type}

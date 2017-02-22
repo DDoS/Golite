@@ -1,5 +1,9 @@
 package test
 
+/*
+    This file is just full of random garbage.
+*/
+
 var (
     g = 1
     b bool
