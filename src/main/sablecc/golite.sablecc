@@ -226,17 +226,10 @@ Productions
     field_type_semi {-> decl} = idenf type semi {-> New decl.type(type, idenf)};
 
     // Function declarations
-<<<<<<< Updated upstream
-    decl_func {-> decl} = {return} kw_func idenf lf_paren param_list rht_paren type block semi
-                    {-> New decl.func(type, idenf, [param_list.param], [block.stmt_stub])}
-            | {no_return} kw_func idenf lf_paren param_list rht_paren block semi
-                    {-> New decl.func(Null, idenf, [param_list.param], [block.stmt_stub])};
-=======
     decl_func {-> decl} = {return} kw_func idenf lf_paren param_list rht_paren type block
                     {-> New decl.func(type, idenf, [param_list.param], [block.stmt])}
             | {no_return} kw_func idenf lf_paren param_list rht_paren block
                     {-> New decl.func(Null, idenf, [param_list.param], [block.stmt])};
->>>>>>> Stashed changes
 
     param_list {-> param*} = {empty}
                     {-> []}
@@ -246,7 +239,6 @@ Productions
     param_list_element {-> param} = param_spec comma {-> param_spec.param};
     param_spec {-> param} = idenf_list type {-> New param(type, [idenf_list.idenf])};
 
-    // block {-> stmt*} = lf_brace stmt* rht_brace {-> [stmt.stmt]}; // TODO: stmt AST
     block {-> stmt*} = lf_brace stmt* rht_brace {-> [stmt.stmt]};
 
     // A list of identifiers
@@ -445,7 +437,7 @@ Productions
     // TYPES
     type {-> type} = {enclosed} lf_paren type rht_paren
                     {-> type.type}
-            | {basic} type_name
+            | {name} type_name
                     {-> type_name.type}
             | {slice} type_slice
                     {-> type_slice.type}
