@@ -1,14 +1,13 @@
-Package golite ;
+Package golite;
 
 /*
-TODO:
-6. Fallthrough statement?
+    TODO:
+    6. Fallthrough statement?
 */
 
 Helpers
 
     // CHARACTERS
-
     // Some Symbols
     underscore = '_';
     slash = '/';
@@ -21,25 +20,25 @@ Helpers
     ch_set = [0 .. 0xFFFF];
 
     tab = 9;
-    newln = 10 ;
+    newln = 10;
     carriage = 13;
-
     endln = carriage newln | carriage | newln;
-    //NOTs
+
+    // NOTs
     not_endln = [ch_set - [carriage + newln]];
     not_star = [ch_set - star];
     not_slash = [ch_set - slash];
     not_star_not_slash = [ch_set - [star + slash]];
 
     // Alphabets
-    alpha_lower = ['a' .. 'z']; 
+    alpha_lower = ['a' .. 'z'];
     alpha_upper = ['A' .. 'Z'];
     alpha = alpha_lower | alpha_upper;
 
     // Numeric Characters
-    num_ch = ['0' .. '9'] ;
+    num_ch = ['0' .. '9'];
     oct_num_ch = ['0' .. '7'];
-    
+
     zero = '0';
     nozero = [num_ch - '0'];
 
@@ -49,9 +48,9 @@ Helpers
     back_q = '`';
 
     // Escape Sequence
-    escapes = '\\'| '\a' | '\b' | '\f' | '\n' | '\r' | '\t' | '\v' ;
+    escapes = '\\' | '\a' | '\b' | '\f' | '\n' | '\r' | '\t' | '\v';
 
-
+    // Exclusions
     no_carr_nl = [ch_set - [carriage + newln]] ;
     no_carr_nl_bsl = [no_carr_nl - backslash];
     no_carr_nl_sl_dlq = [no_carr_nl_bsl - double_quot];
@@ -62,7 +61,7 @@ Helpers
     comment_singleln = '//' not_endln* endln;
     comment_multiln = '/*' not_star* '*'+ (not_star_not_slash not_star* '*'+)* '/';
 
-    string_ch= no_carr_nl_sl_dlq | backslash double_quot | escapes;
+    string_ch = no_carr_nl_sl_dlq | backslash double_quot | escapes;
     string_ch_sequence = string_ch+;
 
 Tokens
@@ -107,10 +106,9 @@ Tokens
     println = 'println';
     append = 'append';
 
-    //Operators
+    // Operators
     plus = '+';
     minus = '-';
-
     mod = '%';
     ampr = '&';
     pipe = '|';
@@ -145,15 +143,16 @@ Tokens
     col_eql = ':=';
     ellipsis = '...';
 
+    // Delimiters
     lf_paren = '(';
     lf_sq_paren = '[';
     lf_brace = '{';
-    comma = ',';
-    dot = dot;
-
     rht_paren = ')';
     rht_sq_paren = ']';
     rht_brace = '}';
+
+    comma = ',';
+    dot = dot;
 
     semi = ';';
     coln = ':';
@@ -181,7 +180,7 @@ Tokens
     raw_string_lit = back_q no_back_q* back_q;
 
     // Rune
-     rune_lit = single_quot ( no_carr_nl_bsl | escapes |  backslash single_quot) single_quot;
+    rune_lit = single_quot (no_carr_nl_bsl | escapes |  backslash single_quot) single_quot;
 
 Ignored Tokens
     comment, space, endln;
