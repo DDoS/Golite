@@ -60,7 +60,7 @@ import golite.node.AVarDecl;
 import golite.node.PDecl;
 import golite.node.PExpr;
 import golite.node.PParam;
-import golite.node.PStmtStub;
+import golite.node.PStmt;
 import golite.node.PStructField;
 import golite.node.Start;
 import golite.node.TIdenf;
@@ -132,7 +132,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getType().apply(this);
         }
         printer.print(" {").newLine().indent();
-        for (PStmtStub stmt : node.getStmtStub()) {
+        for (PStmt stmt : node.getStmt()) {
             stmt.apply(this);
         }
         printer.dedent().print("}").newLine();

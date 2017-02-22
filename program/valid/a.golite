@@ -23,7 +23,8 @@ type (
 )
 
 func hey(a, b int) {
-
+    a, b := 0
+    b = 2;
 }
 
 func omn(a (bool), b int) ([4][]stuff) {

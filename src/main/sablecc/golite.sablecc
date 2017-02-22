@@ -306,8 +306,8 @@ Productions
                     {-> New stmt.incr(expr.expr)}
             | {decr} expr dbl_minus semi
                     {-> New stmt.decr(expr.expr)}
-            //| {decl_var_short} idenf_list col_eql exprs_list semi
-            //        {-> New stmt.decl_var_short([idenf_list.idenf], [exprs_list.expr])}
+            | {decl_var_short} [left]:exprs_list col_eql [right]:exprs_list semi
+                    {-> New stmt.decl_var_short([left.expr], [right.expr])}
             | {assign} [left]:exprs_list eql [right]:exprs_list semi
                     {-> New stmt.assign([left.expr], [right.expr])}
             | {assign_mul} [left]:expr star_eql [right]:expr semi
@@ -499,7 +499,7 @@ Abstract Syntax Tree
             | {expr} expr
             | {incr} expr
             | {decr} expr
-            | {decl_var_short} idenf* expr*
+            | {decl_var_short} [left]:expr* [right]:expr*
             | {assign} [left]:expr* [right]:expr*
             | {assign_mul} [left]:expr [right]:expr
             | {assign_div} [left]:expr [right]:expr
