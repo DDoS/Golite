@@ -1,10 +1,5 @@
 Package golite;
 
-/*
-    TODO:
-    6. Fallthrough statement?
-*/
-
 Helpers
 
     // CHARACTERS
