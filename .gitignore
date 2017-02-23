@@ -86,6 +86,10 @@ config.yml
 /.nb-gradle/profiles/private/
 /.nb-gradle/private/
 
+# Compiler output#
+##################
+*.pretty.go
+
 # Exceptions #
 ##############
 !gradle-wrapper.jar
