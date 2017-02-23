@@ -46,7 +46,9 @@ func hey(a, b int) {
     } else if more {
         print("stuff")
     } else {
-        g = g
+        for {
+            always = true
+        }
     }
 
     if c++; 5 + 6 {
@@ -54,7 +56,9 @@ func hey(a, b int) {
     } else if more {
         print("stuff")
     } else if no - end + in / sight {
-        g = g
+        for i < 0 {
+            somtimes()
+        }
     }
 
     if c++; 5 + 6 {
@@ -62,7 +66,9 @@ func hey(a, b int) {
     } else if more {
         print("stuff")
     } else if no - end + in / sight {
-        g = g
+        for i := 0; i < 10; i++ {
+            ten.times[1] = 2
+        }
     } else {
         actually(we, are, done)
     }

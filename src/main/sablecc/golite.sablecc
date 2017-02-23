@@ -183,10 +183,12 @@ Ignored Tokens
 Productions
 
     // PROGRAM
-    prog {-> prog} = pkg decl* {-> New prog(pkg.pkg, [decl.decl])};
+    prog {-> prog} = pkg semi decl_semi* {-> New prog(pkg.pkg, [decl_semi.decl])};
+
+    decl_semi {-> decl*} = decl semi {-> [decl.decl]};
 
     // Package declaration
-    pkg {-> pkg} = kw_package idenf semi {-> New pkg(idenf)};
+    pkg {-> pkg} = kw_package idenf {-> New pkg(idenf)};
 
     // DECLARATIONS
     decl {-> decl*} = {var} decl_var
@@ -197,13 +199,12 @@ Productions
                     {-> [decl_func.decl]};
 
     // Variable declarations
-    decl_var {-> decl*} = {single} kw_var spec_var_semi
-                    {-> [spec_var_semi.decl]}
-            | {distributed} kw_var lf_paren spec_var_semi* rht_paren semi
+    decl_var {-> decl*} = {single} kw_var spec_var
+                    {-> [spec_var.decl]}
+            | {distributed} kw_var lf_paren spec_var_semi* rht_paren
                     {-> [spec_var_semi.decl]};
 
     spec_var_semi {-> decl} = spec_var semi {-> spec_var.decl};
-
     spec_var {-> decl} = {type} idenf_list type
                     {-> New decl.var(type, [idenf_list.idenf], [])}
             | {expr} idenf_list eql exprs_list
@@ -212,18 +213,19 @@ Productions
                     {-> New decl.var(type, [idenf_list.idenf], [exprs_list.expr])};
 
     // Type declarations
-    decl_type {-> decl*} = {single} kw_type field_type_semi
-                    {-> [field_type_semi.decl]}
-            | {distributed} kw_type lf_paren field_type_semi* rht_paren semi
-                    {-> [field_type_semi.decl]};
+    decl_type {-> decl*} = {single} kw_type spec_type
+                    {-> [spec_type.decl]}
+            | {distributed} kw_type lf_paren spec_type_semi* rht_paren
+                    {-> [spec_type_semi.decl]};
 
     // A field in a type declaration, ending in a semicolon
-    field_type_semi {-> decl} = idenf type semi {-> New decl.type(type, idenf)};
+    spec_type_semi {-> decl} = spec_type semi {-> spec_type.decl};
+    spec_type {-> decl} = idenf type {-> New decl.type(type, idenf)};
 
     // Function declarations
-    decl_func {-> decl} = {return} kw_func idenf lf_paren param_list rht_paren type block semi
+    decl_func {-> decl} = {return} kw_func idenf lf_paren param_list rht_paren type block
                     {-> New decl.func(type, idenf, [param_list.param], [block.stmt])}
-            | {no_return} kw_func idenf lf_paren param_list rht_paren block semi
+            | {no_return} kw_func idenf lf_paren param_list rht_paren block
                     {-> New decl.func(Null, idenf, [param_list.param], [block.stmt])};
 
     param_list {-> param*} = {empty}
@@ -234,7 +236,8 @@ Productions
     param_list_element {-> param} = param_spec comma {-> param_spec.param};
     param_spec {-> param} = idenf_list type {-> New param(type, [idenf_list.idenf])};
 
-    block {-> stmt*} = lf_brace stmt* rht_brace {-> [stmt.stmt]};
+    block {-> stmt*} = lf_brace stmt_semi* rht_brace {-> [stmt_semi.stmt]};
+    stmt_semi {-> stmt} = stmt semi {-> stmt.stmt};
 
     // A list of identifiers
     idenf_list {-> idenf*} = {single} idenf
@@ -245,30 +248,32 @@ Productions
     // STATEMENTS
     stmt {-> stmt} = {simple} simple_stmt
                     {-> simple_stmt.stmt}
-            | {print} print lf_paren exprs_list rht_paren semi
+            | {print} print lf_paren exprs_list rht_paren
                     {-> New stmt.print([exprs_list.expr])}
-            | {println} println lf_paren exprs_list rht_paren semi 
+            | {println} println lf_paren exprs_list rht_paren
                     {-> New stmt.println([exprs_list.expr])}
-            | {return} kw_return semi
+            | {return} kw_return
                     {-> New stmt.return(Null)}
-            | {return_exp} kw_return expr semi
+            | {return_exp} kw_return expr
                     {-> New stmt.return(expr.expr)}
-            | {break} kw_break semi
+            | {break} kw_break
                     {-> New stmt.break()}
-            | {continue} kw_continue semi
+            | {continue} kw_continue
                     {-> New stmt.continue()}
-            | {if} if_chain else_block? semi
+            | {if} if_chain else_block?
                     {-> New stmt.if([if_chain.if_block], [else_block.stmt])}
-            | {switch} kw_switch stmt? expr lf_brace case* rht_brace semi
-                    {-> New stmt.switch(stmt.stmt, expr.expr, [case.case])}
-            | {for} kw_for for_condition block semi
+            | {switch} kw_switch simple_stmt_semi? expr? lf_brace case* rht_brace
+                    {-> New stmt.switch(simple_stmt_semi.stmt, expr.expr, [case.case])}
+            | {for} kw_for for_condition block
                     {-> New stmt.for(for_condition.for_condition, [block.stmt])}
             | {var} decl_var
                     {-> New stmt.decl([decl_var.decl])}
             | {type} decl_type
                     {-> New stmt.decl([decl_type.decl])};
 
-    if_block {-> if_block} = kw_if simple_stmt? expr block {-> New if_block(simple_stmt.stmt, expr.expr, [block.stmt])};
+    simple_stmt_semi {-> stmt} = simple_stmt semi {-> simple_stmt.stmt};
+
+    if_block {-> if_block} = kw_if simple_stmt_semi? expr block {-> New if_block(simple_stmt_semi.stmt, expr.expr, [block.stmt])};
     else_block {-> stmt*} = kw_else block {-> [block.stmt]};
 
     if_chain {-> if_block*} = {single} if_block
@@ -276,51 +281,51 @@ Productions
             | {multiple} if_chain kw_else if_block
                     {-> [if_chain.if_block, if_block.if_block]};
 
-    case {-> case} = {expr} kw_case exprs_list coln stmt*
-                    {-> New case.expr([exprs_list.expr], [stmt.stmt])}
-            | {default} kw_default coln stmt*
-                    {-> New case.default([stmt.stmt])};
+    case {-> case} = {expr} kw_case exprs_list coln block
+                    {-> New case.expr([exprs_list.expr], [block.stmt])}
+            | {default} kw_default coln block
+                    {-> New case.default([block.stmt])};
 
     for_condition {-> for_condition} = {empty}
                     {-> New for_condition.empty()}
             | {expr} expr
                     {-> New for_condition.expr(expr.expr)}
-            | {clause} [init]:simple_stmt [semi1]:semi [cond]:expr [semi2]:semi [post]:simple_stmt
+            | {clause} [init]:simple_stmt_semi [cond]:expr semi [post]:simple_stmt
                     {-> New for_condition.clause(init.stmt, cond.expr, post.stmt)};
 
-    simple_stmt {-> stmt} = {empty} semi
+    simple_stmt {-> stmt} = {empty}
                     {-> New stmt.empty()}
-            | {expr} expr semi
+            | {expr} expr
                     {-> New stmt.expr(expr.expr)}
-            | {incr} expr dbl_plus semi
+            | {incr} expr dbl_plus
                     {-> New stmt.incr(expr.expr)}
-            | {decr} expr dbl_minus semi
+            | {decr} expr dbl_minus
                     {-> New stmt.decr(expr.expr)}
-            | {decl_var_short} [left]:exprs_list col_eql [right]:exprs_list semi
+            | {decl_var_short} [left]:exprs_list col_eql [right]:exprs_list
                     {-> New stmt.decl_var_short([left.expr], [right.expr])}
-            | {assign} [left]:exprs_list eql [right]:exprs_list semi
+            | {assign} [left]:exprs_list eql [right]:exprs_list
                     {-> New stmt.assign([left.expr], [right.expr])}
-            | {assign_mul} [left]:expr star_eql [right]:expr semi
+            | {assign_mul} [left]:expr star_eql [right]:expr
                     {-> New stmt.assign_mul(left, right)}
-            | {assign_div} [left]:expr slash_eql [right]:expr semi
+            | {assign_div} [left]:expr slash_eql [right]:expr
                     {-> New stmt.assign_div(left, right)}
-            | {assign_rem} [left]:expr mod_eql [right]:expr semi
+            | {assign_rem} [left]:expr mod_eql [right]:expr
                     {-> New stmt.assign_rem(left, right)}
-            | {assign_lshift} [left]:expr lshift_eql [right]:expr semi
+            | {assign_lshift} [left]:expr lshift_eql [right]:expr
                     {-> New stmt.assign_lshift(left, right)}
-            | {assign_rshift} [left]:expr rshift_eql [right]:expr semi
+            | {assign_rshift} [left]:expr rshift_eql [right]:expr
                     {-> New stmt.assign_rshift(left, right)}
-            | {assign_bit_and} [left]:expr ampr_eql [right]:expr semi
+            | {assign_bit_and} [left]:expr ampr_eql [right]:expr
                     {-> New stmt.assign_bit_and(left, right)}
-            | {assign_bit_and_not} [left]:expr ampr_crt_eql [right]:expr semi
+            | {assign_bit_and_not} [left]:expr ampr_crt_eql [right]:expr
                     {-> New stmt.assign_bit_and_not(left, right)}
-            | {assign_add} [left]:expr plus_eql [right]:expr semi
+            | {assign_add} [left]:expr plus_eql [right]:expr
                     {-> New stmt.assign_add(left, right)}
-            | {assign_sub} [left]:expr minus_eql [right]:expr semi
+            | {assign_sub} [left]:expr minus_eql [right]:expr
                     {-> New stmt.assign_sub(left, right)}
-            | {assign_bit_or} [left]:expr pipe_eql [right]:expr semi
+            | {assign_bit_or} [left]:expr pipe_eql [right]:expr
                     {-> New stmt.assign_bit_or(left, right)}
-            | {assign_bit_xor} [left]:expr crt_eql [right]:expr semi
+            | {assign_bit_xor} [left]:expr crt_eql [right]:expr
                     {-> New stmt.assign_bit_xor(left, right)};
 
     // EXPRESSIONS
@@ -484,7 +489,7 @@ Abstract Syntax Tree
             | {break}
             | {continue}
             | {if} if_block+ [else]:stmt*
-            | {switch} [init]:stmt? [value]:expr case*
+            | {switch} [init]:stmt? [value]:expr? case*
             | {for} for_condition stmt*
             | {decl} decl*
             | {expr} expr
