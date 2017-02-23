@@ -201,13 +201,13 @@ public class Weeder extends DepthFirstAdapter {
         @Override
         public void caseASelectExpr(ASelectExpr node) {
             // Valid if the value expression is also assignable
-            node.getValue().apply(this);
+            node.getValue().apply(INSTANCE);
         }
 
         @Override
         public void caseAIndexExpr(AIndexExpr node) {
             // Valid if the value expression is also assignable
-            node.getValue().apply(this);
+            node.getValue().apply(INSTANCE);
         }
 
         @Override
