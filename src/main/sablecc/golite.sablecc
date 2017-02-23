@@ -262,10 +262,10 @@ Productions
                     {-> New stmt.break()}
             | {continue} kw_continue semi
                     {-> New stmt.continue()}
-            | {if} kw_if expr_with_stmt block else semi
-                    {-> New stmt.if(expr_with_stmt.expr_with_stmt, [block.stmt], else.else)}
-            | {switch} kw_switch expr_with_stmt lf_brace case* rht_brace semi
-                    {-> New stmt.switch(expr_with_stmt.expr_with_stmt, [case.case])}
+            | {if} if_chain else_block? semi
+                    {-> New stmt.if([if_chain.if_block], [else_block.stmt])}
+            | {switch} kw_switch stmt? expr lf_brace case* rht_brace semi
+                    {-> New stmt.switch(stmt.stmt, expr.expr, [case.case])}
             | {for} kw_for for_condition block semi
                     {-> New stmt.for(for_condition.for_condition, [block.stmt])}
             | {var} decl_var
@@ -273,17 +273,13 @@ Productions
             | {type} decl_type
                     {-> New stmt.decl([decl_type.decl])};
 
-    expr_with_stmt {-> expr_with_stmt} = {expr} expr
-                    {-> New expr_with_stmt(Null, expr.expr)}
-            | {stmt_expr} simple_stmt expr
-                    {-> New expr_with_stmt(simple_stmt.stmt, expr.expr)};
+    if_block {-> if_block} = kw_if simple_stmt? expr block {-> New if_block(simple_stmt.stmt, expr.expr, [block.stmt])};
+    else_block {-> stmt*} = kw_else block {-> [block.stmt]};
 
-    else {-> else} = {empty}
-                     {-> New else.empty()}
-            | {else} kw_else block
-                    {-> New else.else([block.stmt])}
-            | {else_if} kw_else kw_if expr_with_stmt block else
-                    {-> New else.else_if(expr_with_stmt.expr_with_stmt, [block.stmt], else.else)};
+    if_chain {-> if_block*} = {single} if_block
+                    {-> [if_block.if_block]}
+            | {multiple} if_chain kw_else if_block
+                    {-> [if_chain.if_block, if_block.if_block]};
 
     case {-> case} = {expr} kw_case exprs_list coln stmt*
                     {-> New case.expr([exprs_list.expr], [stmt.stmt])}
@@ -492,8 +488,8 @@ Abstract Syntax Tree
             | {return} expr?
             | {break}
             | {continue}
-            | {if} expr_with_stmt stmt* else
-            | {switch} expr_with_stmt case*
+            | {if} if_block+ [else]:stmt*
+            | {switch} [init]:stmt? [value]:expr case*
             | {for} for_condition stmt*
             | {decl} decl*
             | {expr} expr
@@ -513,11 +509,7 @@ Abstract Syntax Tree
             | {assign_bit_or} [left]:expr [right]:expr
             | {assign_bit_xor} [left]:expr [right]:expr;
 
-    else = {empty}
-            | {else} stmt*
-            | {else_if} expr_with_stmt stmt* else;
-
-    expr_with_stmt = stmt? expr;
+    if_block = [init]:stmt? [cond]:expr [block]:stmt*;
 
     case = {default} stmt*
             | {expr} expr* stmt*;
