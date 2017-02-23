@@ -19,7 +19,11 @@ public class SyntaxTest {
     public void testValidPrograms() throws Exception {
         final Path validDirectory = FileSystems.getDefault().getPath("program", "valid");
         final PathMatcher goliteMatcher = FileSystems.getDefault().getPathMatcher("glob:**/*.go");
-        for (Iterator<Path> files = Files.list(validDirectory).filter(goliteMatcher::matches).iterator(); files.hasNext(); ) {
+        final Iterator<Path> files = Files.list(validDirectory).filter(goliteMatcher::matches).iterator();
+        if (!files.hasNext()) {
+            throw new Exception("Expected at least one test file");
+        }
+        while (files.hasNext()) {
             testPrinterInvariant(files.next());
         }
     }
