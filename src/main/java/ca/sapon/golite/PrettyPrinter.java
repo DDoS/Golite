@@ -393,12 +393,20 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseAReaffirmExpr(AReaffirmExpr node) {
         printer.print("+");
+        // Need to add a space, otherwise it would be the ++ operator
+        if (node.getInner().getClass() == AReaffirmExpr.class) {
+            printer.print(" ");
+        }
         node.getInner().apply(this);
     }
 
     @Override
     public void caseANegateExpr(ANegateExpr node) {
         printer.print("-");
+        // Need to add a space, otherwise it would be the -- operator
+        if (node.getInner().getClass() == ANegateExpr.class) {
+            printer.print(" ");
+        }
         node.getInner().apply(this);
     }
 
