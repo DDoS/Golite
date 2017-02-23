@@ -86,6 +86,7 @@ task wrapper(type: Wrapper) {
 test {
     testLogging {
         exceptionFormat = 'full'
+        events 'standard_error'
     }
     // this will ensure that tests are rerun if the program files change
     inputs.dir 'program'

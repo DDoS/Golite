@@ -10,8 +10,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 
-import golite.lexer.LexerException;
-import golite.parser.ParserException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
@@ -101,7 +99,7 @@ public final class App {
         // Do the combined lexing, parsing and pretty printing
         try {
             Golite.prettyPrint(source, pretty);
-        } catch (LexerException | ParserException exception) {
+        } catch (SyntaxException exception) {
             System.err.println(exception.getMessage());
             return 1;
         } catch (IOException exception) {

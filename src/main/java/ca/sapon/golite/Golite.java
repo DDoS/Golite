@@ -19,13 +19,23 @@ public final class Golite {
         throw new Exception("No");
     }
 
-    public static Start parse(Reader source) throws IOException, LexerException, ParserException {
+    public static Start parse(Reader source) throws IOException, SyntaxException {
         final Lexer lexer = new GoliteLexer(new PushbackReader(source, 4096));
         final Parser parser = new Parser(lexer);
-        return parser.parse();
+        try {
+            final Start ast = parser.parse();
+            ast.apply(new Weeder());
+            return ast;
+        } catch (LexerException exception) {
+            throw new SyntaxException(exception);
+        } catch (ParserException exception) {
+            throw new SyntaxException(exception);
+        } catch (WeederException exception) {
+            throw new SyntaxException(exception);
+        }
     }
 
-    public static void prettyPrint(Reader source, Writer pretty) throws IOException, LexerException, ParserException, PrinterException {
+    public static void prettyPrint(Reader source, Writer pretty) throws IOException, SyntaxException, PrinterException {
         prettyPrint(parse(source), pretty);
     }
 

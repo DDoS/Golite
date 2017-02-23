@@ -47,7 +47,7 @@ func hey(a, b int) {
         print("stuff")
     } else {
         for {
-            always = true
+            (always) = true
         }
     }
 
@@ -57,7 +57,7 @@ func hey(a, b int) {
         print("stuff")
     } else if no - end + in / sight {
         for i < 0 {
-            somtimes()
+            (somtimes())
         }
     }
 
