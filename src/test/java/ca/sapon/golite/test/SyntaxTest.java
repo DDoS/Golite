@@ -1,13 +1,14 @@
 package ca.sapon.golite.test;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.CharArrayWriter;
+import java.io.Reader;
 import java.io.StringReader;
+import java.io.Writer;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.util.Iterator;
 
 import ca.sapon.golite.Golite;
 import org.junit.Assert;
@@ -17,21 +18,19 @@ public class SyntaxTest {
     @Test
     public void testValidPrograms() throws Exception {
         final Path validDirectory = FileSystems.getDefault().getPath("program", "valid");
-        final PathMatcher goliteMatcher = FileSystems.getDefault().getPathMatcher("glob:**/*.golite");
-        Files.list(validDirectory).filter(goliteMatcher::matches).forEach(SyntaxTest::testPrinterInvariant);
+        final PathMatcher goliteMatcher = FileSystems.getDefault().getPathMatcher("glob:**/*.go");
+        for (Iterator<Path> files = Files.list(validDirectory).filter(goliteMatcher::matches).iterator(); files.hasNext(); ) {
+            testPrinterInvariant(files.next());
+        }
     }
 
-    private static void testPrinterInvariant(Path sourceFile) {
-        try {
-            final BufferedReader source = Files.newBufferedReader(sourceFile);
-            final ByteArrayOutputStream firstOut = new ByteArrayOutputStream();
-            Golite.prettyPrint(source, firstOut);
-            final String firstPass = firstOut.toString();
-            final ByteArrayOutputStream secondOut = new ByteArrayOutputStream();
-            Golite.prettyPrint(new StringReader(firstPass), secondOut);
-            Assert.assertEquals(firstPass, secondOut.toString());
-        } catch (IOException exception) {
-            throw new RuntimeException(exception);
-        }
+    private static void testPrinterInvariant(Path sourceFile) throws Exception {
+        final Reader source = Files.newBufferedReader(sourceFile);
+        final Writer firstOut = new CharArrayWriter();
+        Golite.prettyPrint(source, firstOut);
+        final String firstPass = firstOut.toString();
+        final Writer secondOut = new CharArrayWriter();
+        Golite.prettyPrint(new StringReader(firstPass), secondOut);
+        Assert.assertEquals(firstPass, secondOut.toString());
     }
 }

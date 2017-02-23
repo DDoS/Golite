@@ -1,32 +1,32 @@
 package ca.sapon.golite;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.Writer;
 
 /**
- * Prints source code to an output stream.
+ * Prints source code to an writer stream.
  */
 public class SourcePrinter {
     private static final String INDENTATION = "    ";
-    private final OutputStream output;
+    private final Writer writer;
     private int indentationCount = 0;
     private boolean indentNext = false;
 
-    public SourcePrinter(OutputStream output) {
-        this.output = output;
+    public SourcePrinter(Writer writer) {
+        this.writer = writer;
     }
 
     public SourcePrinter print(String str) {
         try {
             if (indentNext) {
                 for (int i = 0; i < indentationCount; i++) {
-                    output.write(INDENTATION.getBytes());
+                    writer.append(INDENTATION);
                 }
                 indentNext = false;
             }
-            output.write(str.getBytes());
+            writer.append(str);
         } catch (IOException exception) {
-            throw new RuntimeException(exception);
+            throw new PrinterException(exception);
         }
         return this;
     }
@@ -46,9 +46,9 @@ public class SourcePrinter {
 
     public SourcePrinter newLine() {
         try {
-            output.write(System.lineSeparator().getBytes());
+            writer.append(System.lineSeparator());
         } catch (IOException exception) {
-            throw new RuntimeException(exception);
+            throw new PrinterException(exception);
         }
         indentNext = true;
         return this;

@@ -1,6 +1,6 @@
 package ca.sapon.golite;
 
-import java.io.OutputStream;
+import java.io.Writer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -103,7 +103,7 @@ import golite.node.TIdenf;
 public class PrettyPrinter extends AnalysisAdapter {
     private final SourcePrinter printer;
 
-    public PrettyPrinter(OutputStream output) {
+    public PrettyPrinter(Writer output) {
         printer = new SourcePrinter(output);
     }
 
@@ -153,10 +153,10 @@ public class PrettyPrinter extends AnalysisAdapter {
         printer.print("func ").print(node.getIdenf().getText()).print("(");
         final LinkedList<PParam> param = node.getParam();
         for (int i = 0, paramSize = param.size(); i < paramSize; i++) {
-           param.get(i).apply(this);
-           if (i < paramSize - 1) {
-               printer.print(", ");
-           }
+            param.get(i).apply(this);
+            if (i < paramSize - 1) {
+                printer.print(", ");
+            }
         }
         printer.print(")");
         if (node.getType() != null) {
@@ -576,7 +576,6 @@ public class PrettyPrinter extends AnalysisAdapter {
             fields.get(i).apply(this);
             if (i < fieldsSize - 1) {
                 printer.print(" ");
-
             }
         }
         printer.print("}");
