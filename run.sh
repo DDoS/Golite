@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-./gradlew run -PappArgs="$*"
+./gradlew run -PappArgs="print $*"
