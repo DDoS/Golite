@@ -13,20 +13,48 @@ import golite.analysis.AnalysisAdapter;
 import golite.node.AAddExpr;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
+import golite.node.AAssignAddStmt;
+import golite.node.AAssignBitAndNotStmt;
+import golite.node.AAssignBitAndStmt;
+import golite.node.AAssignBitOrStmt;
+import golite.node.AAssignBitXorStmt;
+import golite.node.AAssignDivStmt;
+import golite.node.AAssignLshiftStmt;
+import golite.node.AAssignMulStmt;
+import golite.node.AAssignRemStmt;
+import golite.node.AAssignRshiftStmt;
+import golite.node.AAssignStmt;
+import golite.node.AAssignSubStmt;
 import golite.node.ABitAndExpr;
 import golite.node.ABitAndNotExpr;
 import golite.node.ABitNotExpr;
 import golite.node.ABitOrExpr;
 import golite.node.ABitXorExpr;
+import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.ACastExpr;
+import golite.node.AClauseForCondition;
+import golite.node.AContinueStmt;
+import golite.node.ADeclStmt;
+import golite.node.ADeclVarShortStmt;
+import golite.node.ADecrStmt;
+import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
+import golite.node.AEmptyForCondition;
+import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
+import golite.node.AExprCase;
+import golite.node.AExprForCondition;
+import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
+import golite.node.AForStmt;
 import golite.node.AFuncDecl;
 import golite.node.AGreatEqExpr;
 import golite.node.AGreatExpr;
 import golite.node.AIdentExpr;
+import golite.node.AIfBlock;
+import golite.node.AIfStmt;
+import golite.node.AIncrStmt;
 import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
@@ -43,9 +71,12 @@ import golite.node.ANegateExpr;
 import golite.node.ANeqExpr;
 import golite.node.AParam;
 import golite.node.APkg;
+import golite.node.APrintStmt;
+import golite.node.APrintlnStmt;
 import golite.node.AProg;
 import golite.node.AReaffirmExpr;
 import golite.node.ARemExpr;
+import golite.node.AReturnStmt;
 import golite.node.ARshiftExpr;
 import golite.node.ARuneExpr;
 import golite.node.ASelectExpr;
@@ -55,6 +86,7 @@ import golite.node.AStringRawExpr;
 import golite.node.AStructField;
 import golite.node.AStructType;
 import golite.node.ASubExpr;
+import golite.node.ASwitchStmt;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.PDecl;
@@ -143,6 +175,134 @@ public class PrettyPrinter extends AnalysisAdapter {
         printIdenfList(node.getIdenf());
         printer.print(" ");
         node.getType().apply(this);
+    }
+
+    @Override
+    public void caseAEmptyStmt(AEmptyStmt node) {
+    }
+
+    @Override
+    public void caseAPrintStmt(APrintStmt node) {
+    }
+
+    @Override
+    public void caseAPrintlnStmt(APrintlnStmt node) {
+    }
+
+    @Override
+    public void caseAReturnStmt(AReturnStmt node) {
+    }
+
+    @Override
+    public void caseABreakStmt(ABreakStmt node) {
+    }
+
+    @Override
+    public void caseAContinueStmt(AContinueStmt node) {
+    }
+
+    @Override
+    public void caseAIfStmt(AIfStmt node) {
+    }
+
+    @Override
+    public void caseASwitchStmt(ASwitchStmt node) {
+    }
+
+    @Override
+    public void caseAForStmt(AForStmt node) {
+    }
+
+    @Override
+    public void caseADeclStmt(ADeclStmt node) {
+    }
+
+    @Override
+    public void caseAExprStmt(AExprStmt node) {
+    }
+
+    @Override
+    public void caseAIncrStmt(AIncrStmt node) {
+    }
+
+    @Override
+    public void caseADecrStmt(ADecrStmt node) {
+    }
+
+    @Override
+    public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
+    }
+
+    @Override
+    public void caseAAssignStmt(AAssignStmt node) {
+    }
+
+    @Override
+    public void caseAAssignMulStmt(AAssignMulStmt node) {
+    }
+
+    @Override
+    public void caseAAssignDivStmt(AAssignDivStmt node) {
+    }
+
+    @Override
+    public void caseAAssignRemStmt(AAssignRemStmt node) {
+    }
+
+    @Override
+    public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
+    }
+
+    @Override
+    public void caseAAssignRshiftStmt(AAssignRshiftStmt node) {
+    }
+
+    @Override
+    public void caseAAssignBitAndStmt(AAssignBitAndStmt node) {
+    }
+
+    @Override
+    public void caseAAssignBitAndNotStmt(AAssignBitAndNotStmt node) {
+    }
+
+    @Override
+    public void caseAAssignAddStmt(AAssignAddStmt node) {
+    }
+
+    @Override
+    public void caseAAssignSubStmt(AAssignSubStmt node) {
+    }
+
+    @Override
+    public void caseAAssignBitOrStmt(AAssignBitOrStmt node) {
+    }
+
+    @Override
+    public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
+    }
+
+    @Override
+    public void caseAIfBlock(AIfBlock node) {
+    }
+
+    @Override
+    public void caseADefaultCase(ADefaultCase node) {
+    }
+
+    @Override
+    public void caseAExprCase(AExprCase node) {
+    }
+
+    @Override
+    public void caseAEmptyForCondition(AEmptyForCondition node) {
+    }
+
+    @Override
+    public void caseAExprForCondition(AExprForCondition node) {
+    }
+
+    @Override
+    public void caseAClauseForCondition(AClauseForCondition node) {
     }
 
     @Override
