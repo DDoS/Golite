@@ -121,54 +121,22 @@ func memWrite(address, value int) {
 
 func checkCondition(cond int) bool {
     switch cond {
-    case 0x0:
-        // EQ
-        return Z
-    case 0x1:
-        // NE
-        return !Z
-    case 0x2:
-        // HS
-        return C
-    case 0x3:
-        // LO
-        return !C
-    case 0x4:
-        // MI
-        return N
-    case 0x5:
-        // PL
-        return !N
-    case 0x6:
-        // VS
-        return V
-    case 0x7:
-        // VC
-        return !V
-    case 0x8:
-        // HI
-        return C && !Z
-    case 0x9:
-        // LS
-        return !C || Z
-    case 0xA:
-        // GE
-        return N == V
-    case 0xB:
-        // LT
-        return N != V
-    case 0xC:
-        // GT
-        return !Z && N == V
-    case 0xD:
-        // LE
-        return Z || N != V
-    case 0xE:
-        // AL
-        return true
-    case 0xF:
-        // NV
-        return false
+    case 0x0: return Z // EQ
+    case 0x1: return !Z // NE
+    case 0x2: return C // HS
+    case 0x3: return !C // LO
+    case 0x4: return N // MI
+    case 0x5: return !N // PL
+    case 0x6: return V // VS
+    case 0x7: return !V // VC
+    case 0x8: return C && !Z // HI
+    case 0x9: return !C || Z // LS
+    case 0xA: return N == V // GE
+    case 0xB: return N != V // LT
+    case 0xC: return !Z && N == V // GT
+    case 0xD: return Z || N != V // LE
+    case 0xE: return true // AL
+    case 0xF: return false // NV
     }
     return false
 }
