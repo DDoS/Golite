@@ -72,6 +72,7 @@ func hey(a, b int) {
     } else {
         actually(we, are, done)
     }
+    ten.times[1]--
 }
 
 func omn(a (bool), b int) ([4][]stuff) {

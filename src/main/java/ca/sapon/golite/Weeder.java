@@ -21,12 +21,14 @@ import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.AContinueStmt;
 import golite.node.ADeclVarShortStmt;
+import golite.node.ADecrStmt;
 import golite.node.ADefaultCase;
 import golite.node.AExprStmt;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
 import golite.node.AIdentExpr;
 import golite.node.AIfStmt;
+import golite.node.AIncrStmt;
 import golite.node.AIndexExpr;
 import golite.node.AProg;
 import golite.node.AReturnStmt;
@@ -154,6 +156,16 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAAssignBitXorStmt(AAssignBitXorStmt node) {
         node.getLeft().apply(AssignableWeeder.INSTANCE);
+    }
+
+    @Override
+    public void outAIncrStmt(AIncrStmt node) {
+        node.getExpr().apply(AssignableWeeder.INSTANCE);
+    }
+
+    @Override
+    public void outADecrStmt(ADecrStmt node) {
+        node.getExpr().apply(AssignableWeeder.INSTANCE);
     }
 
     @Override
