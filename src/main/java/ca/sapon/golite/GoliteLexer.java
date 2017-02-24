@@ -32,6 +32,7 @@ import golite.node.Token;
 /**
  * A modified lexer that supports automatic semicolon insertion, according to the Go rules.
  * <p>Based off the example shown in class.</p>
+ * TODO: fix comments at the end of the line not breaking this
  */
 public class GoliteLexer extends Lexer {
     private Token previousToken = null;
