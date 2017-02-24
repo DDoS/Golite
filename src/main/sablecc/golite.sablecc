@@ -153,7 +153,8 @@ Tokens
     coln = ':';
 
     // COMMENTS
-    comment = comment_singleln | comment_multiln;
+    comment_singleln = comment_singleln;
+    comment_multiln = comment_multiln;
 
     // IDENTIFIERS
     idenf = letter alpha_num*;
@@ -178,7 +179,7 @@ Tokens
     rune_lit = single_quot (no_carr_nl_bsl | escapes |  backslash single_quot) single_quot;
 
 Ignored Tokens
-    comment, space, endln;
+    space, endln, comment_singleln, comment_multiln;
 
 Productions
 
