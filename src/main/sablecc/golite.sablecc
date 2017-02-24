@@ -290,7 +290,7 @@ Productions
                     {-> New for_condition.empty()}
             | {expr} expr
                     {-> New for_condition.expr(expr.expr)}
-            | {clause} [init]:simple_stmt [l]:semi [cond]:expr? [r]:semi [post]:simple_stmt
+            | {clause} [init]:simple_stmt_semi [cond]:expr? [r]:semi [post]:simple_stmt
                     {-> New for_condition.clause(init.stmt, cond.expr, post.stmt)};
 
     simple_stmt {-> stmt} = {empty}
