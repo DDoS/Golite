@@ -34,14 +34,6 @@ import golite.node.ASelectExpr;
 import golite.node.ASwitchStmt;
 import golite.node.Node;
 
-/**
- * TODO: weeding of
- * 1. Assignment LHS
- * 2. Short variable declaration LHS
- * 3. Expression statements
- * 4. Default case
- * 5. Break and continue
- */
 public class Weeder extends DepthFirstAdapter {
     private final Deque<Scope> scopeStack = new ArrayDeque<>();
 
@@ -88,16 +80,16 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void inASwitchStmt(ASwitchStmt node) {
         scopeStack.push(Scope.SWITCH);
-        // Check that case.getClass() == ADefaultCase.class is only true for one case at most
         boolean alreadyDefault = false;
+        
         for (Node c : node.getCase()) {
-        	if (c.getClass() == ADefaultCase.class) {
-        		if (alreadyDefault == true) {
-        			throw new WeederException("There can only be one default case in a switch statement");
-        		} else {
-        			alreadyDefault = true;
-        		}
-        	}
+            if (c.getClass() == ADefaultCase.class) {
+                if (alreadyDefault == true) {
+                    throw new WeederException("There can only be one default case in a switch statement");
+                } else {
+                    alreadyDefault = true;
+                }
+            }
         }
     }
 
@@ -168,44 +160,39 @@ public class Weeder extends DepthFirstAdapter {
 
     @Override
     public void outADeclVarShortStmt(ADeclVarShortStmt node) {
-        // Check that the left list elements are all getClass() == AIdentExpr.class
-    	for (Node n : node.getLeft()) {
-    		if ((n.getClass()) != AIdentExpr.class) {
-    			throw new WeederException("The LHS of the declaration must contain identifiers");
-    		}
-    	}
+        for (Node n : node.getLeft()) {
+    	    if ((n.getClass()) != AIdentExpr.class) {
+                throw new WeederException("The LHS of the declaration must contain identifiers");
+            }
+        }
     }
 
     @Override
     public void outAExprStmt(AExprStmt node) {
-        // Check that the expr node getClass() == ACallExpr.class
-    	if (node.getExpr().getClass() != ACallExpr.class) {
-    		throw new WeederException("Expected an expression");
-    	}
+        if (node.getExpr().getClass() != ACallExpr.class) {
+    	    throw new WeederException("Expected an expression");
+        }
     }
 
     @Override
     public void outABreakStmt(ABreakStmt node) {
-        // Check that scope stack contains FOR
-    	if (!scopeStack.contains(Scope.FOR)) {
-    		throw new WeederException("The break keyword cannot be used outside a loop.");
-    	}
+        if (!scopeStack.contains(Scope.FOR)) {
+    	    throw new WeederException("The break keyword cannot be used outside a loop.");
+        }
     }
 
     @Override
     public void outAContinueStmt(AContinueStmt node) {
-        // Check that scope stack contains FOR
-    	if (!scopeStack.contains(Scope.FOR)) {
-    		throw new WeederException("The continue keyword cannot be used outside a loop.");
-    	}
+        if (!scopeStack.contains(Scope.FOR)) {
+    	    throw new WeederException("The continue keyword cannot be used outside a loop.");
+        }
     }
 
     @Override
     public void outAReturnStmt(AReturnStmt node) {
-        // Check that scope stack contains FUNC
-    	if (!scopeStack.contains(Scope.FUNC)) {
-    		throw new WeederException("The return keyword cannot be used outside a function");
-    	}
+        if (!scopeStack.contains(Scope.FUNC)) {
+    	    throw new WeederException("The return keyword cannot be used outside a function");
+        }
     }
 
     private void popScope(Scope out) {
