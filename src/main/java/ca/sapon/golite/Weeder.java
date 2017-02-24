@@ -81,14 +81,12 @@ public class Weeder extends DepthFirstAdapter {
     public void inASwitchStmt(ASwitchStmt node) {
         scopeStack.push(Scope.SWITCH);
         boolean alreadyDefault = false;
-        
         for (Node c : node.getCase()) {
             if (c.getClass() == ADefaultCase.class) {
-                if (alreadyDefault == true) {
+                if (alreadyDefault) {
                     throw new WeederException("There can only be one default case in a switch statement");
-                } else {
-                    alreadyDefault = true;
                 }
+                alreadyDefault = true;
             }
         }
     }
@@ -161,8 +159,8 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outADeclVarShortStmt(ADeclVarShortStmt node) {
         for (Node n : node.getLeft()) {
-    	    if ((n.getClass()) != AIdentExpr.class) {
-                throw new WeederException("The LHS of the declaration must contain identifiers");
+            if (n.getClass() != AIdentExpr.class) {
+                throw new WeederException("The left side of the declaration must contain identifiers");
             }
         }
     }
@@ -170,28 +168,28 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAExprStmt(AExprStmt node) {
         if (node.getExpr().getClass() != ACallExpr.class) {
-    	    throw new WeederException("Expected an expression");
+            throw new WeederException("Expected an expression");
         }
     }
 
     @Override
     public void outABreakStmt(ABreakStmt node) {
         if (!scopeStack.contains(Scope.FOR)) {
-    	    throw new WeederException("The break keyword cannot be used outside a loop.");
+            throw new WeederException("The break keyword cannot be used outside a loop");
         }
     }
 
     @Override
     public void outAContinueStmt(AContinueStmt node) {
         if (!scopeStack.contains(Scope.FOR)) {
-    	    throw new WeederException("The continue keyword cannot be used outside a loop.");
+            throw new WeederException("The continue keyword cannot be used outside a loop");
         }
     }
 
     @Override
     public void outAReturnStmt(AReturnStmt node) {
         if (!scopeStack.contains(Scope.FUNC)) {
-    	    throw new WeederException("The return keyword cannot be used outside a function");
+            throw new WeederException("The return keyword cannot be used outside a function");
         }
     }
 
