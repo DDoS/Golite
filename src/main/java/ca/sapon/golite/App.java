@@ -146,6 +146,7 @@ public final class App {
         return sub;
     }
 
+    @FunctionalInterface
     private interface Executor {
         int execute(File inputFile, File outputFile);
     }
