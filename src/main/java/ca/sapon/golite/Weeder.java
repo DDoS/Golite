@@ -36,6 +36,10 @@ import golite.node.ASelectExpr;
 import golite.node.ASwitchStmt;
 import golite.node.Node;
 
+/**
+ * Weeds out the usage of certain statements and expressions when it is not possible to do so in the grammar file.
+ * <p>For example: left hand side of an assignment, {@code break} and {@code continue}.</p>
+ */
 public class Weeder extends DepthFirstAdapter {
     private final Deque<Scope> scopeStack = new ArrayDeque<>();
 
