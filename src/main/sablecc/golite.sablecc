@@ -281,10 +281,10 @@ Productions
             | {multiple} if_chain kw_else if_block
                     {-> [if_chain.if_block, if_block.if_block]};
 
-    case {-> case} = {expr} kw_case exprs_list coln block
-                    {-> New case.expr([exprs_list.expr], [block.stmt])}
-            | {default} kw_default coln block
-                    {-> New case.default([block.stmt])};
+    case {-> case} = {expr} kw_case exprs_list coln stmt_semi*
+                    {-> New case.expr([exprs_list.expr], [stmt_semi.stmt])}
+            | {default} kw_default coln stmt_semi*
+                    {-> New case.default([stmt_semi.stmt])};
 
     for_condition {-> for_condition} = {empty}
                     {-> New for_condition.empty()}
