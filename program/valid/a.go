@@ -81,10 +81,10 @@ func hey(a, b int) {
 }
 
 func omn(a (bool), b int) ([4][]stuff) {
-
+    var _, _, a int
 }
 
-func hh(_ string) struct {x int;} {
+func hh(_ string, _ bool) struct {x int;} {
 
 }
 
