@@ -39,6 +39,8 @@ import golite.node.Node;
 /**
  * Weeds out the usage of certain statements and expressions when it is not possible to do so in the grammar file.
  * <p>For example: left hand side of an assignment, {@code break} and {@code continue}.</p>
+ * TODO: blank identifier usage
+ * TODO: same number of elements on both side of list declarations and assignments
  */
 public class Weeder extends DepthFirstAdapter {
     private final Deque<Scope> scopeStack = new ArrayDeque<>();
