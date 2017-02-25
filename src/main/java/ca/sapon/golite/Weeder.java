@@ -1,7 +1,13 @@
 package ca.sapon.golite;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import golite.analysis.AnalysisAdapter;
 import golite.analysis.DepthFirstAdapter;
@@ -35,18 +41,25 @@ import golite.node.AProg;
 import golite.node.AReturnStmt;
 import golite.node.ASelectExpr;
 import golite.node.AStructField;
+import golite.node.AStructType;
 import golite.node.ASwitchStmt;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.TIdenf;
+import golite.node.Token;
 
 /**
  * Weeds out the usage of certain statements and expressions when it is not possible to do so in the grammar file.
  * <p>For example: left hand side of an assignment, {@code break} and {@code continue}.</p>
+<<<<<<< HEAD
  * TODO: uniqueness of identifiers in declarations
+=======
+ * TODO: same number of elements on both side of list-declarations and list-assignments
+>>>>>>> 66e18c30e8640882eb3cb3962a3c75945eb535d4
  */
 public class Weeder extends DepthFirstAdapter {
+    private static final String BLANK_IDENTIFIER = "_";
     private final Deque<Scope> scopeStack = new ArrayDeque<>();
 
     @Override
@@ -60,6 +73,13 @@ public class Weeder extends DepthFirstAdapter {
     }
 
     @Override
+    public void inAVarDecl(AVarDecl node) {
+        if (!areNamesUnique(node.getIdenf().stream())) {
+            throw new WeederException(node, "Multiple declared variables have the same name");
+        }
+    }
+
+    @Override
     public void outAVarDecl(AVarDecl node) {
         if ((node.getExpr().size()) != 0 && (node.getIdenf().size() != node.getExpr().size())) {
             throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
@@ -68,6 +88,9 @@ public class Weeder extends DepthFirstAdapter {
 
     @Override
     public void inAFuncDecl(AFuncDecl node) {
+        if (!areNamesUnique(node.getParam().stream().flatMap(field -> ((AParam) field).getIdenf().stream()))) {
+            throw new WeederException(node, "Multiple parameters have the same name");
+        }
         scopeStack.push(Scope.FUNC);
     }
 
@@ -190,10 +213,15 @@ public class Weeder extends DepthFirstAdapter {
 
     @Override
     public void outADeclVarShortStmt(ADeclVarShortStmt node) {
-        for (Node n : node.getLeft()) {
-            if (n.getClass() != AIdentExpr.class) {
-                throw new WeederException(n, "The left side of the declaration must contain identifiers");
+        final List<TIdenf> idenfs = new ArrayList<>();
+        for (Node left : node.getLeft()) {
+            if (!(left instanceof AIdentExpr)) {
+                throw new WeederException(left, "The left side of the declaration must contain identifiers");
             }
+            idenfs.add(((AIdentExpr) left).getIdenf());
+        }
+        if (!areNamesUnique(idenfs.stream())) {
+            throw new WeederException(node, "Multiple variables on the left have the same name");
         }
         if ((node.getRight().size()) != 0 && (node.getLeft().size() != node.getRight().size())) {
             throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
@@ -229,8 +257,15 @@ public class Weeder extends DepthFirstAdapter {
     }
 
     @Override
+    public void outAStructType(AStructType node) {
+        if (!areNamesUnique(node.getFields().stream().flatMap(field -> ((AStructField) field).getNames().stream()))) {
+            throw new WeederException(node, "Multiple struct fields have the same name");
+        }
+    }
+
+    @Override
     public void caseTIdenf(TIdenf idenf) {
-        if (!idenf.getText().equals("_")) {
+        if (!idenf.getText().equals(BLANK_IDENTIFIER)) {
             return;
         }
         /*
@@ -279,6 +314,17 @@ public class Weeder extends DepthFirstAdapter {
         if (scope != out) {
             throw new IllegalStateException("Expected out of scope " + out + ", but got " + scope);
         }
+    }
+
+    private static boolean areNamesUnique(Stream<? extends TIdenf> idenfs) {
+        final Set<String> uniques = new HashSet<>();
+        final Iterator<String> names = idenfs.map(Token::getText).filter(name -> !name.equals(BLANK_IDENTIFIER)).iterator();
+        while (names.hasNext()) {
+            if (!uniques.add(names.next())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private enum Scope {
