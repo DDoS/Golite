@@ -35,13 +35,17 @@ import golite.node.ACallExpr;
 import golite.node.ACastExpr;
 import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
+import golite.node.ADeclStmt;
 import golite.node.ADeclVarShortStmt;
 import golite.node.ADecrStmt;
+import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
 import golite.node.AEmptyForCondition;
 import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
+import golite.node.AExprCase;
 import golite.node.AExprForCondition;
+import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
@@ -161,9 +165,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getType().apply(this);
         }
         printer.print(" {").newLine().indent();
-        for (PStmt stmt : node.getStmt()) {
-            stmt.apply(this);
-        }
+        printStmtList(node.getStmt());
         printer.dedent().print("}").newLine();
     }
 
@@ -458,6 +460,253 @@ public class PrettyPrinter extends AnalysisAdapter {
         printer.print(";");
     }
 
+    // STATEMENTS
+    @Override
+    public void caseAEmptyStmt(AEmptyStmt node) {
+    }
+
+    @Override
+    public void caseAPrintStmt(APrintStmt node) {
+        printer.print("print(");
+        printExprList(node.getExpr());
+        printer.print(")");
+    }
+
+    @Override
+    public void caseAPrintlnStmt(APrintlnStmt node) {
+        printer.print("println(");
+        printExprList(node.getExpr());
+        printer.print(")");
+    }
+
+    @Override
+    public void caseAContinueStmt(AContinueStmt node) {
+        printer.print("continue");
+    }
+
+    @Override
+    public void caseABreakStmt(ABreakStmt node) {
+        printer.print("break");
+    }
+
+    @Override
+    public void caseAReturnStmt(AReturnStmt node) {
+        printer.print("return");
+        if (node.getExpr() != null) {
+            printer.print(" ");
+            node.getExpr().apply(this);
+        }
+    }
+
+    @Override
+    public void caseAIfBlock(AIfBlock node) {
+        printer.print("if");
+        if (node.getInit() != null) {
+            printer.print(" ");
+            node.getInit().apply(this);
+            printer.print(";");
+        }
+        printer.print(" ");
+        node.getCond().apply(this);
+        printer.print(" {").newLine().indent();
+        printStmtList(node.getBlock());
+        printer.dedent().print("}");
+    }
+
+    @Override
+    public void caseAIfStmt(AIfStmt node) {
+        final LinkedList<PIfBlock> ifBlocks = node.getIfBlock();
+        for (int i = 0, ifBlocksSize = ifBlocks.size(); i < ifBlocksSize; i++) {
+            ifBlocks.get(i).apply(this);
+            if (i < ifBlocksSize - 1) {
+                printer.print(" else ");
+            }
+        }
+        if (!node.getElse().isEmpty()) {
+            printer.print(" else {").newLine().indent();
+            printStmtList(node.getElse());
+            printer.dedent().print("}");
+        }
+    }
+
+    @Override
+    public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" ^= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignBitOrStmt(AAssignBitOrStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" |= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignSubStmt(AAssignSubStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" -= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignAddStmt(AAssignAddStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" += ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignBitAndNotStmt(AAssignBitAndNotStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" &^= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignBitAndStmt(AAssignBitAndStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" &= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignRshiftStmt(AAssignRshiftStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" >>= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" <<= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignRemStmt(AAssignRemStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" %= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignDivStmt(AAssignDivStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" /= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignMulStmt(AAssignMulStmt node) {
+        node.getLeft().apply(this);
+        printer.print(" *= ");
+        node.getRight().apply(this);
+    }
+
+    @Override
+    public void caseAAssignStmt(AAssignStmt node) {
+        printExprList(node.getLeft());
+        printer.print(" = ");
+        printExprList(node.getRight());
+    }
+
+    @Override
+    public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
+        printExprList(node.getLeft());
+        printer.print(" := ");
+        printExprList(node.getRight());
+    }
+
+    @Override
+    public void caseADecrStmt(ADecrStmt node) {
+        node.getExpr().apply(this);
+        printer.print("--");
+    }
+
+    @Override
+    public void caseAIncrStmt(AIncrStmt node) {
+        node.getExpr().apply(this);
+        printer.print("++");
+    }
+
+    @Override
+    public void caseASwitchStmt(ASwitchStmt node) {
+        printer.print("switch");
+        if (node.getInit() != null) {
+            printer.print(" ");
+            node.getInit().apply(this);
+            printer.print(";");
+        }
+        if (node.getValue() != null) {
+            printer.print(" ");
+            node.getValue().apply(this);
+        }
+        printer.print(" {").newLine();
+        node.getCase().forEach(case_ -> case_.apply(this));
+        printer.print("}");
+    }
+
+    @Override
+    public void caseADefaultCase(ADefaultCase node) {
+        printer.print("default:").newLine().indent();
+        printStmtList(node.getStmt());
+    }
+
+    @Override
+    public void caseAExprCase(AExprCase node) {
+        printer.print("case ");
+        printExprList(node.getExpr());
+        printer.print(": ").newLine().indent();
+        printStmtList(node.getStmt());
+        printer.dedent();
+    }
+
+    @Override
+    public void caseAEmptyForCondition(AEmptyForCondition node) {
+    }
+
+    @Override
+    public void caseAExprForCondition(AExprForCondition node) {
+        node.getExpr().apply(this);
+    }
+
+    @Override
+    public void caseAClauseForCondition(AClauseForCondition node) {
+        node.getInit().apply(this);
+        printer.print("; ");
+        node.getCond().apply(this);
+        printer.print("; ");
+        node.getPost().apply(this);
+    }
+
+    @Override
+    public void caseAForStmt(AForStmt node) {
+        printer.print("for ");
+        node.getForCondition().apply(this);
+        printer.print(" {").newLine().indent();
+        // Statements
+        printStmtList(node.getStmt());
+        printer.dedent().print("}");
+    }
+
+    @Override
+    public void caseADeclStmt(ADeclStmt node) {
+        final LinkedList<PDecl> decls = node.getDecl();
+        for (int i = 0, declsSize = decls.size(); i < declsSize; i++) {
+            decls.get(i).apply(this);
+            if (i < declsSize - 1) {
+                printer.newLine();
+            }
+        }
+    }
+
+    @Override
+    public void caseAExprStmt(AExprStmt node) {
+        node.getExpr().apply(this);
+    }
     private void printIdenfList(List<TIdenf> idenfs) {
         for (int i = 0, idenfsSize = idenfs.size(); i < idenfsSize; i++) {
             printer.print(idenfs.get(i).getText());
@@ -473,6 +722,13 @@ public class PrettyPrinter extends AnalysisAdapter {
             if (i < exprsSize - 1) {
                 printer.print(", ");
             }
+        }
+    }
+
+    private void printStmtList(List<PStmt> stmts) {
+        for (PStmt stmt : stmts) {
+            stmt.apply(this);
+            printer.newLine();
         }
     }
 
@@ -528,374 +784,5 @@ public class PrettyPrinter extends AnalysisAdapter {
         ).collect(Collectors.toMap(key -> key, value -> 5)));
         EXPR_PRECEDENCE = Collections.unmodifiableMap(precedences);
     }
-    // STATEMENTS
-
-    public void caseAEmptyStmt(AEmptyStmt node) {
-        // (do nothing)
-    }
-
-    @Override
-    public void caseAPrintStmt(APrintStmt node) {
-        printer.print("print");
-        printer.print("(");
-
-        node.getExpr().forEach(field -> {
-            field.apply(this);
-        });
-
-        printer.print(")").newLine();
-    }
-
-    @Override
-    public void caseAPrintlnStmt(APrintlnStmt node) {
-        printer.print("println");
-        printer.print("(");
-
-        node.getExpr().forEach(field -> {
-            field.apply(this);
-            //printer.print(",");
-        });
-
-        printer.print(")").newLine();
-    }
-
-    @Override
-    public void caseAContinueStmt(AContinueStmt node) {
-        printer.print("continue");
-    }
-
-    @Override
-    public void caseABreakStmt(ABreakStmt node) {
-        printer.print("break");
-    }
-
-    @Override
-    public void caseAReturnStmt(AReturnStmt node) {
-        printer.print("return");
-        if (node.getExpr() != null) {
-            printer.print(" ");
-            node.getExpr().apply(this);
-        }
-        printer.newLine();
-    }
-
-    @Override
-    public void caseAIfBlock(AIfBlock node) {
-
-        // Example: i := 0;  
-        if (node.getInit() != null) {
-            node.getInit().apply(this);
-            // TO DO : Not for the last one
-            printer.print("; ");
-        }
-
-        // i < 10;
-        if (node.getCond() != null) {
-            node.getCond().apply(this);
-        }
-
-        printer.print(" {").newLine().indent();
-
-        if (node.getBlock() != null) {
-            printer.print(" ");
-            if (node.getBlock() != null) {
-                node.getBlock().forEach(field -> {
-                    field.apply(this);
-                });
-            }
-        }
-        printer.print("").dedent().print("} ").newLine();
-    }
-
-    @Override
-    public void caseAIfStmt(AIfStmt node) {
-
-        printer.print("if");
-
-        if (node.getIfBlock() != null) {
-
-            final LinkedList<PIfBlock> fields = node.getIfBlock();
-            for (int i = 0, fieldsSize = fields.size(); i < fieldsSize; i++) {
-                if (i < 1) {
-                    printer.print(" ");
-                    fields.get(i).apply(this);
-                } else if (i > 0) {
-                    printer.print("else if ");
-                    fields.get(i).apply(this);
-                }
-            }
-        }
-        // TO DO: Check if the next statement is of type if -else of not
-        if (node.getElse() != null) {
-            printer.print("else");
-
-            printer.print(" {").newLine().indent();
-
-            if (node.getElse() != null) {
-                printer.print(" ");
-                final LinkedList<PStmt> fields = node.getElse();
-                for (int i = 0, fieldsSize = fields.size(); i < fieldsSize; i++) {
-                    fields.get(i).apply(this);
-                    if (i < fieldsSize - 1) {
-                        printer.print(",");
-                    }
-                }
-            }
-            printer.print("").dedent().print("} ").newLine();
-        }
-    }
-
-    @Override
-    public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" ^= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignBitOrStmt(AAssignBitOrStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" |= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignSubStmt(AAssignSubStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" -= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignAddStmt(AAssignAddStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" += ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignBitAndNotStmt(AAssignBitAndNotStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" &^= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignBitAndStmt(AAssignBitAndStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" &= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignRshiftStmt(AAssignRshiftStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" >>= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" <<= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignRemStmt(AAssignRemStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" %= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignDivStmt(AAssignDivStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" /= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    @Override
-    public void caseAAssignMulStmt(AAssignMulStmt node) {
-        if (node.getLeft() != null) {
-            node.getLeft().apply(this);
-        }
-        printer.print(" *= ");
-        if (node.getRight() != null) {
-            node.getRight().apply(this);
-        }
-    }
-
-    public void caseAAssignStmt(AAssignStmt node) {
-
-        final LinkedList<PExpr> fields = node.getLeft();
-        for (int i = 0, fieldsSize = fields.size(); i < fieldsSize; i++) {
-            fields.get(i).apply(this);
-            if (i < fieldsSize - 1) {
-                printer.print(",");
-            }
-        }
-
-        printer.print(" = ");
-
-        node.getRight().forEach(field -> {
-            field.apply(this);
-            printer.newLine();
-        });
-    }
-
-    public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
-
-        LinkedList<PExpr> exprLList = node.getLeft();
-        for (int i = 0; i < exprLList.size(); i++) {
-            exprLList.get(i).apply(this);
-            if (i < exprLList.size() - 1) {
-                printer.print(", ");
-            }
-        }
-        printer.print(" := ");
-
-        LinkedList<PExpr> exprRList = node.getRight();
-        for (int i = 0; i < exprRList.size(); i++) {
-            exprRList.get(i).apply(this);
-            if (i < exprRList.size()) {
-                printer.newLine();
-            }
-        }
-    }
-
-    public void caseADecrStmt(ADecrStmt node) {
-        if (node.getExpr() != null) {
-            node.getExpr().apply(this);
-        }
-        printer.print("--");
-    }
-
-    public void caseAIncrStmt(AIncrStmt node) {
-        if (node.getExpr() != null) {
-            node.getExpr().apply(this);
-        }
-        printer.print("++");
-    }
-
-    public void caseASwitchStmt(ASwitchStmt node) {
-        printer.print("switch");
-        if (node.getInit() != null) {
-            printer.print(" ");
-            node.getInit().apply(this);
-            printer.print(";");
-        }
-
-        if (node.getValue() != null) {
-            printer.print(" ");
-            node.getValue().apply(this);
-            printer.print(" {").newLine();
-        }
-
-        printer.print(" {").newLine().indent();
-
-        if (node.getCase() != null) {
-            printer.print(" ");
-            if (node.getCase() != null) {
-                node.getCase().forEach(field -> {
-                    field.apply(this);
-                });
-            }
-        }
-        printer.print("").dedent().print("} ");
-    }
-
-    @Override
-    public void caseAEmptyForCondition(AEmptyForCondition node) {
-
-        return;
-    }
-
-    @Override
-    public void caseAExprForCondition(AExprForCondition node) {
-
-        // Example:  i <10
-        node.getExpr().apply(this);
-        printer.print(" ");
-    }
-
-    @Override
-    public void caseAClauseForCondition(AClauseForCondition node) {
-
-        // Example: i := 0;
-        node.getInit().apply(this);
-        printer.print("; ");
-
-        // i < 10;
-        node.getCond().apply(this);
-        printer.print("; ");
-
-        // i++
-        node.getPost().apply(this);
-        printer.print("; ");
-
-        //            printer.print(" {").newLine();
-
-    }
-
-    @Override
-    public void caseAForStmt(AForStmt node) {
-
-        printer.print("for ");
-
-        if (node.getForCondition() != null) {
-            node.getForCondition().apply(this);
-        }
-
-        printer.print(" {").newLine().indent();
-
-        // Statements
-        node.getStmt().forEach(field -> {
-            printer.print("").indent();
-            field.apply(this);
-            printer.newLine();
-        });
-
-        printer.print("").dedent().print("} ").newLine();
-    }
+  
 }
