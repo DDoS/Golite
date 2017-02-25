@@ -52,7 +52,6 @@ import golite.node.Token;
 /**
  * Weeds out the usage of certain statements and expressions when it is not possible to do so in the grammar file.
  * <p>For example: left hand side of an assignment, {@code break} and {@code continue}.</p>
- * TODO: uniqueness of identifiers in declarations
  */
 public class Weeder extends DepthFirstAdapter {
     private static final String BLANK_IDENTIFIER = "_";
@@ -77,7 +76,7 @@ public class Weeder extends DepthFirstAdapter {
 
     @Override
     public void outAVarDecl(AVarDecl node) {
-        if ((node.getExpr().size()) != 0 && (node.getIdenf().size() != node.getExpr().size())) {
+        if (!node.getExpr().isEmpty() && node.getIdenf().size() != node.getExpr().size()) {
             throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
         }
     }
@@ -137,7 +136,7 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAAssignStmt(AAssignStmt node) {
         node.getLeft().forEach(n -> n.apply(AssignableWeeder.INSTANCE));
-        if ((node.getRight().size()) != 0 && (node.getLeft().size() != node.getRight().size())) {
+        if (!node.getRight().isEmpty() && node.getLeft().size() != node.getRight().size()) {
             throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
         }
     }
@@ -220,7 +219,7 @@ public class Weeder extends DepthFirstAdapter {
             throw new WeederException(node, "Multiple variables on the left have the same name");
         }
 
-        if ((node.getRight().size()) != 0 && (node.getLeft().size() != node.getRight().size())) {
+        if (!node.getRight().isEmpty() && node.getLeft().size() != node.getRight().size()) {
             throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
         }
     }
