@@ -125,7 +125,6 @@ public class Weeder extends DepthFirstAdapter {
                 alreadyDefault = true;
             }
         }
-        // TODO: Maybe weed cases with duplicate literals? The spec doesn't make it mandatory, but the go compiler does it
     }
 
     @Override
@@ -136,7 +135,7 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAAssignStmt(AAssignStmt node) {
         node.getLeft().forEach(n -> n.apply(AssignableWeeder.INSTANCE));
-        // TODO: check that the left and right lists are of the same length, unless the right is empty
+        // TODO: check that the left and right lists are of the same length
     }
 
     @Override
@@ -216,7 +215,7 @@ public class Weeder extends DepthFirstAdapter {
         if (!areNamesUnique(idenfs.stream())) {
             throw new WeederException(node, "Multiple variables on the left have the same name");
         }
-        // TODO: check that the left and right lists are of the same length, unless the right is empty
+        // TODO: check that the left and right lists are of the same length
     }
 
     @Override
