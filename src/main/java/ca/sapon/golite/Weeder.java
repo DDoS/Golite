@@ -136,7 +136,7 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAAssignStmt(AAssignStmt node) {
         node.getLeft().forEach(n -> n.apply(AssignableWeeder.INSTANCE));
-        if (!node.getRight().isEmpty() && node.getLeft().size() != node.getRight().size()) {
+        if (node.getLeft().size() != node.getRight().size()) {
             throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
         }
     }
@@ -219,7 +219,7 @@ public class Weeder extends DepthFirstAdapter {
             throw new WeederException(node, "Multiple variables on the left have the same name");
         }
 
-        if (!node.getRight().isEmpty() && node.getLeft().size() != node.getRight().size()) {
+        if (node.getLeft().size() != node.getRight().size()) {
             throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
         }
     }
