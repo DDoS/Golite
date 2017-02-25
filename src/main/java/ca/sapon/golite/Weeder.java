@@ -125,6 +125,7 @@ public class Weeder extends DepthFirstAdapter {
                 alreadyDefault = true;
             }
         }
+        // TODO: Maybe weed cases with duplicate literals? The spec doesn't make it mandatory, but the go compiler does it
     }
 
     @Override
