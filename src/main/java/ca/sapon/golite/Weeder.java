@@ -45,7 +45,6 @@ import golite.node.TIdenf;
  * Weeds out the usage of certain statements and expressions when it is not possible to do so in the grammar file.
  * <p>For example: left hand side of an assignment, {@code break} and {@code continue}.</p>
  * TODO: uniqueness of identifiers in declarations
- * TODO: same number of elements on both side of list-declarations and list-assignments
  */
 public class Weeder extends DepthFirstAdapter {
     private final Deque<Scope> scopeStack = new ArrayDeque<>();
@@ -62,7 +61,9 @@ public class Weeder extends DepthFirstAdapter {
 
     @Override
     public void outAVarDecl(AVarDecl node) {
-        // TODO: check that the left and right lists are of the same length, unless the right is empty
+        if ((node.getExpr().size()) != 0 && (node.getIdenf().size() != node.getExpr().size())) {
+            throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
+        }
     }
 
     @Override
@@ -117,7 +118,9 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAAssignStmt(AAssignStmt node) {
         node.getLeft().forEach(n -> n.apply(AssignableWeeder.INSTANCE));
-        // TODO: check that the left and right lists are of the same length, unless the right is empty
+        if ((node.getRight().size()) != 0 && (node.getLeft().size() != node.getRight().size())) {
+            throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
+        }
     }
 
     @Override
@@ -192,7 +195,9 @@ public class Weeder extends DepthFirstAdapter {
                 throw new WeederException(n, "The left side of the declaration must contain identifiers");
             }
         }
-        // TODO: check that the left and right lists are of the same length, unless the right is empty
+        if ((node.getRight().size()) != 0 && (node.getLeft().size() != node.getRight().size())) {
+            throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
+        }
     }
 
     @Override
