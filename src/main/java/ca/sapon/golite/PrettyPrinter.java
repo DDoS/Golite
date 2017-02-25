@@ -112,15 +112,17 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseAProg(AProg node) {
         node.getPkg().apply(this);
+        printer.newLine();
         for (PDecl decl : node.getDecl()) {
             printer.newLine();
             decl.apply(this);
+            printer.newLine();
         }
     }
 
     @Override
     public void caseAPkg(APkg node) {
-        printer.print("package ").print(node.getIdenf().getText()).print(";").newLine();
+        printer.print("package ").print(node.getIdenf().getText());
     }
 
     @Override
@@ -135,14 +137,12 @@ public class PrettyPrinter extends AnalysisAdapter {
             printer.print(" = ");
             printExprList(node.getExpr());
         }
-        printer.print(";").newLine();
     }
 
     @Override
     public void caseATypeDecl(ATypeDecl node) {
         printer.print("type ").print(node.getIdenf().getText()).print(" ");
         node.getType().apply(this);
-        printer.print(";").newLine();
     }
 
     @Override
