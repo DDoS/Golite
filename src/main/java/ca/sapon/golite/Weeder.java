@@ -52,11 +52,7 @@ import golite.node.Token;
 /**
  * Weeds out the usage of certain statements and expressions when it is not possible to do so in the grammar file.
  * <p>For example: left hand side of an assignment, {@code break} and {@code continue}.</p>
-<<<<<<< HEAD
  * TODO: uniqueness of identifiers in declarations
-=======
- * TODO: same number of elements on both side of list-declarations and list-assignments
->>>>>>> 66e18c30e8640882eb3cb3962a3c75945eb535d4
  */
 public class Weeder extends DepthFirstAdapter {
     private static final String BLANK_IDENTIFIER = "_";
@@ -223,6 +219,7 @@ public class Weeder extends DepthFirstAdapter {
         if (!areNamesUnique(idenfs.stream())) {
             throw new WeederException(node, "Multiple variables on the left have the same name");
         }
+
         if ((node.getRight().size()) != 0 && (node.getLeft().size() != node.getRight().size())) {
             throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
         }
