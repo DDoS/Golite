@@ -707,6 +707,7 @@ public class PrettyPrinter extends AnalysisAdapter {
     public void caseAExprStmt(AExprStmt node) {
         node.getExpr().apply(this);
     }
+
     private void printIdenfList(List<TIdenf> idenfs) {
         for (int i = 0, idenfsSize = idenfs.size(); i < idenfsSize; i++) {
             printer.print(idenfs.get(i).getText());

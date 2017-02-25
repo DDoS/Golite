@@ -34,13 +34,14 @@ import golite.node.AProg;
 import golite.node.AReturnStmt;
 import golite.node.ASelectExpr;
 import golite.node.ASwitchStmt;
+import golite.node.AVarDecl;
 import golite.node.Node;
 
 /**
  * Weeds out the usage of certain statements and expressions when it is not possible to do so in the grammar file.
  * <p>For example: left hand side of an assignment, {@code break} and {@code continue}.</p>
  * TODO: blank identifier usage
- * TODO: same number of elements on both side of list declarations and assignments
+ * TODO: same number of elements on both side of list-declarations and list-assignments
  */
 public class Weeder extends DepthFirstAdapter {
     private final Deque<Scope> scopeStack = new ArrayDeque<>();
@@ -53,6 +54,11 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAProg(AProg node) {
         popScope(Scope.TOP);
+    }
+
+    @Override
+    public void outAVarDecl(AVarDecl node) {
+        // TODO: check that the left and right lists are of the same length, unless the right is empty
     }
 
     @Override
@@ -107,6 +113,7 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAAssignStmt(AAssignStmt node) {
         node.getLeft().forEach(n -> n.apply(AssignableWeeder.INSTANCE));
+        // TODO: check that the left and right lists are of the same length, unless the right is empty
     }
 
     @Override
@@ -181,6 +188,7 @@ public class Weeder extends DepthFirstAdapter {
                 throw new WeederException(n, "The left side of the declaration must contain identifiers");
             }
         }
+        // TODO: check that the left and right lists are of the same length, unless the right is empty
     }
 
     @Override

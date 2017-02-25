@@ -10,7 +10,7 @@ var (
 )
 
 var mul, m3 = + +43, g * 53
-var gf, fd int = lol(), - -4
+var gf, fd int
 var lol int = (_ + 42) * (.42 * 4.2) * 42. * gh("lol") && h().u6 * (-+5.4) || append('l' &^ float64(g.h), rune << 4)
 
 type (
@@ -23,11 +23,11 @@ type (
 )
 
 func hey(a, b int) {
-    a, b := 0
+    a, b := 0, 1
     b = 2
     var (
         g = 4
-        gh, fd = 45, "l"
+        gh, fd = - -45, "l"
     )
     type stuff [0xaF]Point
 
