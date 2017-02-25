@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 
 import golite.lexer.Lexer;
 import golite.lexer.LexerException;
+import golite.node.EOF;
 import golite.node.TCommentMultiln;
 import golite.node.TCommentSingleln;
 import golite.node.TDblMinus;
@@ -60,7 +61,7 @@ public class GoliteLexer extends Lexer {
     }
 
     private static final Set<Class<? extends Token>> END_LINE_TOKENS = Stream.of(
-            TEndln.class, TCommentSingleln.class
+            TEndln.class, TCommentSingleln.class, EOF.class
     ).collect(Collectors.toSet());
 
     private static final Set<Class<? extends Token>> FINAL_LINE_TOKENS = Stream.of(
