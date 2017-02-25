@@ -11,25 +11,30 @@ var (
 
 var mul, m3 = + +43, g * 53
 var gf, fd int
-var lol int = (_ + 42) * (.42 * 4.2) * 42. * gh("lol") && h().u6 * (-+5.4) || append('l' &^ float64(g.h), rune << 4)
+var lol int = (fd + 42) * (.42 * 4.2) * 42. * gh("lol") && h().u6 * (-+5.4) || append('l' &^ float64(g.h), rune << 4)
 
 type (
     Point struct {
         x, y, z float64
+        _ int
         inr rune
+        _ int
     }
     float float64
     chars ([]rune)
 )
 
 func hey(a, b int) {
-    a, b := 0, 1
+    a, _ := 0, 1
     b = 2
+    _ = 3
+    f, _ = 4, 5
     var (
-        g = 4
+        _ = 4
         gh, fd = - -45, "l"
     )
     type stuff [0xaF]Point
+    type _ []ignored
 
     if b := 1; true {
         a := 1
@@ -79,6 +84,10 @@ func omn(a (bool), b int) ([4][]stuff) {
 
 }
 
-func hh() struct {x int;} {
+func hh(_ string) struct {x int;} {
 
+}
+
+func _() {
+    // Not bound!
 }

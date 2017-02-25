@@ -30,17 +30,21 @@ import golite.node.AIdentExpr;
 import golite.node.AIfStmt;
 import golite.node.AIncrStmt;
 import golite.node.AIndexExpr;
+import golite.node.AParam;
 import golite.node.AProg;
 import golite.node.AReturnStmt;
 import golite.node.ASelectExpr;
+import golite.node.AStructField;
 import golite.node.ASwitchStmt;
+import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
+import golite.node.TIdenf;
 
 /**
  * Weeds out the usage of certain statements and expressions when it is not possible to do so in the grammar file.
  * <p>For example: left hand side of an assignment, {@code break} and {@code continue}.</p>
- * TODO: blank identifier usage
+ * TODO: uniqueness of identifiers in declarations
  * TODO: same number of elements on both side of list-declarations and list-assignments
  */
 public class Weeder extends DepthFirstAdapter {
@@ -194,7 +198,7 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAExprStmt(AExprStmt node) {
         if (node.getExpr().getClass() != ACallExpr.class) {
-            throw new WeederException(node.getExpr(), "Expected an expression");
+            throw new WeederException(node.getExpr(), "Expected a call expression");
         }
     }
 
@@ -217,6 +221,52 @@ public class Weeder extends DepthFirstAdapter {
         if (!scopeStack.contains(Scope.FUNC)) {
             throw new WeederException(node, "The return keyword cannot be used outside a function");
         }
+    }
+
+    @Override
+    public void caseTIdenf(TIdenf idenf) {
+        if (!idenf.getText().equals("_")) {
+            return;
+        }
+        /*
+            The blank identifier can only be used in the following cases:
+                As a declaration name
+                As a field name in a struct type declaration
+                As a parameter name in a function declaration
+                As an operand on the left side of an assignment or short variable declaration
+        */
+        final Node parent = idenf.parent();
+        // Valid if it is the identifier of a declaration
+        if (parent instanceof AVarDecl && ((AVarDecl) parent).getIdenf().contains(idenf)) {
+            return;
+        }
+        if (parent instanceof ATypeDecl && ((ATypeDecl) parent).getIdenf() == idenf) {
+            return;
+        }
+        if (parent instanceof AFuncDecl && ((AFuncDecl) parent).getIdenf() == idenf) {
+            return;
+        }
+        // Valid if it is the identifier of a parameter
+        if (parent instanceof AStructField && ((AStructField) parent).getNames().contains(idenf)) {
+            return;
+        }
+        // Valid if it is the identifier of a struct field
+        if (parent instanceof AParam && ((AParam) parent).getIdenf().contains(idenf)) {
+            return;
+        }
+        // Valid if used in an identifier expression on the left side of a regular assignment variable or short declaration
+        if (parent instanceof AIdentExpr) {
+            final AIdentExpr expr = (AIdentExpr) parent;
+            final Node exprParent = expr.parent();
+            // The expression must be on the left side of the assignment or variable short declaration
+            if (exprParent instanceof AAssignStmt && ((AAssignStmt) exprParent).getLeft().contains(expr)) {
+                return;
+            }
+            if (exprParent instanceof ADeclVarShortStmt && ((ADeclVarShortStmt) exprParent).getLeft().contains(expr)) {
+                return;
+            }
+        }
+        throw new WeederException(idenf, "Invalid usage of the blank identifier");
     }
 
     private void popScope(Scope out) {
