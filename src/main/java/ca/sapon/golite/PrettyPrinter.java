@@ -35,17 +35,13 @@ import golite.node.ACallExpr;
 import golite.node.ACastExpr;
 import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
-import golite.node.ADeclStmt;
 import golite.node.ADeclVarShortStmt;
 import golite.node.ADecrStmt;
-import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
 import golite.node.AEmptyForCondition;
 import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
-import golite.node.AExprCase;
 import golite.node.AExprForCondition;
-import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
@@ -91,12 +87,12 @@ import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.PDecl;
 import golite.node.PExpr;
+import golite.node.PIfBlock;
 import golite.node.PParam;
 import golite.node.PStmt;
 import golite.node.PStructField;
 import golite.node.Start;
 import golite.node.TIdenf;
-import golite.node.PIfBlock;
 
 /**
  * The pretty printer.
@@ -177,7 +173,6 @@ public class PrettyPrinter extends AnalysisAdapter {
         printer.print(" ");
         node.getType().apply(this);
     }
-
 
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
@@ -534,16 +529,15 @@ public class PrettyPrinter extends AnalysisAdapter {
         EXPR_PRECEDENCE = Collections.unmodifiableMap(precedences);
     }
     // STATEMENTS
-    
+
     public void caseAEmptyStmt(AEmptyStmt node) {
         // (do nothing)
-      }  
-    
-    
+    }
+
     @Override
     public void caseAPrintStmt(APrintStmt node) {
         printer.print("print");
-        printer.print("(") ;
+        printer.print("(");
 
         node.getExpr().forEach(field -> {
             field.apply(this);
@@ -555,7 +549,7 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseAPrintlnStmt(APrintlnStmt node) {
         printer.print("println");
-        printer.print("(") ;
+        printer.print("(");
 
         node.getExpr().forEach(field -> {
             field.apply(this);
@@ -564,6 +558,7 @@ public class PrettyPrinter extends AnalysisAdapter {
 
         printer.print(")").newLine();
     }
+
     @Override
     public void caseAContinueStmt(AContinueStmt node) {
         printer.print("continue");
@@ -577,68 +572,66 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseAReturnStmt(AReturnStmt node) {
         printer.print("return");
-        if (node.getExpr()!= null) {
+        if (node.getExpr() != null) {
             printer.print(" ");
             node.getExpr().apply(this);
         }
         printer.newLine();
-    }    
+    }
 
-    @Override 
+    @Override
     public void caseAIfBlock(AIfBlock node) {
 
         // Example: i := 0;  
-        if (node.getInit()!= null) {
-        node.getInit().apply(this);
-        // TO DO : Not for the last one
-        printer.print("; ");
+        if (node.getInit() != null) {
+            node.getInit().apply(this);
+            // TO DO : Not for the last one
+            printer.print("; ");
         }
-        
+
         // i < 10;
-        if (node.getCond()!= null) {
-        node.getCond().apply(this);
+        if (node.getCond() != null) {
+            node.getCond().apply(this);
         }
-        
+
         printer.print(" {").newLine().indent();
-        
-        if (node.getBlock()!= null) {
+
+        if (node.getBlock() != null) {
             printer.print(" ");
-            if (node.getBlock()!= null) {
+            if (node.getBlock() != null) {
                 node.getBlock().forEach(field -> {
                     field.apply(this);
                 });
             }
-        }       
+        }
         printer.print("").dedent().print("} ").newLine();
     }
-    
-    @Override 
+
+    @Override
     public void caseAIfStmt(AIfStmt node) {
 
-        printer.print("if" );
+        printer.print("if");
 
-        if (node.getIfBlock()!= null) {
-            
+        if (node.getIfBlock() != null) {
+
             final LinkedList<PIfBlock> fields = node.getIfBlock();
             for (int i = 0, fieldsSize = fields.size(); i < fieldsSize; i++) {
                 if (i < 1) {
-                    printer.print(" " );
-                fields.get(i).apply(this);
-                }
-                else if (i > 0)
-                { 
+                    printer.print(" ");
+                    fields.get(i).apply(this);
+                } else if (i > 0) {
                     printer.print("else if ");
-                fields.get(i).apply(this);
-                    }
+                    fields.get(i).apply(this);
                 }
-        } 
+            }
+        }
         // TO DO: Check if the next statement is of type if -else of not
-        if (node.getElse()!= null) {
+        if (node.getElse() != null) {
             printer.print("else");
 
             printer.print(" {").newLine().indent();
 
-            if (node.getElse()!= null) {
+            if (node.getElse() != null) {
                 printer.print(" ");
                 final LinkedList<PStmt> fields = node.getElse();
                 for (int i = 0, fieldsSize = fields.size(); i < fieldsSize; i++) {
@@ -647,12 +640,10 @@ public class PrettyPrinter extends AnalysisAdapter {
                         printer.print(",");
                     }
                 }
-
-            }       
+            }
             printer.print("").dedent().print("} ").newLine();
-
         }
-    } 
+    }
 
     @Override
     public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
@@ -660,7 +651,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" ^= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
@@ -671,7 +662,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" |= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
@@ -682,7 +673,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" -= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
@@ -693,7 +684,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" += ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
@@ -704,7 +695,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" &^= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
@@ -715,7 +706,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" &= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
@@ -726,11 +717,10 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" >>= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
-
 
     @Override
     public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
@@ -738,10 +728,10 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" <<= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
-    } 
+    }
 
     @Override
     public void caseAAssignRemStmt(AAssignRemStmt node) {
@@ -749,11 +739,10 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" %= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
-    } 
-
+    }
 
     @Override
     public void caseAAssignDivStmt(AAssignDivStmt node) {
@@ -761,7 +750,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" /= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
@@ -772,34 +761,33 @@ public class PrettyPrinter extends AnalysisAdapter {
             node.getLeft().apply(this);
         }
         printer.print(" *= ");
-        if (node.getRight()!= null) {
+        if (node.getRight() != null) {
             node.getRight().apply(this);
         }
     }
 
     public void caseAAssignStmt(AAssignStmt node) {
-        
-      final LinkedList<PExpr> fields = node.getLeft();
-          for (int i = 0, fieldsSize = fields.size(); i < fieldsSize; i++) {
-              fields.get(i).apply(this);
-              if (i < fieldsSize - 1) {
-                  printer.print(",");
-              }
-          }
 
-      printer.print(" = ");
+        final LinkedList<PExpr> fields = node.getLeft();
+        for (int i = 0, fieldsSize = fields.size(); i < fieldsSize; i++) {
+            fields.get(i).apply(this);
+            if (i < fieldsSize - 1) {
+                printer.print(",");
+            }
+        }
 
-      node.getRight().forEach(field -> {
-          field.apply(this);
-          printer.newLine();
-      }); 
-  }
+        printer.print(" = ");
+
+        node.getRight().forEach(field -> {
+            field.apply(this);
+            printer.newLine();
+        });
+    }
 
     public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
 
-
-        LinkedList <PExpr> exprLList = node.getLeft();
-        for (int i = 0;  i < exprLList.size() ; i++) {
+        LinkedList<PExpr> exprLList = node.getLeft();
+        for (int i = 0; i < exprLList.size(); i++) {
             exprLList.get(i).apply(this);
             if (i < exprLList.size() - 1) {
                 printer.print(", ");
@@ -807,8 +795,8 @@ public class PrettyPrinter extends AnalysisAdapter {
         }
         printer.print(" := ");
 
-        LinkedList <PExpr> exprRList = node.getRight();
-        for (int i = 0;  i < exprRList.size() ; i++) {
+        LinkedList<PExpr> exprRList = node.getRight();
+        for (int i = 0; i < exprRList.size(); i++) {
             exprRList.get(i).apply(this);
             if (i < exprRList.size()) {
                 printer.newLine();
@@ -822,24 +810,23 @@ public class PrettyPrinter extends AnalysisAdapter {
         }
         printer.print("--");
     }
-    
+
     public void caseAIncrStmt(AIncrStmt node) {
         if (node.getExpr() != null) {
-          node.getExpr().apply(this);
+            node.getExpr().apply(this);
         }
         printer.print("++");
-      }
-
+    }
 
     public void caseASwitchStmt(ASwitchStmt node) {
         printer.print("switch");
-        if (node.getInit()!= null) {
+        if (node.getInit() != null) {
             printer.print(" ");
             node.getInit().apply(this);
             printer.print(";");
         }
 
-        if (node.getValue()!= null) {
+        if (node.getValue() != null) {
             printer.print(" ");
             node.getValue().apply(this);
             printer.print(" {").newLine();
@@ -847,70 +834,68 @@ public class PrettyPrinter extends AnalysisAdapter {
 
         printer.print(" {").newLine().indent();
 
-        if (node.getCase()!= null) {
+        if (node.getCase() != null) {
             printer.print(" ");
-            if (node.getCase()!= null) {
+            if (node.getCase() != null) {
                 node.getCase().forEach(field -> {
                     field.apply(this);
                 });
             }
-        }       
+        }
         printer.print("").dedent().print("} ");
+    }
+
+    @Override
+    public void caseAEmptyForCondition(AEmptyForCondition node) {
+
+        return;
+    }
+
+    @Override
+    public void caseAExprForCondition(AExprForCondition node) {
+
+        // Example:  i <10
+        node.getExpr().apply(this);
+        printer.print(" ");
+    }
+
+    @Override
+    public void caseAClauseForCondition(AClauseForCondition node) {
+
+        // Example: i := 0;
+        node.getInit().apply(this);
+        printer.print("; ");
+
+        // i < 10;
+        node.getCond().apply(this);
+        printer.print("; ");
+
+        // i++
+        node.getPost().apply(this);
+        printer.print("; ");
+
+        //            printer.print(" {").newLine();
 
     }
-    
-        @Override
-        public void caseAEmptyForCondition(AEmptyForCondition node) {
-           
-            return;
-        }
-    
-        @Override
-        public void caseAExprForCondition(AExprForCondition node) {
-                        
-            // Example:  i <10
-            node.getExpr().apply(this);
-            printer.print(" ");
-        }
-    
-        @Override
-        public void caseAClauseForCondition(AClauseForCondition node) {
-                       
-            // Example: i := 0;  
-            node.getInit().apply(this);
-            printer.print("; ");
-            
-            // i < 10;
-            node.getCond().apply(this);
-            printer.print("; ");
-            
-            // i++
-            node.getPost().apply(this);
-            printer.print("; ");
-            
-//            printer.print(" {").newLine();
 
+    @Override
+    public void caseAForStmt(AForStmt node) {
+
+        printer.print("for ");
+
+        if (node.getForCondition() != null) {
+            node.getForCondition().apply(this);
         }
-        
-        @Override
-        public void caseAForStmt(AForStmt node) {
-            
-            printer.print("for ");
 
-            if (node.getForCondition()!= null) {
-                node.getForCondition().apply(this);
-            }
-            
-            printer.print(" {").newLine().indent();
-       
-            // Statements 
-            node.getStmt().forEach(field -> {
-                printer.print("").indent();
-                field.apply(this);
-                printer.newLine();
-            });
+        printer.print(" {").newLine().indent();
 
-            printer.print("").dedent().print("} ").newLine();
+        // Statements
+        node.getStmt().forEach(field -> {
+            printer.print("").indent();
+            field.apply(this);
+            printer.newLine();
+        });
 
-        }
+        printer.print("").dedent().print("} ").newLine();
+    }
 }
