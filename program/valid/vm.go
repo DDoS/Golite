@@ -40,6 +40,7 @@
         EOR Rm Rn Rd       : Rd = Rm ^ Rn <update NZ>
         SUB Rm Rn Rd       : Rd = Rm - Rn <update NZCV>
         ADD Rm Rn Rd       : Rd = Rm + Rn <update NZCV>
+        CMP Rm Rn          : Rm - Rn <update NZCV>
         MUL Rm Rn Rd       : Rd = Rm * Rn <update NZ>
         DIV Rm Rn Rd       : Rd = Rm / Rn <update NZ>
         REM Rm Rn Rd       : Rd = Rm % Rn <update NZ>
@@ -67,6 +68,7 @@
         EOR Rm Rn Rd       : c 04 ..mnd
         SUB Rm Rn Rd       : c 05 ..mnd
         ADD Rm Rn Rd       : c 06 ..mnd
+        CMP Rm Rn          : c 14 ...mn
         MUL Rm Rn Rd       : c 07 ..mnd
         DIV Rm Rn Rd       : c 08 ..mnd
         REM Rm Rn Rd       : c 09 ..mnd
@@ -242,6 +244,17 @@ func aluAdd(inst int) {
     V = overflowedAdd(op1, op2, value)
 }
 
+func aluCmp(inst int) {
+    Rm := (inst >> 4) & 0xF
+    Rn := inst & 0xF
+    op1 := registers[Rm]
+    op2 := registers[Rn]
+    value := op1 - op2
+    updateNZ(value)
+    C = !borrowedSub(op1, op2, value)
+    V = overflowedSub(op1, op2, value)
+}
+
 func aluMul(inst int) {
     Rm := (inst >> 8) & 0xF
     Rn := (inst >> 4) & 0xF
@@ -296,7 +309,7 @@ func aluLsr(inst int) {
     value := op >> sh
     // No logical right shift in golite, so do it by hand
     if sh > 0 {
-        value &= ^(0x80000000 >>( sh - 1))
+        value &= ^(0x80000000 >> (sh - 1))
     }
     registers[Rd] = value
     updateNZ(value)
@@ -403,6 +416,7 @@ func execute(inst int) {
     case 0x4: aluEor(inst)
     case 0x5: aluSub(inst)
     case 0x6: aluAdd(inst)
+    case 0x14: aluCmp(inst)
     case 0x7: aluMul(inst)
     case 0x8: aluDiv(inst)
     case 0x9: aluRem(inst)
@@ -421,11 +435,25 @@ func execute(inst int) {
 
 func main() {
     // Place a progam in the ROM
+    // This one has been assembled by asm.go
+    // Take a look at the code() func for details
     rpc := 0
-    rom[rpc] = 0xE0100201; rpc++ // MOV 32 R1
-    rom[rpc] = 0xE01001D2; rpc++ // MOV 29 R2
-    rom[rpc] = 0xE0600120; rpc++ // ADD R1 R2 R0
-    rom[rpc] = 0xE1300000; rpc++ // STOP
+    rom[rpc] = -535822317 ; rpc++
+    rom[rpc] = -515899389 ; rpc++
+    rom[rpc] = -1059061755 ; rpc++
+    rom[rpc] = -535822320 ; rpc++
+    rom[rpc] = -522190835 ; rpc++
+    rom[rpc] = -535822319 ; rpc++
+    rom[rpc] = -535822302 ; rpc++
+    rom[rpc] = -529530591 ; rpc++
+    rom[rpc] = -515899360 ; rpc++
+    rom[rpc] = -1595932660 ; rpc++
+    rom[rpc] = -530578894 ; rpc++
+    rom[rpc] = -522190841 ; rpc++
+    rom[rpc] = -536870896 ; rpc++
+    rom[rpc] = -516947968 ; rpc++
+    // Set the argument to the program, which will calculate the factorial of R0
+    registers[R0] = 6
     // Initialize the program counter to the begining of memory
     registers[PC] = 0
     // Initialize the stack pointer to the top of the memory
