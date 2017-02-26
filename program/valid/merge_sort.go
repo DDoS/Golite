@@ -30,9 +30,7 @@ func merge(low, middle, high int) {
         arr[i] = intArr[i]
     }
 
-    for j = middle + 1
-    j <= high;
-    j++{
+    for j = middle + 1; j <= high; j++{
         arr[high + middle + 1 - j] = intArr[j]
     }
 
@@ -40,9 +38,7 @@ func merge(low, middle, high int) {
     j = high
 
 
-    for k = low;
-    k <= high;
-    k++{
+    for k = low; k <= high; k++{
         if (arr[i] <= arr[j]) {
             intArr[k] = arr[i]
             i++
@@ -75,9 +71,7 @@ func main() {
     // Unsorted Array
     print("Unsorted Array : ")
 
-    for i = 0;
-    i < 10;
-    i++{
+    for i = 0; i < 10; i++{
         print(intArr[i])
         print(" ")
     }
@@ -87,9 +81,7 @@ func main() {
     // Sorted Array
     print("\n Sorted Array  : ")
 
-    for i = 0;
-    i < 10;
-    i++{
+    for i = 0; i < 10; i++{
         print(arr[i])
         print(" ")
     }
