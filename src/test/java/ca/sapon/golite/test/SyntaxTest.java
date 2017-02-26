@@ -69,6 +69,7 @@ public class SyntaxTest {
         try {
             Golite.parse(source);
         } catch (SyntaxException exception) {
+            //System.err.println(sourceFile.getFileName() + ": " + exception.getMessage());
             return;
         }
         Assert.fail("Expected a syntax error");
