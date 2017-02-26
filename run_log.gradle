@@ -1,0 +1,26 @@
+// Disables all build status logging
+
+useLogger(new RunEventLogger())
+
+class RunEventLogger extends BuildAdapter implements TaskExecutionListener {
+    public void beforeExecute(Task task) {
+    }
+
+    public void afterExecute(Task task, TaskState state) {
+    }
+
+    public void buildStarted(Gradle result) {
+    }
+
+    public void buildFinished(BuildResult result) {
+    }
+
+    public void settingsEvaluated(Settings settings) {
+    }
+
+    public void projectsLoaded(Gradle gradle) {
+    }
+
+    public void projectsEvaluated(Gradle gradle) {
+    }
+}
