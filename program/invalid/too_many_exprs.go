@@ -1,5 +1,6 @@
 package test
 
 func hola(a,b int) {
-	a := 2, 3
+    //too many exprs given on RHS
+    a := 2, 3
 }

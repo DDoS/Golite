@@ -1,7 +1,8 @@
 package test
 
 func hi(int x) {
-for ;;x++; {
-	x := 4;
-	}
+    //The last semicolon should not be there
+    for ;;x++; {
+		x := 4;
+}
 }
