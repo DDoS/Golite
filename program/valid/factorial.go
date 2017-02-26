@@ -2,14 +2,14 @@
 //n! = n*(n-1)*...*1
 package main
 
-func fact(n int) int {
-	fact := n
-	for n := n-1; n>1; n-- {
-		fact = fact * n
+func rec_factorial(n int) int {
+	if (n == 1) {
+		return n;
+	} else {
+		return n * rec_factorial(n-1)
 	}
-	return fact
 }
 
 func main() {
-	print(fact(5))
+	print(rec_factorial(5))
 }
