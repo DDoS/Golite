@@ -64,16 +64,19 @@ func merge(low, middle, high int) {
 
 func main() {
 
-	s := [10]int{2, 3, 5, 7, 9, 10, 12, 14, 16, 19}
-	sort(s)
-	
-	// Print the sorted array
-	print ("Sorted array is: ")
-	var iter int
-	for iter = 0 ; iter < 9 ; iter++ {
-	print (s[iter] )
-	print (" ")
-	}
+ var s [10]int
+ 
+ s[0] = 2
+ s[1] = 3
+ s[2] = 6
+ s[3] = 8
+ s[4] = 10
+ s[5] = 12
+ s[6] = 14
+ s[7] = 16
+ s[8] = 18
+ s[9] = 21
+
+ sort(s)
+
 }
-
-
