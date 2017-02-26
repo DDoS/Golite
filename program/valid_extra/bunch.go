@@ -118,6 +118,7 @@ func omn(a (bool), b int) ([4][]stuff) {
     for ; ; {
 
     }
+    ;
 }
 
 func hh(_ string, _ bool) struct {x int;} {

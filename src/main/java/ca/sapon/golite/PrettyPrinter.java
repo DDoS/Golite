@@ -729,6 +729,10 @@ public class PrettyPrinter extends AnalysisAdapter {
 
     private void printStmtList(List<PStmt> stmts) {
         for (PStmt stmt : stmts) {
+            // Skip over empty statements entirely
+            if (stmt instanceof AEmptyStmt) {
+                continue;
+            }
             stmt.apply(this);
             printer.newLine();
         }
