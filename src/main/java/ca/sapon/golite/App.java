@@ -15,6 +15,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import golite.node.Start;
 
 public final class App {
     private static final String PRETTY_EXTENSION = "pretty.go";
@@ -81,7 +82,7 @@ public final class App {
         if (outputFile == null) {
             outputFile = defaultOutputFile(inputFile, PRETTY_EXTENSION);
         }
-        // Create the source reader and output writer
+        // Create the source reader
         final Reader source;
         try {
             source = new BufferedReader(new FileReader(inputFile));
@@ -89,6 +90,18 @@ public final class App {
             System.err.println("Input file not found: " + exception.getMessage());
             return 1;
         }
+        // First do the lexing, parsing and weeding
+        final Start ast;
+        try {
+            ast = Golite.parse(source);
+        } catch (SyntaxException exception) {
+            System.err.println(exception.getMessage());
+            return 1;
+        } catch (IOException exception) {
+            System.err.println("Error when reading source: " + exception.getMessage());
+            return 1;
+        }
+        // Create the output writer
         final Writer pretty;
         try {
             pretty = new FileWriter(outputFile);
@@ -96,15 +109,9 @@ public final class App {
             System.err.println("Cannot create output file: " + exception.getMessage());
             return 1;
         }
-        // Do the combined lexing, parsing and pretty printing
+        // Then do the pretty printing
         try {
-            Golite.prettyPrint(source, pretty);
-        } catch (SyntaxException exception) {
-            System.err.println(exception.getMessage());
-            return 1;
-        } catch (IOException exception) {
-            System.err.println("Error when reading source: " + exception.getMessage());
-            return 1;
+            Golite.prettyPrint(ast, pretty);
         } catch (PrinterException exception) {
             System.err.println("Error when printing: " + exception.getMessage());
             return 1;
