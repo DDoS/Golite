@@ -4,79 +4,83 @@
 
 package main
 
-var numbers [10]int
-var helper [10]int
-var number int
+    var intArr [10]int 
 
-func sort(values [10]int) {
-    numbers = values
-    number = 10 //values.length
+   func sort(low, high int) [10]int {
 
-    Mergesort(0, number - 1)
+        if (low < high) { 
+        var middle int    
+	middle = (low + high) / 2
+             
+            sort(low, middle); 
+            sort(middle + 1, high) 
+            merge(low, middle, high) 
+        } 
+        return intArr; 
+
 }
 
+    func merge( low, middle, high int) { 
+    
+    var arr [10]int 
+    var i, j, k int
+	 
+        for i = low; i <= middle; i++ { 
+            arr[i] = intArr[i]
+        } 
 
-// If low is not smaller then high then the array is sorted
-func Mergesort(low, high int) {
-    var middle int
-    if low < high {
-        middle = low + (high - low) / 2
-        Mergesort(low, middle)
-        Mergesort(middle + 1, high)
-        merge(low, middle, high)
-    }
-}
+        for j = middle + 1; j <= high; j++ { 
+            arr[high + middle + 1 - j] = intArr[j] 
+        } 
+
+        i = low
+        j = high
 
 
-func merge(low, middle, high int) {
+        for k = low; k <=high; k++ { 
+            if (arr[i] <= arr[j]) { 
+                intArr[k] = arr[i]
+                i++ 
+            } else { 
+                intArr[k] = arr[j] 
+                j-- 
+            } 
+        } 
+    } 
 
-   var it int
-
-   // Copy into helper array
-    for it = low; it <= high; it++ {
-        helper[it] = numbers[it]
-    }
-
-    var i int = low
-    var j int = middle + 1
-    var k int = low
-
-    for i = low; i <= middle; i++ {
-        if j <= high {
-            if helper[i] <= helper[j] {
-                numbers[k] = helper[i]
-                i++
-            } else {
-                numbers[k] = helper[j]
-                j++
-            }
-            k++
-        }
-    }
-
-// Copy rest of left array in target array
-    for i = i; i <= middle; i++ {
-        numbers[k] = helper[i]
-        k++
-        i++
-    }
-}
 
 func main() {
 
- var s [10]int
- 
- s[0] = 2
- s[1] = 3
- s[2] = 6
- s[3] = 8
- s[4] = 10
- s[5] = 12
- s[6] = 14
- s[7] = 16
- s[8] = 18
- s[9] = 21
+    var i int
+        var arr [10]int
 
- sort(s)
+
+ intArr[0] = 2
+ intArr[1] = 31
+ intArr[2] = 61
+ intArr[3] = 18
+ intArr[4] = 10
+ intArr[5] = 21
+ intArr[6] = 14
+ intArr[7] = 161
+ intArr[8] = 18
+ intArr[9] = 21
+
+
+	// Unsorted
+	print ("Unsorted Array : ")
+        for i = 0; i < 10; i++ { 
+            print(intArr[i])
+	    print (" ")
+        } 
+
+	arr = sort(0, 9) 
+
+	print ("\n Sorted Array  : ")
+        for i = 0; i < 10; i++ { 
+            print(arr[i])
+	    print (" ")
+        } 
+
 
 }
