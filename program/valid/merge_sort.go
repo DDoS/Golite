@@ -5,19 +5,6 @@ package main
 
 var intArr[10] int
 
-func sort(low, high int)[10] int {
-
-    if (low < high) {
-        var middle int
-        middle = (low + high) / 2
-
-        sort(low, middle)
-        sort(middle + 1, high)
-        merge(low, middle, high)
-    }
-    return intArr;
-
-}
 
 func merge(low, middle, high int) {
 
@@ -48,6 +35,20 @@ func merge(low, middle, high int) {
         }
 
     }
+}
+
+func sort(low, high int)[10] int {
+
+    if (low < high) {
+        var middle int
+        middle = (low + high) / 2
+
+        sort(low, middle)
+        sort(middle + 1, high)
+        merge(low, middle, high)
+    }
+    return intArr;
+
 }
 
 func main() {
