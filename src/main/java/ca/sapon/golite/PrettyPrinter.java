@@ -455,7 +455,6 @@ public class PrettyPrinter extends AnalysisAdapter {
     // STATEMENTS
     @Override
     public void caseAEmptyStmt(AEmptyStmt node) {
-        printer.print(";");
     }
 
     @Override

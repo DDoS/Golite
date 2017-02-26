@@ -94,6 +94,30 @@ func hey(a, b int) {
 
 func omn(a (bool), b int) ([4][]stuff) {
     var _, _, a int
+    for i := 0; i < 10; i++ {
+
+    }
+    for i := 0; ; i++ {
+
+    }
+    for i := 0; i < 10; {
+
+    }
+    for ; i < 10; i++ {
+
+    }
+    for ; ; i++ {
+
+    }
+    for i := 0; ; {
+
+    }
+    for ; i < 10; {
+
+    }
+    for ; ; {
+
+    }
 }
 
 func hh(_ string, _ bool) struct {x int;} {
