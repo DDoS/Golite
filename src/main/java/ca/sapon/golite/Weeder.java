@@ -77,7 +77,7 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAVarDecl(AVarDecl node) {
         if (!node.getExpr().isEmpty() && node.getIdenf().size() != node.getExpr().size()) {
-            throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
+            throw new WeederException(node, "The number of expressions on the right do not match the number of identifiers");
         }
     }
 
@@ -137,7 +137,7 @@ public class Weeder extends DepthFirstAdapter {
     public void outAAssignStmt(AAssignStmt node) {
         node.getLeft().forEach(n -> n.apply(AssignableWeeder.INSTANCE));
         if (node.getLeft().size() != node.getRight().size()) {
-            throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
+            throw new WeederException(node, "The number of expressions on the right do not match the number of identifiers");
         }
     }
 
@@ -220,7 +220,7 @@ public class Weeder extends DepthFirstAdapter {
         }
 
         if (node.getLeft().size() != node.getRight().size()) {
-            throw new WeederException(node, "The number of expressions on the RHS do not match the number of identifiers.");
+            throw new WeederException(node, "The number of expressions on the right do not match the number of identifiers");
         }
     }
 
