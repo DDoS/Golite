@@ -218,13 +218,13 @@ public class PrettyPrinter extends AnalysisAdapter {
 
     @Override
     public void caseASelectExpr(ASelectExpr node) {
-        node.getValue().apply(this);
+        printExprLeft(ASelectExpr.class, node.getValue());
         printer.print(".").print(node.getIdenf().getText());
     }
 
     @Override
     public void caseAIndexExpr(AIndexExpr node) {
-        node.getValue().apply(this);
+        printExprLeft(AIndexExpr.class, node.getValue());
         printer.print("[");
         node.getIndex().apply(this);
         printer.print("]");
@@ -232,7 +232,7 @@ public class PrettyPrinter extends AnalysisAdapter {
 
     @Override
     public void caseACallExpr(ACallExpr node) {
-        node.getValue().apply(this);
+        printExprLeft(ACallExpr.class, node.getValue());
         printer.print("(");
         printExprList(node.getArgs());
         printer.print(")");
@@ -258,7 +258,7 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseALogicNotExpr(ALogicNotExpr node) {
         printer.print("!");
-        node.getInner().apply(this);
+        printExprLeft(ALogicNotExpr.class, node.getInner());
     }
 
     @Override
@@ -268,7 +268,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         if (node.getInner().getClass() == AReaffirmExpr.class) {
             printer.print(" ");
         }
-        node.getInner().apply(this);
+        printExprLeft(AReaffirmExpr.class, node.getInner());
     }
 
     @Override
@@ -278,13 +278,13 @@ public class PrettyPrinter extends AnalysisAdapter {
         if (node.getInner().getClass() == ANegateExpr.class) {
             printer.print(" ");
         }
-        node.getInner().apply(this);
+        printExprLeft(ANegateExpr.class, node.getInner());
     }
 
     @Override
     public void caseABitNotExpr(ABitNotExpr node) {
         printer.print("^");
-        node.getInner().apply(this);
+        printExprLeft(ABitNotExpr.class, node.getInner());
     }
 
     @Override
@@ -742,11 +742,14 @@ public class PrettyPrinter extends AnalysisAdapter {
     }
 
     private void printExpr(Class<? extends PExpr> parent, PExpr child, boolean right) {
-        final int parentPrecedence = EXPR_PRECEDENCE.getOrDefault(parent, 0);
-        if (parentPrecedence <= 0) {
+        final Integer parentPrecedence = EXPR_PRECEDENCE.get(parent);
+        if (parentPrecedence == null) {
             throw new IllegalStateException();
         }
-        final int childPrecedence = EXPR_PRECEDENCE.getOrDefault(child.getClass(), 0);
+        final Integer childPrecedence = EXPR_PRECEDENCE.get(child.getClass());
+        if (childPrecedence == null) {
+            throw new IllegalStateException();
+        }
         // Add parenthesis around lower precedence children
         // If the children is on the right, also do so for the same precedence to respect left associativity
         final boolean needParenthesis = right ? childPrecedence >= parentPrecedence : childPrecedence > parentPrecedence;
@@ -763,6 +766,19 @@ public class PrettyPrinter extends AnalysisAdapter {
 
     static {
         final Map<Class<? extends PExpr>, Integer> precedences = new HashMap<>();
+        // Precedence -2
+        precedences.putAll(Stream.of(
+                AIdentExpr.class, AIntDecExpr.class, AIntOctExpr.class, AIntHexExpr.class, AFloatExpr.class, ARuneExpr.class,
+                AStringIntrExpr.class, AStringRawExpr.class, AAppendExpr.class
+        ).collect(Collectors.toMap(key -> key, value -> -1)));
+        // Precedence -1
+        precedences.putAll(Stream.of(
+                ASelectExpr.class, AIndexExpr.class, ACallExpr.class, ACastExpr.class
+        ).collect(Collectors.toMap(key -> key, value -> -1)));
+        // Precedence 0
+        precedences.putAll(Stream.of(
+                ALogicNotExpr.class, AReaffirmExpr.class, ANegateExpr.class, ABitNotExpr.class
+        ).collect(Collectors.toMap(key -> key, value -> 0)));
         // Precedence 1
         precedences.putAll(Stream.of(
                 AMulExpr.class, ADivExpr.class, ARemExpr.class, ALshiftExpr.class, ARshiftExpr.class, ABitAndExpr.class, ABitAndNotExpr.class

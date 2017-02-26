@@ -78,6 +78,13 @@ func hey(a, b int) {
         actually(we, are, done)
     }
     ten.times[1]--
+    (x + 5)(x + 2)
+    a := (x + 5).test
+    a := (x + 5)[g.l]
+    a := !(x + 2)
+    a := ^(x + 2)
+    a := +(x + 2)
+    a := -(x + 2)
 }
 
 func omn(a (bool), b int) ([4][]stuff) {
