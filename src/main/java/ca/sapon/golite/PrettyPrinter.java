@@ -165,7 +165,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         }
         printer.print(" {").newLine().indent();
         printStmtList(node.getStmt());
-        printer.dedent().print("}").newLine();
+        printer.dedent().print("}");
     }
 
     @Override

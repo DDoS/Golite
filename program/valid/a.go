@@ -85,6 +85,7 @@ func hey(a, b int) {
     a := ^(x + 2)
     a := +(x + 2)
     a := -(x + 2)
+    a := append(x, 4)[2]
 }
 
 func omn(a (bool), b int) ([4][]stuff) {
