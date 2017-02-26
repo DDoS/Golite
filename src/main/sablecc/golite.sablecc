@@ -261,6 +261,8 @@ Productions
                     {-> New stmt.break(kw_break)}
             | {continue} kw_continue
                     {-> New stmt.continue(kw_continue)}
+            | {block} block
+                    {-> New stmt.block([block.stmt])}
             | {if} if_chain else_block?
                     {-> New stmt.if([if_chain.if_block], [else_block.stmt])}
             | {switch} kw_switch simple_stmt_semi? expr? lf_brace case* rht_brace
@@ -489,6 +491,7 @@ Abstract Syntax Tree
             | {return} expr?
             | {break} kw_break
             | {continue} kw_continue
+            | {block} stmt*
             | {if} if_block+ [else]:stmt*
             | {switch} [init]:stmt? [value]:expr? case*
             | {for} for_condition stmt*

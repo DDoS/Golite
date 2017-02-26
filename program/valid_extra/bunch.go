@@ -89,6 +89,7 @@ func hey(a, b int) {
     empty()
     print()
     println()
+    {}
 }
 
 func omn(a (bool), b int) ([4][]stuff) {
@@ -96,7 +97,9 @@ func omn(a (bool), b int) ([4][]stuff) {
 }
 
 func hh(_ string, _ bool) struct {x int;} {
-
+    {
+        im_in_a_scope()
+    }
 }
 
 func _() {

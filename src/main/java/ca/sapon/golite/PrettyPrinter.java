@@ -30,6 +30,7 @@ import golite.node.ABitAndNotExpr;
 import golite.node.ABitNotExpr;
 import golite.node.ABitOrExpr;
 import golite.node.ABitXorExpr;
+import golite.node.ABlockStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.AClauseForCondition;
@@ -488,6 +489,13 @@ public class PrettyPrinter extends AnalysisAdapter {
             printer.print(" ");
             node.getExpr().apply(this);
         }
+    }
+
+    @Override
+    public void caseABlockStmt(ABlockStmt node) {
+        printer.print("{").newLine().indent();
+        printStmtList(node.getStmt());
+        printer.dedent().print("}");
     }
 
     @Override
