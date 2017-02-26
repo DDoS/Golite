@@ -24,7 +24,52 @@ command line application, and on JUnit for testing.
 
 ## Implementation
 
-Stuff here
+Both the lexer and parser where implemented using SableCC. We also
+use the AST definitions to transform the CST. There isn't much to
+say about this, it's a rather straight forward translation of the
+Go syntax specification. There is only one case were we had
+to do something different. In short variable declarations, the
+left side should be a list of identifiers, but due to a shift-reduce
+conflict, we use a list of expressions instead. This is weeded out
+after.
+
+The weeder also: takes care of proper usage of `break`, `continue`
+and `return`; checks for redundant names in declarations; checks
+that lists are balanced on either side of multiple declarations
+and assignments; checks for multiple default cases; check that
+statement expressions are calls only; and checks that blank
+identifiers are used in valid places.
+
+The pretty printer is written around the `SourcePrinter` class,
+which outputs to a `Writer`. This can either be a string or a file.
+It inserts indentation automatically after new lines, according to
+the current level. The `PrettyPrinter` class is a switch that
+recursively traverses the AST to print the nodes, from bottom to
+top.
+
+To print nicer error messages about nodes, a `NodePosition` switch
+can be applied to a node to extract the start and ending position.
+This is done by visiting the `Token`s, which are the leaves of the
+AST, and using the minimum and maximum position values.
+
+For automatic semicolons, an extension of the Lexer called
+`GoliteLexer` is used. It implements the insertion rule as per the
+Go specification. More information can be found inside.
+
+A `Golite` class is used to perform compilation tasks. Right now
+only `parse` and `prettyPrint` are implemented.
+
+The `App` class
+implements the command line interface, and runs the proper task
+on the input file, then outputs to the given output file (or a
+default if none is given). 
+
+The other main package classes are used for exception management.
+
+The test package contains a runner called `SyntaxTest`, which runs
+all valid and invalid programs through the parser. It also checks
+the pretty printer invariant on the valid ones. It automates
+testing. Tests are run when building, or by using `./gradlew test`.
 
 ## Team work summary
 
