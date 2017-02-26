@@ -249,10 +249,10 @@ Productions
     // STATEMENTS
     stmt {-> stmt} = {simple} simple_stmt
                     {-> simple_stmt.stmt}
-            | {print} print lf_paren exprs_list rht_paren
-                    {-> New stmt.print([exprs_list.expr])}
-            | {println} println lf_paren exprs_list rht_paren
-                    {-> New stmt.println([exprs_list.expr])}
+            | {print} print args_list
+                    {-> New stmt.print([args_list.expr])}
+            | {println} println args_list
+                    {-> New stmt.println([args_list.expr])}
             | {return} kw_return
                     {-> New stmt.return(Null)}
             | {return_exp} kw_return expr

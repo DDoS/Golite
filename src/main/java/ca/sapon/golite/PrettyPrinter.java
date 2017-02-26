@@ -459,14 +459,18 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseAPrintStmt(APrintStmt node) {
         printer.print("print(");
-        printExprList(node.getExpr());
+        if (node.getExpr() != null) {
+            printExprList(node.getExpr());
+        }
         printer.print(")");
     }
 
     @Override
     public void caseAPrintlnStmt(APrintlnStmt node) {
         printer.print("println(");
-        printExprList(node.getExpr());
+        if (node.getExpr() != null) {
+            printExprList(node.getExpr());
+        }
         printer.print(")");
     }
 
