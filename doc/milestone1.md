@@ -89,8 +89,8 @@ the parser, he wrote a bunch of unit test cases which are on a different
 branch. For submission, he wrote two valid and ten invalid programs.
 
 
-Ayesha Krishnamurthy worked on adding statements to the grammar and 
-adding AST transformations and nodes for statements. She also worked on the 
-Weeder with Aleksi and helped out with bug fixes in the Weeder and PrettyPrinter.
-For general testing and the submission, she wrote two valid and 10 invalid 
-programs, most of which deal with the syntactic correctness of statements.
+Ayesha Krishnamurthy contributed to the grammar, primarily by adding 
+statements to the grammar and adding AST transformations and nodes for statements.
+She also worked on the Weeder with Aleksi and helped out with bug fixes 
+in the Weeder and PrettyPrinter. For general testing and the submission, 
+she wrote two valid and 10 invalid programs.
