@@ -13,3 +13,4 @@ func rec_factorial(n int) int {
 func main() {
 	print(rec_factorial(5))
 }
+
