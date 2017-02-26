@@ -668,7 +668,9 @@ public class PrettyPrinter extends AnalysisAdapter {
     public void caseAClauseForCondition(AClauseForCondition node) {
         node.getInit().apply(this);
         printer.print("; ");
-        node.getCond().apply(this);
+        if (node.getCond() != null) {
+            node.getCond().apply(this);
+        }
         printer.print("; ");
         node.getPost().apply(this);
     }
