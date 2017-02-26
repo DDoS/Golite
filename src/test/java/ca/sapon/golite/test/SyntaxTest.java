@@ -1,6 +1,7 @@
 package ca.sapon.golite.test;
 
 import java.io.CharArrayWriter;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
@@ -11,20 +12,45 @@ import java.nio.file.PathMatcher;
 import java.util.Iterator;
 
 import ca.sapon.golite.Golite;
+import ca.sapon.golite.SyntaxException;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class SyntaxTest {
     @Test
     public void testValidPrograms() throws Exception {
-        final Path validDirectory = FileSystems.getDefault().getPath("program", "valid");
+        testPrograms(true, "valid");
+    }
+
+    @Test
+    public void testExtraValidPrograms() throws Exception {
+        testPrograms(true, "valid_extra");
+    }
+
+    @Test
+    public void testInvalidPrograms() throws Exception {
+        testPrograms(false, "invalid");
+    }
+
+    @Test
+    public void testExtraInvalidPrograms() throws Exception {
+        testPrograms(false, "invalid_extra");
+    }
+
+    private static void testPrograms(boolean valid, String... path) throws Exception {
+        final Path validDirectory = FileSystems.getDefault().getPath("program", path);
         final PathMatcher goliteMatcher = FileSystems.getDefault().getPathMatcher("glob:**/*.go");
         final Iterator<Path> files = Files.list(validDirectory).filter(goliteMatcher::matches).iterator();
         if (!files.hasNext()) {
             throw new Exception("Expected at least one test file");
         }
         while (files.hasNext()) {
-            testPrinterInvariant(files.next());
+            final Path sourceFile = files.next();
+            if (valid) {
+                testPrinterInvariant(sourceFile);
+            } else {
+                testSyntaxError(sourceFile);
+            }
         }
     }
 
@@ -36,5 +62,15 @@ public class SyntaxTest {
         final Writer secondOut = new CharArrayWriter();
         Golite.prettyPrint(new StringReader(firstPass), secondOut);
         Assert.assertEquals(firstPass, secondOut.toString());
+    }
+
+    private static void testSyntaxError(Path sourceFile) throws IOException {
+        final Reader source = Files.newBufferedReader(sourceFile);
+        try {
+            Golite.parse(source);
+        } catch (SyntaxException exception) {
+            return;
+        }
+        Assert.fail("Expected a syntax error");
     }
 }
