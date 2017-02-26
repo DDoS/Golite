@@ -459,18 +459,14 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseAPrintStmt(APrintStmt node) {
         printer.print("print(");
-        if (node.getExpr() != null) {
-            printExprList(node.getExpr());
-        }
+        printExprList(node.getExpr());
         printer.print(")");
     }
 
     @Override
     public void caseAPrintlnStmt(APrintlnStmt node) {
         printer.print("println(");
-        if (node.getExpr() != null) {
-            printExprList(node.getExpr());
-        }
+        printExprList(node.getExpr());
         printer.print(")");
     }
 
@@ -798,5 +794,4 @@ public class PrettyPrinter extends AnalysisAdapter {
         ).collect(Collectors.toMap(key -> key, value -> 5)));
         EXPR_PRECEDENCE = Collections.unmodifiableMap(precedences);
     }
-  
 }
