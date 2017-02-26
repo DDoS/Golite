@@ -32,7 +32,6 @@ import golite.node.ABitOrExpr;
 import golite.node.ABitXorExpr;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
-import golite.node.ACastExpr;
 import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
 import golite.node.ADeclStmt;
@@ -235,14 +234,6 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ACallExpr.class, node.getValue());
         printer.print("(");
         printExprList(node.getArgs());
-        printer.print(")");
-    }
-
-    @Override
-    public void caseACastExpr(ACastExpr node) {
-        node.getType().apply(this);
-        printer.print("(");
-        node.getValue().apply(this);
         printer.print(")");
     }
 
@@ -773,7 +764,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         ).collect(Collectors.toMap(key -> key, value -> -1)));
         // Precedence -1
         precedences.putAll(Stream.of(
-                ASelectExpr.class, AIndexExpr.class, ACallExpr.class, ACastExpr.class
+                ASelectExpr.class, AIndexExpr.class, ACallExpr.class
         ).collect(Collectors.toMap(key -> key, value -> -1)));
         // Precedence 0
         precedences.putAll(Stream.of(

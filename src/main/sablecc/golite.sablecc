@@ -531,7 +531,6 @@ Abstract Syntax Tree
             | {select} [value]:expr idenf
             | {index} [value]:expr [index]:expr
             | {call} [value]:expr [args]:expr*
-            | {cast} [type]:type [value]:expr
             | {append} [left]:expr [right]:expr
             | {logic_not} [inner]:expr
             | {reaffirm} [inner]:expr
