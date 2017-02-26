@@ -4,7 +4,7 @@ package main
 
 func main() {
 
-var f1 string // fallthrough is reserved
-f1 = "aA \a \b ? "'"
+var f1 string 
+f1 = "aA \a \b ? "'" // Bad String
 
 }
