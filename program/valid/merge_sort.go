@@ -41,8 +41,7 @@ func merge (low, middle, high int) {
 		if (arr[i] <= arr[j]) { 
 			intArr[k] = arr[i]
 			i++ 
-		} 
-		else { 
+		} else { 
 			intArr[k] = arr[j] 
 			 j-- 
 		} 
