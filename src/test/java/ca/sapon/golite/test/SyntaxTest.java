@@ -55,7 +55,7 @@ public class SyntaxTest {
     }
 
     private static void testPrinterInvariant(Path sourceFile) throws Exception {
-        System.err.println("Running: " + sourceFile.toString());
+        System.out.println("Testing: " + sourceFile.toString());
         final Reader source = Files.newBufferedReader(sourceFile);
         final Writer firstOut = new CharArrayWriter();
         Golite.prettyPrint(source, firstOut);
@@ -66,12 +66,12 @@ public class SyntaxTest {
     }
 
     private static void testSyntaxError(Path sourceFile) throws IOException {
-        System.err.println("Running: " + sourceFile.toString());
+        System.out.println("Testing: " + sourceFile.toString());
         final Reader source = Files.newBufferedReader(sourceFile);
         try {
             Golite.parse(source);
         } catch (SyntaxException exception) {
-            //System.err.println(sourceFile.getFileName() + ": " + exception.getMessage());
+            System.out.println("    " + exception.getMessage());
             return;
         }
         Assert.fail("Expected a syntax error");
