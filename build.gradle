@@ -88,5 +88,5 @@ test {
         events 'standard_error'
     }
     // this will ensure that tests are rerun if the program files change
-    inputs.dir 'program'
+    inputs.dir 'programs'
 }

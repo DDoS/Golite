@@ -38,7 +38,7 @@ public class SyntaxTest {
     }
 
     private static void testPrograms(boolean valid, String... path) throws Exception {
-        final Path validDirectory = FileSystems.getDefault().getPath("program", path);
+        final Path validDirectory = FileSystems.getDefault().getPath("programs", path);
         final PathMatcher goliteMatcher = FileSystems.getDefault().getPathMatcher("glob:**/*.go");
         final Iterator<Path> files = Files.list(validDirectory).filter(goliteMatcher::matches).iterator();
         if (!files.hasNext()) {

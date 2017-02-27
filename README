@@ -16,4 +16,4 @@ a Gradle installation. The `gradle` directory contains the wrapper
 and a plugin for SableCC support.
 
 We decided to bundle our extra test cases. They can be found in
-the directories `program/invalid_extra` and `program/valid_extra`
+the directories `programs/invalid_extra` and `programs/valid_extra`
