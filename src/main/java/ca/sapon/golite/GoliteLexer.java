@@ -47,8 +47,12 @@ public class GoliteLexer extends Lexer {
     @Override
     protected void filter() throws LexerException, IOException {
         final Class<? extends Token> tokenClass = token.getClass();
-        // Ignore the ignored tokens, except single lines comments because they end in a new line
-        if (tokenClass == TCommentMultiln.class || tokenClass == TSpace.class) {
+        // Ignore spaces before a new line
+        if (tokenClass == TSpace.class) {
+            return;
+        }
+        // Ignore a multi-line comment if it doesn't have a new line, in which case it's just like a really long space
+        if (tokenClass == TCommentMultiln.class && !hasNewLine(token.getText())) {
             return;
         }
         // If the token ends a line and the previous token matches certain rules, replace it by a semicolon
@@ -60,8 +64,12 @@ public class GoliteLexer extends Lexer {
         previousToken = token;
     }
 
+    private static boolean hasNewLine(String string) {
+        return string.indexOf('\n') >= 0 || string.indexOf('\r') >= 0;
+    }
+
     private static final Set<Class<? extends Token>> END_LINE_TOKENS = Stream.of(
-            TEndln.class, TCommentSingleln.class, EOF.class
+            TEndln.class, TCommentSingleln.class, TCommentMultiln.class, EOF.class
     ).collect(Collectors.toSet());
 
     private static final Set<Class<? extends Token>> FINAL_LINE_TOKENS = Stream.of(
