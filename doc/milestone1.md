@@ -82,11 +82,13 @@ extra tests. Finally he also took care of overall code quality and
 consistency.
 
 
-Rohit Verma setup the initial grammar file. He implemented the helpers, 
-tokens and declarations including CST to AST conversion for the part.
-He also did the statements for the pretty printer. For general testing of
-the parser, he wrote a bunch of unit test cases which are on a different 
-branch. For submission, he wrote two valid and ten invalid programs.
+Rohit Verma setup the initial grammar file. He implemented the Helpers, 
+Tokens and Declarations section in the CST and did the CST to AST conversion 
+for the same part. He also did the statements for the pretty printer. 
+For general testing of the parser, he wrote a bunch of unit test cases which
+are in valid_extra directory. Found many bugs towards the end and helped with
+bug fixes at many places including the weeder. For submission, he wrote two valid 
+and ten invalid programs.
 
 
 Ayesha Krishnamurthy contributed to the grammar, primarily by adding 
