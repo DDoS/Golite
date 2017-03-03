@@ -1,7 +1,9 @@
-package ca.sapon.golite;
+package ca.sapon.golite.util;
 
 import java.io.IOException;
 import java.io.Writer;
+
+import ca.sapon.golite.syntax.PrinterException;
 
 /**
  * Prints source code to an writer stream.

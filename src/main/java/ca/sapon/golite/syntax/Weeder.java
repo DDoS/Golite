@@ -1,4 +1,4 @@
-package ca.sapon.golite;
+package ca.sapon.golite.syntax;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -233,7 +233,7 @@ public class Weeder extends DepthFirstAdapter {
 
     @Override
     public void outABreakStmt(ABreakStmt node) {
-        if (!scopeStack.contains(Scope.FOR) && !scopeStack.contains(Scope.SWITCH)) { 
+        if (!scopeStack.contains(Scope.FOR) && !scopeStack.contains(Scope.SWITCH)) {
             throw new WeederException(node, "The break keyword cannot be used outside a loop or switch case");
         }
     }

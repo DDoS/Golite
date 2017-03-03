@@ -5,6 +5,12 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.Writer;
 
+import ca.sapon.golite.syntax.GoliteLexer;
+import ca.sapon.golite.syntax.PrettyPrinter;
+import ca.sapon.golite.syntax.PrinterException;
+import ca.sapon.golite.syntax.SyntaxException;
+import ca.sapon.golite.syntax.Weeder;
+import ca.sapon.golite.syntax.WeederException;
 import golite.lexer.Lexer;
 import golite.lexer.LexerException;
 import golite.node.Start;

@@ -1,4 +1,4 @@
-package ca.sapon.golite;
+package ca.sapon.golite.syntax;
 
 import java.io.IOException;
 import java.io.PushbackReader;
@@ -71,7 +71,6 @@ public class GoliteLexer extends Lexer {
     private static final Set<Class<? extends Token>> END_LINE_TOKENS = Stream.of(
             TEndln.class, TCommentSingleln.class, TCommentMultiln.class, EOF.class
     ).collect(Collectors.toSet());
-
     private static final Set<Class<? extends Token>> FINAL_LINE_TOKENS = Stream.of(
             TIdenf.class, TIntLit.class, THexLit.class, TOctLit.class, TFloatLit.class,
             TInterpretedStringLit.class, TRawStringLit.class, TRuneLit.class,

@@ -1,4 +1,4 @@
-package ca.sapon.golite;
+package ca.sapon.golite.syntax;
 
 import golite.lexer.LexerException;
 import golite.parser.ParserException;

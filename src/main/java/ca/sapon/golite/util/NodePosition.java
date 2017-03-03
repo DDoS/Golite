@@ -1,4 +1,4 @@
-package ca.sapon.golite;
+package ca.sapon.golite.util;
 
 import golite.analysis.DepthFirstAdapter;
 import golite.node.Node;

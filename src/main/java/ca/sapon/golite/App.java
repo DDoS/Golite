@@ -10,12 +10,14 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 
+import ca.sapon.golite.syntax.PrinterException;
+import ca.sapon.golite.syntax.SyntaxException;
+import golite.node.Start;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import golite.node.Start;
 
 public final class App {
     private static final String PRETTY_EXTENSION = "pretty.go";

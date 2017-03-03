@@ -12,7 +12,7 @@ import java.nio.file.PathMatcher;
 import java.util.Iterator;
 
 import ca.sapon.golite.Golite;
-import ca.sapon.golite.SyntaxException;
+import ca.sapon.golite.syntax.SyntaxException;
 import org.junit.Assert;
 import org.junit.Test;
 

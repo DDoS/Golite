@@ -1,4 +1,4 @@
-package ca.sapon.golite;
+package ca.sapon.golite.syntax;
 
 import java.io.Writer;
 import java.util.Collections;
@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import ca.sapon.golite.util.SourcePrinter;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAddExpr;
 import golite.node.AAppendExpr;

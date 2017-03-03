@@ -1,5 +1,6 @@
-package ca.sapon.golite;
+package ca.sapon.golite.syntax;
 
+import ca.sapon.golite.util.NodePosition;
 import golite.node.Node;
 
 /**
