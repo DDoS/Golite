@@ -9,8 +9,8 @@ import ca.sapon.golite.semantic.type.BasicType;
  */
 public final class UniverseContext extends Context {
     public static final UniverseContext INSTANCE = new UniverseContext();
-    private static final Variable TRUE_VARIABLE = new Variable("true", BasicType.BOOL);
-    private static final Variable FALSE_VARIABLE = new Variable("false", BasicType.BOOL);
+    private static final Variable TRUE_VARIABLE = new Variable("true", BasicType.BOOL, true);
+    private static final Variable FALSE_VARIABLE = new Variable("false", BasicType.BOOL, true);
 
     private UniverseContext() {
         super(null);
