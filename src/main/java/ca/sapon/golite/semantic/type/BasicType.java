@@ -1,4 +1,4 @@
-package ca.sapon.golite.typecheck.type;
+package ca.sapon.golite.semantic.type;
 
 import java.util.Collections;
 import java.util.Set;

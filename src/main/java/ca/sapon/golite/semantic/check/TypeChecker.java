@@ -1,4 +1,4 @@
-package ca.sapon.golite.typecheck;
+package ca.sapon.golite.semantic.check;
 
 import golite.analysis.AnalysisAdapter;
 

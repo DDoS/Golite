@@ -1,4 +1,4 @@
-package ca.sapon.golite.typecheck.context;
+package ca.sapon.golite.semantic.context;
 
 /**
  *

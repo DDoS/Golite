@@ -1,4 +1,4 @@
-package ca.sapon.golite.syntax;
+package ca.sapon.golite.syntax.print;
 
 import java.io.Writer;
 import java.util.Collections;

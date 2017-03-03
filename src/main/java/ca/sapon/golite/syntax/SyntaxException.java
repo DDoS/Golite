@@ -1,5 +1,6 @@
 package ca.sapon.golite.syntax;
 
+import ca.sapon.golite.syntax.weed.WeederException;
 import golite.lexer.LexerException;
 import golite.parser.ParserException;
 

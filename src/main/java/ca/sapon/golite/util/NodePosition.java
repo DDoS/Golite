@@ -7,25 +7,33 @@ import golite.node.Token;
 /**
  * Traverse the AST to extract source position information for the node.
  */
-public class NodePosition extends DepthFirstAdapter {
+public class NodePosition extends DepthFirstAdapter implements SourcePositioned {
     private int minLine = Integer.MAX_VALUE;
     private int maxLine = Integer.MIN_VALUE;
     private int minPos = Integer.MAX_VALUE;
     private int maxPos = Integer.MIN_VALUE;
 
-    public int getMinLine() {
+    public NodePosition(Node node) {
+        node.apply(this);
+    }
+
+    @Override
+    public int getStartLine() {
         return minLine;
     }
 
-    public int getMaxLine() {
+    @Override
+    public int getEndLine() {
         return maxLine;
     }
 
-    public int getMinPos() {
+    @Override
+    public int getStartPos() {
         return minPos;
     }
 
-    public int getMaxPos() {
+    @Override
+    public int getEndPos() {
         return maxPos;
     }
 

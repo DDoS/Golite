@@ -1,4 +1,4 @@
-package ca.sapon.golite.syntax;
+package ca.sapon.golite.syntax.print;
 
 /**
  * A runtime exception for the pretty printer, since we need to wrap the explicit IO exception if we want to use them in a Switch.

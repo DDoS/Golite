@@ -1,6 +1,6 @@
-package ca.sapon.golite.typecheck.context;
+package ca.sapon.golite.semantic.context;
 
-import ca.sapon.golite.typecheck.type.BasicType;
+import ca.sapon.golite.semantic.type.BasicType;
 
 /**
  *

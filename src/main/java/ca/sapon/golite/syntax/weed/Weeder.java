@@ -1,4 +1,4 @@
-package ca.sapon.golite.syntax;
+package ca.sapon.golite.syntax.weed;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

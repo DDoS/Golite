@@ -1,9 +1,9 @@
-package ca.sapon.golite.typecheck.type;
+package ca.sapon.golite.semantic.type;
 
 /**
  *
  */
-public class SliceType implements Type {
+public class SliceType extends Type {
     private final Type component;
 
     public SliceType(Type component) {

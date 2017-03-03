@@ -1,9 +1,9 @@
-package ca.sapon.golite.typecheck.context;
+package ca.sapon.golite.semantic.context;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import ca.sapon.golite.typecheck.type.Type;
+import ca.sapon.golite.semantic.type.Type;
 
 /**
  *
