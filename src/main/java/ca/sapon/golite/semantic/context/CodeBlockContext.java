@@ -1,7 +1,7 @@
 package ca.sapon.golite.semantic.context;
 
+import ca.sapon.golite.semantic.symbol.NamedType;
 import ca.sapon.golite.semantic.symbol.Variable;
-import ca.sapon.golite.semantic.type.Type;
 
 /**
  *
@@ -24,13 +24,13 @@ public class CodeBlockContext extends Context {
     }
 
     @Override
-    public boolean declareType(String name, Type type) {
-        return super.declareType(name, type);
+    public boolean declareType(NamedType type) {
+        return super.declareType(type);
     }
 
     @Override
-    public boolean declareVariable(String name, Variable variable) {
-        return super.declareVariable(name, variable);
+    public boolean declareVariable(Variable variable) {
+        return super.declareVariable(variable);
     }
 
     public enum Kind {

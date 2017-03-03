@@ -5,15 +5,16 @@ import java.util.Map;
 import java.util.Optional;
 
 import ca.sapon.golite.semantic.symbol.Function;
+import ca.sapon.golite.semantic.symbol.NamedType;
+import ca.sapon.golite.semantic.symbol.Symbol;
 import ca.sapon.golite.semantic.symbol.Variable;
-import ca.sapon.golite.semantic.type.Type;
 
 /**
  *
  */
 public abstract class Context {
     private final Context parent;
-    protected final Map<String, Type> types = new HashMap<>();
+    protected final Map<String, NamedType> types = new HashMap<>();
     protected final Map<String, Variable> variables = new HashMap<>();
     protected final Map<String, Function> functions = new HashMap<>();
 
@@ -25,7 +26,7 @@ public abstract class Context {
         return parent;
     }
 
-    public Optional<Type> resolveType(String name) {
+    public Optional<NamedType> resolveType(String name) {
         return resolveShadowed(parent::resolveType, types, name);
     }
 
@@ -37,16 +38,16 @@ public abstract class Context {
         return resolveShadowed(parent::resolveFunction, functions, name);
     }
 
-    protected boolean declareType(String name, Type type) {
-        return declareUnique(types, name, type);
+    protected boolean declareType(NamedType type) {
+        return declareSymbol(types, type);
     }
 
-    protected boolean declareVariable(String name, Variable variable) {
-        return declareUnique(variables, name, variable);
+    protected boolean declareVariable(Variable variable) {
+        return declareSymbol(variables, variable);
     }
 
-    protected boolean declareFunction(String name, Function function) {
-        return declareUnique(functions, name, function);
+    protected boolean declareFunction(Function function) {
+        return declareSymbol(functions, function);
     }
 
     private static <T> Optional<T> resolveShadowed(java.util.function.Function<String, Optional<T>> parentSearch,
@@ -58,11 +59,11 @@ public abstract class Context {
         return parentSearch == null ? null : parentSearch.apply(name);
     }
 
-    private static <T> boolean declareUnique(Map<String, T> search, String name, T item) {
-        if (search.containsKey(name)) {
+    private static <T extends Symbol> boolean declareSymbol(Map<String, T> search, T symbol) {
+        if (search.containsKey(symbol.getName())) {
             return false;
         }
-        search.put(name, item);
+        search.put(symbol.getName(), symbol);
         return true;
     }
 }
