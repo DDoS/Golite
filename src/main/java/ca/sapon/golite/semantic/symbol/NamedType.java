@@ -13,6 +13,11 @@ public class NamedType extends Symbol {
         this.type = type;
     }
 
+    public NamedType(int startLine, int endLine, int startPos, int endPos, String name, Type type) {
+        super(startLine, endLine, startPos, endPos, name);
+        this.type = type;
+    }
+
     public Type getType() {
         return type;
     }

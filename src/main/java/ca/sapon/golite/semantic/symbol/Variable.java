@@ -13,6 +13,11 @@ public class Variable extends Symbol {
         this.type = type;
     }
 
+    public Variable(int startLine, int endLine, int startPos, int endPos, String name, Type type) {
+        super(startLine, endLine, startPos, endPos, name);
+        this.type = type;
+    }
+
     public Type getType() {
         return type;
     }

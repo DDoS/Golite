@@ -24,13 +24,13 @@ public class CodeBlockContext extends Context {
     }
 
     @Override
-    public boolean declareType(NamedType type) {
-        return super.declareType(type);
+    public void declareType(NamedType type) {
+        super.declareType(type);
     }
 
     @Override
-    public boolean declareVariable(Variable variable) {
-        return super.declareVariable(variable);
+    public void declareVariable(Variable variable) {
+        super.declareVariable(variable);
     }
 
     public enum Kind {

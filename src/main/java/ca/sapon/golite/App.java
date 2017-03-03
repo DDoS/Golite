@@ -10,8 +10,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 
-import ca.sapon.golite.syntax.PrinterException;
 import ca.sapon.golite.syntax.SyntaxException;
+import ca.sapon.golite.syntax.print.PrinterException;
 import golite.node.Start;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;

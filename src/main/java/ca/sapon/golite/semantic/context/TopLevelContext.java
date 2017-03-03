@@ -13,17 +13,17 @@ public class TopLevelContext extends Context {
     }
 
     @Override
-    public boolean declareType(NamedType type) {
-        return super.declareType(type);
+    public void declareType(NamedType type) {
+        super.declareType(type);
     }
 
     @Override
-    public boolean declareVariable(Variable variable) {
-        return super.declareVariable(variable);
+    public void declareVariable(Variable variable) {
+        super.declareVariable(variable);
     }
 
     @Override
-    public boolean declareFunction(Function function) {
-        return super.declareFunction(function);
+    public void declareFunction(Function function) {
+        super.declareFunction(function);
     }
 }

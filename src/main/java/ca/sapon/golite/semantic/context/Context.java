@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import ca.sapon.golite.semantic.check.TypeCheckerException;
 import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.NamedType;
 import ca.sapon.golite.semantic.symbol.Symbol;
@@ -38,16 +39,16 @@ public abstract class Context {
         return resolveShadowed(parent::resolveFunction, functions, name);
     }
 
-    protected boolean declareType(NamedType type) {
-        return declareSymbol(types, type);
+    protected void declareType(NamedType type) {
+        declareSymbol(types, type);
     }
 
-    protected boolean declareVariable(Variable variable) {
-        return declareSymbol(variables, variable);
+    protected void declareVariable(Variable variable) {
+        declareSymbol(variables, variable);
     }
 
-    protected boolean declareFunction(Function function) {
-        return declareSymbol(functions, function);
+    protected void declareFunction(Function function) {
+        declareSymbol(functions, function);
     }
 
     private static <T> Optional<T> resolveShadowed(java.util.function.Function<String, Optional<T>> parentSearch,
@@ -59,11 +60,10 @@ public abstract class Context {
         return parentSearch == null ? null : parentSearch.apply(name);
     }
 
-    private static <T extends Symbol> boolean declareSymbol(Map<String, T> search, T symbol) {
+    private static <T extends Symbol> void declareSymbol(Map<String, T> search, T symbol) {
         if (search.containsKey(symbol.getName())) {
-            return false;
+            throw new TypeCheckerException(symbol, "Cannot redeclare symbol");
         }
         search.put(symbol.getName(), symbol);
-        return true;
     }
 }

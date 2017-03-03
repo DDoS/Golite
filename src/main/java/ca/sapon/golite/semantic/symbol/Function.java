@@ -17,6 +17,12 @@ public class Function extends Symbol {
         this.parameters = parameters;
     }
 
+    public Function(int startLine, int endLine, int startPos, int endPos, String name, Type type, Variable... parameters) {
+        super(startLine, endLine, startPos, endPos, name);
+        this.type = type;
+        this.parameters = parameters;
+    }
+
     public Variable[] getParameters() {
         return parameters;
     }
