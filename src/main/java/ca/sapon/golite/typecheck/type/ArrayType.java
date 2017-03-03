@@ -1,9 +1,9 @@
-package ca.sapon.golite.type;
+package ca.sapon.golite.typecheck.type;
 
 /**
  *
  */
-public class ArrayType implements Type {
+public class ArrayType extends Type {
     private final Type component;
     private final int length;
 

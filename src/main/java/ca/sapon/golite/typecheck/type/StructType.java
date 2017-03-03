@@ -1,4 +1,4 @@
-package ca.sapon.golite.type;
+package ca.sapon.golite.typecheck.type;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 /**
  *
  */
-public class StructType implements Type {
+public class StructType extends Type {
     private final Field[] fields;
 
     public StructType(Field[] fields) {

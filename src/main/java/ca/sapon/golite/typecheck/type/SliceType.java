@@ -1,4 +1,4 @@
-package ca.sapon.golite.type;
+package ca.sapon.golite.typecheck.type;
 
 /**
  *
