@@ -8,10 +8,10 @@ import golite.node.Token;
  * Traverse the AST to extract source position information for the node.
  */
 public class NodePosition extends DepthFirstAdapter implements SourcePositioned {
-    private int minLine = Integer.MAX_VALUE;
-    private int maxLine = Integer.MIN_VALUE;
-    private int minPos = Integer.MAX_VALUE;
-    private int maxPos = Integer.MIN_VALUE;
+    private int startLine = Integer.MAX_VALUE;
+    private int endLine = Integer.MIN_VALUE;
+    private int startPos = Integer.MAX_VALUE;
+    private int endPos = Integer.MIN_VALUE;
 
     public NodePosition(Node node) {
         node.apply(this);
@@ -19,22 +19,22 @@ public class NodePosition extends DepthFirstAdapter implements SourcePositioned 
 
     @Override
     public int getStartLine() {
-        return minLine;
+        return startLine;
     }
 
     @Override
     public int getEndLine() {
-        return maxLine;
+        return endLine;
     }
 
     @Override
     public int getStartPos() {
-        return minPos;
+        return startPos;
     }
 
     @Override
     public int getEndPos() {
-        return maxPos;
+        return endPos;
     }
 
     @Override
@@ -45,9 +45,9 @@ public class NodePosition extends DepthFirstAdapter implements SourcePositioned 
         final Token token = (Token) node;
         final int line = token.getLine();
         final int pos = token.getPos();
-        minLine = Math.min(minLine, line);
-        maxLine = Math.max(maxLine, line);
-        minPos = Math.min(minPos, pos);
-        maxPos = Math.max(maxPos, pos);
+        startLine = Math.min(startLine, line);
+        endLine = Math.max(endLine, line);
+        startPos = Math.min(startPos, pos);
+        endPos = Math.max(endPos, pos);
     }
 }
