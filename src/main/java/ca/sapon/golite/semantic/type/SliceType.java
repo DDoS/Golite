@@ -3,7 +3,7 @@ package ca.sapon.golite.semantic.type;
 /**
  *
  */
-public class SliceType extends Type {
+public class SliceType implements Type {
     private final Type component;
 
     public SliceType(Type component) {

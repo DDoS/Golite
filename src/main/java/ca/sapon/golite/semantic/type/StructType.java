@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 /**
  *
  */
-public class StructType extends Type {
+public class StructType implements Type {
     private final Field[] fields;
 
     public StructType(Field[] fields) {

@@ -3,7 +3,7 @@ package ca.sapon.golite.semantic.type;
 /**
  *
  */
-public class ArrayType extends Type {
+public class ArrayType implements Type {
     private final Type component;
     private final int length;
 

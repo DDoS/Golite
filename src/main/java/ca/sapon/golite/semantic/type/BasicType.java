@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 /**
  *
  */
-public final class BasicType extends Type {
+public final class BasicType implements Type {
     public static final BasicType INT = new BasicType("int");
     public static final BasicType FLOAT64 = new BasicType("float64");
     public static final BasicType BOOL = new BasicType("bool");
