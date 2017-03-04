@@ -17,3 +17,4 @@ var d = int('a')
 var e = append(a, d)
 var f = b.age
 var g = e[0]
+var h = rune(41.32)

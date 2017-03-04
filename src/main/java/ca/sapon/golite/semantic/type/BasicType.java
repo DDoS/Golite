@@ -38,12 +38,12 @@ public final class BasicType extends Type {
         if (this.equals(type)) {
             return true;
         }
-        // Int to float or vice-versa
-        if (this.equals(BasicType.INT) && type.equals(BasicType.FLOAT64)
-                || this.equals(BasicType.FLOAT64) && type.equals(BasicType.INT)) {
+        // Int or rune to float (and vice-versa)
+        if ((this.equals(BasicType.INT) || this.equals(BasicType.RUNE)) && type.equals(BasicType.FLOAT64)
+                || this.equals(BasicType.FLOAT64) && (type.equals(BasicType.INT) || type.equals(BasicType.RUNE))) {
             return true;
         }
-        // Int to rune or vice-versa
+        // Int to rune (and vice-versa)
         return this.equals(BasicType.INT) && type.equals(BasicType.RUNE)
                 || this.equals(BasicType.RUNE) && type.equals(BasicType.INT);
     }
