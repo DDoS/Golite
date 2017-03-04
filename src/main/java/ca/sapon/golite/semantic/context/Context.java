@@ -28,15 +28,15 @@ public abstract class Context {
     }
 
     public Optional<NamedType> resolveType(String name) {
-        return resolveShadowed(parent::resolveType, types, name);
+        return resolveShadowed(parent == null ? null : parent::resolveType, types, name);
     }
 
     public Optional<Variable> resolveVariable(String name) {
-        return resolveShadowed(parent::resolveVariable, variables, name);
+        return resolveShadowed(parent == null ? null : parent::resolveVariable, variables, name);
     }
 
     public Optional<Function> resolveFunction(String name) {
-        return resolveShadowed(parent::resolveFunction, functions, name);
+        return resolveShadowed(parent == null ? null : parent::resolveFunction, functions, name);
     }
 
     public void declareType(NamedType type) {
@@ -60,7 +60,7 @@ public abstract class Context {
         if (item != null) {
             return Optional.of(item);
         }
-        return parentSearch == null ? null : parentSearch.apply(name);
+        return parentSearch == null ? Optional.empty() : parentSearch.apply(name);
     }
 
     private static <T extends Symbol> void declareSymbol(Map<String, T> mapping, T symbol) {
