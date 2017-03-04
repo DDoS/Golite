@@ -175,11 +175,18 @@ public final class App {
     private int findOutputFile(boolean lastOption) {
         try {
             final Options options = new Options();
-            final Option outputFileOption = Option.builder("o").longOpt("output").hasArg().argName("file")
+            final Option outputFileOption = Option.builder("o").hasArg().argName("file")
                     .desc("The output file").type(File.class).build();
             options.addOption(outputFileOption);
             final CommandLine line = new DefaultParser().parse(options, args, !lastOption);
-            outputFile = (File) line.getParsedOptionValue("output");
+            outputFile = (File) line.getParsedOptionValue("o");
+            // Fix for a bug with CLI: remove the output file option manually (it should not be remaining)
+            if (!lastOption) {
+                final int i = line.getArgList().indexOf("-o");
+                if (i >= 0) {
+                    line.getArgList().subList(i, i + 2).clear();
+                }
+            }
             // Set the arguments to the remaining ones
             args = line.getArgs();
         } catch (ParseException exception) {
