@@ -213,15 +213,23 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseAAssignStmt(AAssignStmt node) {
         //Check that both sides have valid exprs
-        node.getLeft().forEach(lExpr -> lExpr.apply(this));
+        for (PExpr exp : node.getLeft()) {
+            AIdentExpr e = (AIdentExpr) exp;
+            if (!e.getIdenf().getText().equals("_")) {
+                e.apply(this);
+            }
+        }
         node.getRight().forEach(rExpr -> rExpr.apply(this));
         //Compare elements at the same position in both sides
         for (int i = 0; i < node.getLeft().size(); i++) {
-            Type l = exprNodeTypes.get((node.getLeft().get(i)));
-            Type r = exprNodeTypes.get((node.getRight().get(i)));
-            if (!l.equals(r)) {
-                throw new TypeCheckerException(node, "Cannot use type " + r  + " as type " +  l + " in assignment" );
-            }
+            AIdentExpr lExp = (AIdentExpr) node.getLeft().get(i);
+            if (!lExp.getIdenf().getText().equals("_")) {
+                Type l = exprNodeTypes.get((node.getLeft().get(i)));
+                Type r = exprNodeTypes.get((node.getRight().get(i)));
+                if (!l.equals(r)) {
+                    throw new TypeCheckerException(node, "Cannot use type " + r  + " as type " +  l + " in assignment" );
+                }
+            }   
         }
     }
 
