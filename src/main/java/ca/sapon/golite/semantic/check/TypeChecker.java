@@ -161,7 +161,7 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseAIdentExpr(AIdentExpr node) {
         // Resolve the symbol for the name
         final String name = node.getIdenf().getText();
-        final Optional<Symbol> optSymbol = context.resolveSymbol(name);
+        final Optional<Symbol> optSymbol = context.lookupSymbol(name);
         if (!optSymbol.isPresent()) {
             throw new TypeCheckerException(node, "Undeclared symbol " + name);
         }
@@ -260,7 +260,7 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseANameType(ANameType node) {
         // Resolve the symbol for the name
         final String name = node.getIdenf().getText();
-        final Optional<Symbol> optSymbol = context.resolveSymbol(name);
+        final Optional<Symbol> optSymbol = context.lookupSymbol(name);
         if (!optSymbol.isPresent()) {
             throw new TypeCheckerException(node.getIdenf(), "Undeclared symbol " + name);
         }

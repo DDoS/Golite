@@ -22,7 +22,7 @@ public abstract class Context {
         return parent;
     }
 
-    public Optional<Symbol> resolveSymbol(String name) {
+    public Optional<Symbol> lookupSymbol(String name) {
         if (name.equals("_")) {
             throw new IllegalArgumentException("Cannot resolve the blank identifier");
         }
@@ -30,7 +30,7 @@ public abstract class Context {
         if (symbol != null) {
             return Optional.of(symbol);
         }
-        return parent == null ? Optional.empty() : parent.resolveSymbol(name);
+        return parent == null ? Optional.empty() : parent.lookupSymbol(name);
     }
 
     public void declareSymbol(Symbol symbol) {
