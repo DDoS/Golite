@@ -29,7 +29,10 @@ import ca.sapon.golite.util.NodePosition;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
+import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
+import golite.node.AContinueStmt;
+import golite.node.AEmptyStmt;
 import golite.node.AFloatExpr;
 import golite.node.AFuncDecl;
 import golite.node.AIdentExpr;
@@ -40,6 +43,7 @@ import golite.node.AIntOctExpr;
 import golite.node.ANameType;
 import golite.node.AParam;
 import golite.node.AProg;
+import golite.node.AReturnStmt;
 import golite.node.ARuneExpr;
 import golite.node.ASelectExpr;
 import golite.node.ASliceType;
@@ -162,9 +166,48 @@ public class TypeChecker extends AnalysisAdapter {
         // Declare the parameters as variables
         params.forEach(context::declareSymbol);
         // TODO: type check the statements
+        node.getStmt().forEach(stmt -> stmt.apply(this));
         // TODO: check that the function returns on each path
         // Exit the function body
         context = context.getParent();
+    }
+ /** No need?   
+    @Override
+    public void caseAEmptyStmt(AEmptyStmt node) {
+        
+    }
+    
+    @Override 
+    public void caseABreakStmt(ABreakStmt node) {
+        
+    }
+    
+    @Override 
+    public void caseAContinueStmt(AContinueStmt node) {
+        
+    }
+    **/
+    
+    @Override 
+    public void caseAReturnStmt(AReturnStmt node) {
+
+        Function func = ((FunctionContext) context).getFunction();
+        //look up the return type of the function
+        Optional<Type> retType = ((FunctionType) func.getType()).getReturnType();
+        if (!retType.isPresent()) {
+            if (node.getExpr() != null)
+                throw new TypeCheckerException(node, "This function should not return anything.");
+        } else if(node.getExpr() == null) {
+            throw new TypeCheckerException(node, "A return expression is required.");
+        }
+        else {
+            Type noOptionalRetType = retType.get();
+            node.getExpr().apply(this);
+            Type exprType = exprNodeTypes.get(node.getExpr());
+            if (!exprType.equals(noOptionalRetType)) {
+                throw new TypeCheckerException(node, "This function should return " + noOptionalRetType + " instead of " + exprType);
+            }
+        } 
     }
 
     @Override
