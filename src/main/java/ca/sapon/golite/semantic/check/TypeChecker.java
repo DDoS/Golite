@@ -97,7 +97,7 @@ public class TypeChecker extends AnalysisAdapter {
             for (int i = 0; i < valueTypes.size(); i++) {
                 final Type valueType = valueTypes.get(i);
                 if (!valueType.equals(type)) {
-                    throw new TypeCheckerException(node.getExpr().get(i), String.format("Cannot assign type %s to %s", valueType, type));
+                    throw new TypeCheckerException(node.getExpr().get(i), "Cannot assign type " + valueType + " to " + type);
                 }
             }
             // Declare the variables
@@ -248,7 +248,45 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseACallExpr(ACallExpr node) {
-        super.caseACallExpr(node);
+        // The call might be a cast. In this case the identifier will be a single symbol pointing to a type
+        final PExpr value = node.getValue();
+        if (value instanceof AIdentExpr) {
+            final Optional<Symbol> symbol = context.lookupSymbol(((AIdentExpr) value).getIdenf().getText());
+            if (symbol.isPresent() && symbol.get() instanceof DeclaredType) {
+                // It's a cast
+                // TODO: casts
+                return;
+            }
+        }
+        // It's a call
+        value.apply(this);
+        final Type valueType = exprNodeTypes.get(value);
+        // The value should be a function type
+        if (!(valueType instanceof FunctionType)) {
+            throw new TypeCheckerException(value, "Not a function type " + valueType);
+        }
+        final FunctionType functionType = (FunctionType) valueType;
+        // The function should have a return type
+        if (!functionType.getReturnType().isPresent()) {
+            throw new TypeCheckerException(value, "The function type " + functionType + " does not return");
+        }
+        // Get the argument types
+        node.getArgs().forEach(arg -> arg.apply(this));
+        final List<Type> argTypes = node.getArgs().stream().map(exprNodeTypes::get).collect(Collectors.toList());
+        // The argument and parameter types should be the same
+        final List<Parameter> parameters = functionType.getParameters();
+        if (parameters.size() != argTypes.size()) {
+            throw new TypeCheckerException(node, "Mistmatch in the number of parameters in " + functionType
+                    + " and arguments for the call: " + parameters.size() + " != " + argTypes.size());
+        }
+        for (int i = 0; i < parameters.size(); i++) {
+            final Type paramType = parameters.get(i).getType();
+            if (!paramType.equals(argTypes.get(i))) {
+                throw new TypeCheckerException(node.getArgs().get(i), "Cannot assign type " + argTypes.get(i) + " to " + paramType);
+            }
+        }
+        // The return type if the type of the expression
+        exprNodeTypes.put(node, functionType.getReturnType().get());
     }
 
     @Override
