@@ -3,7 +3,7 @@ package ca.sapon.golite.semantic.type;
 /**
  *
  */
-public abstract class IndexableType implements Type {
+public abstract class IndexableType extends Type {
     protected final Type component;
 
     protected IndexableType(Type component) {

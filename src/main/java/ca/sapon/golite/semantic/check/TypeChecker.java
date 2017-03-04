@@ -11,10 +11,11 @@ import ca.sapon.golite.semantic.context.Context;
 import ca.sapon.golite.semantic.context.FunctionContext;
 import ca.sapon.golite.semantic.context.TopLevelContext;
 import ca.sapon.golite.semantic.context.UniverseContext;
-import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.DeclaredType;
+import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.Symbol;
 import ca.sapon.golite.semantic.symbol.Variable;
+import ca.sapon.golite.semantic.type.AliasType;
 import ca.sapon.golite.semantic.type.ArrayType;
 import ca.sapon.golite.semantic.type.BasicType;
 import ca.sapon.golite.semantic.type.FunctionType;
@@ -95,7 +96,7 @@ public class TypeChecker extends AnalysisAdapter {
             // Check that the values have the same type as the variable (this is skipped if there are no values)
             for (int i = 0; i < valueTypes.size(); i++) {
                 final Type valueType = valueTypes.get(i);
-                if (valueType != type) {
+                if (!valueType.equals(type)) {
                     throw new TypeCheckerException(node.getExpr().get(i), String.format("Cannot assign type %s to %s", valueType, type));
                 }
             }
@@ -213,15 +214,15 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseASelectExpr(ASelectExpr node) {
         // Check that the value is a struct type
         node.getValue().apply(this);
-        final Type type = exprNodeTypes.get(node.getValue());
-        if (!(type instanceof StructType)) {
-            throw new TypeCheckerException(node.getValue(), "Not a struct type: " + type);
+        final Type valueType = exprNodeTypes.get(node.getValue()).resolve();
+        if (!(valueType instanceof StructType)) {
+            throw new TypeCheckerException(node.getValue(), "Not a struct type: " + valueType);
         }
         // Check that the struct has a field with the selected name
         final String fieldName = node.getIdenf().getText();
-        final Optional<Field> optField = ((StructType) type).getField(fieldName);
+        final Optional<Field> optField = ((StructType) valueType).getField(fieldName);
         if (!optField.isPresent()) {
-            throw new TypeCheckerException(node.getIdenf(), "No field named " + fieldName + " in type " + type);
+            throw new TypeCheckerException(node.getIdenf(), "No field named " + fieldName + " in type " + valueType);
         }
         // The type is that of the field
         exprNodeTypes.put(node, optField.get().getType());
@@ -231,18 +232,18 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseAIndexExpr(AIndexExpr node) {
         // Check that the value is a slice or array type (indexable type)
         node.getValue().apply(this);
-        final Type type = exprNodeTypes.get(node.getValue());
-        if (!(type instanceof IndexableType)) {
-            throw new TypeCheckerException(node.getValue(), "Not a slice or array type: " + type);
+        final Type valueType = exprNodeTypes.get(node.getValue()).resolve();
+        if (!(valueType instanceof IndexableType)) {
+            throw new TypeCheckerException(node.getValue(), "Not a slice or array type: " + valueType);
         }
         // Check the the index expression has type int
         node.getIndex().apply(this);
-        final Type indexType = exprNodeTypes.get(node.getIndex());
+        final Type indexType = exprNodeTypes.get(node.getIndex()).resolve();
         if (indexType != BasicType.INT) {
-            throw new TypeCheckerException(node.getIndex(), "Not an int " + type);
+            throw new TypeCheckerException(node.getIndex(), "Not an int " + valueType);
         }
         // The type is that of the component
-        exprNodeTypes.put(node, ((IndexableType) type).getComponent());
+        exprNodeTypes.put(node, ((IndexableType) valueType).getComponent());
     }
 
     @Override
@@ -268,8 +269,8 @@ public class TypeChecker extends AnalysisAdapter {
         if (!(symbol instanceof DeclaredType)) {
             throw new TypeCheckerException(node.getIdenf(), "Not a type " + symbol);
         }
-        // The type is that of the resolved type
-        typeNodeTypes.put(node, symbol.getType());
+        // The type is an alias to that type
+        typeNodeTypes.put(node, new AliasType(name, symbol.getType()));
     }
 
     @Override

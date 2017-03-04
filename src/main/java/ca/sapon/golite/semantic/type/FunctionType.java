@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 /**
  *
  */
-public class FunctionType implements Type {
+public class FunctionType extends Type {
     private final List<Parameter> parameters;
     private final Type returnType;
 
@@ -34,6 +34,25 @@ public class FunctionType implements Type {
         return "func" + signature();
     }
 
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof FunctionType)) {
+            return false;
+        }
+        final FunctionType functionType = (FunctionType) other;
+        return parameters.equals(functionType.parameters) && returnType.equals(functionType.returnType);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = parameters.hashCode();
+        result = 31 * result + returnType.hashCode();
+        return result;
+    }
+
     public static class Parameter {
         private final String name;
         private final Type type;
@@ -54,6 +73,25 @@ public class FunctionType implements Type {
         @Override
         public String toString() {
             return String.format("%s %s", name, type);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof Parameter)) {
+                return false;
+            }
+            final Parameter parameter = (Parameter) other;
+            return name.equals(parameter.name) && type.equals(parameter.type);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = name.hashCode();
+            result = 31 * result + type.hashCode();
+            return result;
         }
     }
 }

@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 /**
  *
  */
-public final class BasicType implements Type {
+public final class BasicType extends Type {
     public static final BasicType INT = new BasicType("int");
     public static final BasicType FLOAT64 = new BasicType("float64");
     public static final BasicType BOOL = new BasicType("bool");
@@ -30,5 +30,15 @@ public final class BasicType implements Type {
     @Override
     public String toString() {
         return name;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return this == obj;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

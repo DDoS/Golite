@@ -3,5 +3,8 @@ package ca.sapon.golite.semantic.type;
 /**
  *
  */
-public interface Type {
+public abstract class Type {
+    public Type resolve() {
+        return this;
+    }
 }
