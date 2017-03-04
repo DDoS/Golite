@@ -17,6 +17,9 @@ public final class BasicType extends Type {
     public static final Set<BasicType> ALL = Collections.unmodifiableSet(Stream.of(
             INT, FLOAT64, BOOL, RUNE, STRING
     ).collect(Collectors.toSet()));
+    public static final Set<BasicType> CAST_TYPES = Collections.unmodifiableSet(Stream.of(
+            INT, FLOAT64, BOOL, RUNE
+    ).collect(Collectors.toSet()));
     private final String name;
 
     private BasicType(String name) {
@@ -25,6 +28,24 @@ public final class BasicType extends Type {
 
     public String getName() {
         return name;
+    }
+
+    public boolean canCastFrom(Type type) {
+        if (!CAST_TYPES.contains(this)) {
+            throw new IllegalStateException("This isn't a cast-able type: " + this);
+        }
+        // Identity is allowed
+        if (this.equals(type)) {
+            return true;
+        }
+        // Int to float or vice-versa
+        if (this.equals(BasicType.INT) && type.equals(BasicType.FLOAT64)
+                || this.equals(BasicType.FLOAT64) && type.equals(BasicType.INT)) {
+            return true;
+        }
+        // Int to rune or vice-versa
+        return this.equals(BasicType.INT) && type.equals(BasicType.RUNE)
+                || this.equals(BasicType.RUNE) && type.equals(BasicType.INT);
     }
 
     @Override

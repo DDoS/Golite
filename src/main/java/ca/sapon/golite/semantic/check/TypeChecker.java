@@ -256,7 +256,7 @@ public class TypeChecker extends AnalysisAdapter {
             final Optional<Symbol> symbol = context.lookupSymbol(((AIdentExpr) value).getIdenf().getText());
             if (symbol.isPresent() && symbol.get() instanceof DeclaredType) {
                 // It's a cast
-                // TODO: casts
+                typeCheckCast(node, symbol.get().getType());
                 return;
             }
         }
@@ -289,6 +289,27 @@ public class TypeChecker extends AnalysisAdapter {
         }
         // The return type if the type of the expression
         exprNodeTypes.put(node, functionType.getReturnType().get());
+    }
+
+    private void typeCheckCast(ACallExpr node, Type castType) {
+        // Check that the inner type can be used for a cast
+        final Type innerType = castType.resolve();
+        if (!(innerType instanceof BasicType) || !BasicType.CAST_TYPES.contains(innerType)) {
+            throw new TypeCheckerException(node.getValue(), "Cannot cast to type " + innerType);
+        }
+        // Get the argument types
+        node.getArgs().forEach(arg -> arg.apply(this));
+        final List<Type> argTypes = node.getArgs().stream().map(exprNodeTypes::get).collect(Collectors.toList());
+        // There should only be one argument
+        if (argTypes.size() != 1) {
+            throw new TypeCheckerException(node, "Expected only one argument for a cast");
+        }
+        // Check that we can cast the argument to the cast type
+        if (!((BasicType) innerType).canCastFrom(argTypes.get(0))) {
+            throw new TypeCheckerException(node, "Cannot cast from " + argTypes.get(0) + " to " + castType);
+        }
+        // The type is that of the cast, without the resolution
+        exprNodeTypes.put(node, castType);
     }
 
     @Override
