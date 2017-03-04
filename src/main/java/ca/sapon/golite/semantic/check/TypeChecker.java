@@ -77,6 +77,12 @@ public class TypeChecker extends AnalysisAdapter {
         context = new TopLevelContext();
         nodeContexts.put(node, context);
         node.getDecl().forEach(decl -> decl.apply(this));
+
+        System.out.println(exprNodeTypes);
+        System.out.println();
+        System.out.println(typeNodeTypes);
+        System.out.println();
+        System.out.println(context);
     }
 
     @Override
@@ -174,7 +180,7 @@ public class TypeChecker extends AnalysisAdapter {
             return;
         }
         // Otherwise the symbol can't be used an expression
-        throw new TypeCheckerException(node, "Cannot use symbol " + symbol + " as an expression");
+        throw new TypeCheckerException(node, "Cannot use symbol \"" + symbol + "\" as an expression");
     }
 
     @Override
@@ -314,7 +320,22 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseAAppendExpr(AAppendExpr node) {
-        super.caseAAppendExpr(node);
+        // Check that the left argument is a slice type, after resolution
+        node.getLeft().apply(this);
+        final Type leftType = exprNodeTypes.get(node.getLeft());
+        final Type innerLeftType = leftType.resolve();
+        if (!(innerLeftType instanceof SliceType)) {
+            throw new TypeCheckerException(node.getLeft(), "Not a slice type: " + innerLeftType);
+        }
+        final SliceType sliceType = (SliceType) innerLeftType;
+        // Check that the right argument has the same type as the slice component
+        node.getRight().apply(this);
+        final Type rightType = exprNodeTypes.get(node.getRight());
+        if (!rightType.equals(sliceType.getComponent())) {
+            throw new TypeCheckerException(node.getRight(), "Cannot append " + rightType + " to " + innerLeftType);
+        }
+        // The type is the unresolved left type
+        exprNodeTypes.put(node, leftType);
     }
 
     @Override

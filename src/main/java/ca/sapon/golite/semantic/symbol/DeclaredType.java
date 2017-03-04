@@ -1,5 +1,6 @@
 package ca.sapon.golite.semantic.symbol;
 
+import ca.sapon.golite.semantic.type.AliasType;
 import ca.sapon.golite.semantic.type.Type;
 import ca.sapon.golite.util.SourcePositioned;
 
@@ -30,6 +31,9 @@ public class DeclaredType extends Symbol {
 
     @Override
     public String toString() {
-        return String.format("type %s %s", name, type);
+        if (type instanceof AliasType) {
+            return String.format("type %s %s", name, ((AliasType) type).getInner());
+        }
+        return "type " + type;
     }
 }
