@@ -1,6 +1,7 @@
 package ca.sapon.golite.semantic.symbol;
 
 import ca.sapon.golite.semantic.type.Type;
+import ca.sapon.golite.util.SourcePositioned;
 
 /**
  *
@@ -13,6 +14,10 @@ public class Variable extends Symbol {
         super(name);
         this.type = type;
         this.constant = constant;
+    }
+
+    public Variable(SourcePositioned source, String name, Type type, boolean constant) {
+        this(source.getStartLine(), source.getEndLine(), source.getStartPos(), source.getEndPos(), name, type, constant);
     }
 
     public Variable(int startLine, int endLine, int startPos, int endPos, String name, Type type, boolean constant) {

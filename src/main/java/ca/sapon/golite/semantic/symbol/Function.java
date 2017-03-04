@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import ca.sapon.golite.semantic.type.Type;
+import ca.sapon.golite.util.SourcePositioned;
 
 /**
  *
@@ -16,6 +17,10 @@ public class Function extends Symbol {
         super(name);
         this.parameters = parameters;
         this.type = type;
+    }
+
+    public Function(SourcePositioned source, String name, List<Variable> parameters, Type type) {
+        this(source.getStartLine(), source.getEndLine(), source.getStartPos(), source.getEndPos(), name, parameters, type);
     }
 
     public Function(int startLine, int endLine, int startPos, int endPos, String name, List<Variable> parameters, Type type) {

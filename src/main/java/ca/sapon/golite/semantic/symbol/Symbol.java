@@ -14,7 +14,7 @@ public abstract class Symbol implements SourcePositioned {
         this(0, 0, 0, 0, name);
     }
 
-    public Symbol(int startLine, int endLine, int startPos, int endPos, String name) {
+    protected Symbol(int startLine, int endLine, int startPos, int endPos, String name) {
         this.startLine = startLine;
         this.endLine = endLine;
         this.startPos = startPos;
