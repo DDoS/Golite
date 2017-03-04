@@ -6,19 +6,19 @@ import ca.sapon.golite.util.SourcePositioned;
 /**
  *
  */
-public class NamedType extends Symbol {
+public class DeclaredType extends Symbol {
     private final Type type;
 
-    public NamedType(String name, Type type) {
+    public DeclaredType(String name, Type type) {
         super(name);
         this.type = type;
     }
 
-    public NamedType(SourcePositioned source, String name, Type type) {
+    public DeclaredType(SourcePositioned source, String name, Type type) {
         this(source.getStartLine(), source.getEndLine(), source.getStartPos(), source.getEndPos(), name, type);
     }
 
-    public NamedType(int startLine, int endLine, int startPos, int endPos, String name, Type type) {
+    public DeclaredType(int startLine, int endLine, int startPos, int endPos, String name, Type type) {
         super(startLine, endLine, startPos, endPos, name);
         this.type = type;
     }

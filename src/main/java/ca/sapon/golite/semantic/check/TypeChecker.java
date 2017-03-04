@@ -12,7 +12,7 @@ import ca.sapon.golite.semantic.context.FunctionContext;
 import ca.sapon.golite.semantic.context.TopLevelContext;
 import ca.sapon.golite.semantic.context.UniverseContext;
 import ca.sapon.golite.semantic.symbol.Function;
-import ca.sapon.golite.semantic.symbol.NamedType;
+import ca.sapon.golite.semantic.symbol.DeclaredType;
 import ca.sapon.golite.semantic.symbol.Symbol;
 import ca.sapon.golite.semantic.symbol.Variable;
 import ca.sapon.golite.semantic.type.ArrayType;
@@ -115,7 +115,7 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseATypeDecl(ATypeDecl node) {
         node.getType().apply(this);
-        context.declareSymbol(new NamedType(new NodePosition(node), node.getIdenf().getText(), typeNodeTypes.get(node.getType())));
+        context.declareSymbol(new DeclaredType(new NodePosition(node), node.getIdenf().getText(), typeNodeTypes.get(node.getType())));
     }
 
     @Override
@@ -265,7 +265,7 @@ public class TypeChecker extends AnalysisAdapter {
         }
         // Check that the symbol is a type
         final Symbol symbol = optSymbol.get();
-        if (!(symbol instanceof NamedType)) {
+        if (!(symbol instanceof DeclaredType)) {
             throw new TypeCheckerException(node.getIdenf(), "Not a type " + symbol);
         }
         // The type is that of the resolved type
