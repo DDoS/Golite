@@ -44,6 +44,8 @@ import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
 import golite.node.ANameType;
 import golite.node.AParam;
+import golite.node.APrintStmt;
+import golite.node.APrintlnStmt;
 import golite.node.AProg;
 import golite.node.AReturnStmt;
 import golite.node.ARuneExpr;
@@ -231,6 +233,16 @@ public class TypeChecker extends AnalysisAdapter {
                 }
             }   
         }
+    }
+    
+    @Override
+    public void caseAPrintStmt(APrintStmt node) {
+        node.getExpr().forEach(exp -> exp.apply(this));
+    }
+    
+    @Override
+    public void caseAPrintlnStmt(APrintlnStmt node) {
+        node.getExpr().forEach(exp -> exp.apply(this));
     }
 
     @Override
