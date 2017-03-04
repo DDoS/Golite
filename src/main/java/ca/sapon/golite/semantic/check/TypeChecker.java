@@ -38,6 +38,7 @@ import golite.node.AStructField;
 import golite.node.AStructType;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
+import golite.node.Node;
 import golite.node.PExpr;
 import golite.node.PParam;
 import golite.node.PStructField;
@@ -50,11 +51,13 @@ import golite.node.TIdenf;
 public class TypeChecker extends AnalysisAdapter {
     private final Map<PExpr, Type> exprNodeTypes = new HashMap<>();
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
+    private final Map<Node, Context> nodeContexts = new HashMap<>();
     private Context context;
 
     @Override
     public void caseAProg(AProg node) {
         context = new TopLevelContext();
+        nodeContexts.put(node, context);
         node.getDecl().forEach(decl -> decl.apply(this));
     }
 
@@ -122,6 +125,7 @@ public class TypeChecker extends AnalysisAdapter {
         context.declareFunction(function);
         // Enter the function body
         context = new FunctionContext((TopLevelContext) context, function);
+        nodeContexts.put(node, context);
         // Declare the parameters as variables
         params.forEach(context::declareVariable);
         // TODO: type check the statements
