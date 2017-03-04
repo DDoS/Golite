@@ -53,6 +53,9 @@ public abstract class Context {
 
     private static <T> Optional<T> resolveShadowed(java.util.function.Function<String, Optional<T>> parentSearch,
                                                    Map<String, T> search, String name) {
+        if (name.equals("_")) {
+            throw new IllegalArgumentException("Cannot resolve the blank identifier");
+        }
         final T item = search.get(name);
         if (item != null) {
             return Optional.of(item);
@@ -60,10 +63,14 @@ public abstract class Context {
         return parentSearch == null ? null : parentSearch.apply(name);
     }
 
-    private static <T extends Symbol> void declareSymbol(Map<String, T> search, T symbol) {
-        if (search.containsKey(symbol.getName())) {
-            throw new TypeCheckerException(symbol, "Cannot redeclare symbol");
+    private static <T extends Symbol> void declareSymbol(Map<String, T> mapping, T symbol) {
+        if (symbol.getName().equals("_")) {
+            // Don't declare blank symbols
+            return;
         }
-        search.put(symbol.getName(), symbol);
+        if (mapping.containsKey(symbol.getName())) {
+            throw new TypeCheckerException(symbol, "Cannot redeclare symbol " + symbol.getName());
+        }
+        mapping.put(symbol.getName(), symbol);
     }
 }
