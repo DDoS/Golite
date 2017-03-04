@@ -6,8 +6,15 @@ import ca.sapon.golite.semantic.symbol.Function;
  *
  */
 public class FunctionContext extends Context {
-    public FunctionContext(TopLevelContext parent) {
+    private final Function function;
+
+    public FunctionContext(TopLevelContext parent, Function function) {
         super(parent);
+        this.function = function;
+    }
+
+    public Function getFunction() {
+        return function;
     }
 
     @Override
