@@ -23,6 +23,7 @@ public class NamedType extends Symbol {
         this.type = type;
     }
 
+    @Override
     public Type getType() {
         return type;
     }

@@ -26,6 +26,7 @@ public class Variable extends Symbol {
         this.constant = constant;
     }
 
+    @Override
     public Type getType() {
         return type;
     }

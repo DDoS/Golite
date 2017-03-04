@@ -1,5 +1,6 @@
 package ca.sapon.golite.semantic.symbol;
 
+import ca.sapon.golite.semantic.type.Type;
 import ca.sapon.golite.util.SourcePositioned;
 
 /**
@@ -45,4 +46,6 @@ public abstract class Symbol implements SourcePositioned {
     public String getName() {
         return name;
     }
+
+    public abstract Type getType();
 }

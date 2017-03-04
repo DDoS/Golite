@@ -1,6 +1,7 @@
 package ca.sapon.golite.semantic.context;
 
 import ca.sapon.golite.semantic.symbol.Function;
+import ca.sapon.golite.semantic.symbol.Symbol;
 
 /**
  *
@@ -18,7 +19,10 @@ public class FunctionContext extends Context {
     }
 
     @Override
-    public void declareFunction(Function function) {
-        throw new IllegalStateException("Cannot declare a function in a function context");
+    public void declareSymbol(Symbol symbol) {
+        if (symbol instanceof Function) {
+            throw new IllegalStateException("Cannot declare a function in a block context");
+        }
+        super.declareSymbol(symbol);
     }
 }

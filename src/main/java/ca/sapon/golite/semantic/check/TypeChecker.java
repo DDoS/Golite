@@ -5,25 +5,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import ca.sapon.golite.semantic.context.Context;
 import ca.sapon.golite.semantic.context.FunctionContext;
 import ca.sapon.golite.semantic.context.TopLevelContext;
+import ca.sapon.golite.semantic.context.UniverseContext;
 import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.NamedType;
+import ca.sapon.golite.semantic.symbol.Symbol;
 import ca.sapon.golite.semantic.symbol.Variable;
 import ca.sapon.golite.semantic.type.ArrayType;
 import ca.sapon.golite.semantic.type.BasicType;
+import ca.sapon.golite.semantic.type.FunctionType;
+import ca.sapon.golite.semantic.type.FunctionType.Parameter;
+import ca.sapon.golite.semantic.type.IndexableType;
 import ca.sapon.golite.semantic.type.SliceType;
 import ca.sapon.golite.semantic.type.StructType;
 import ca.sapon.golite.semantic.type.StructType.Field;
 import ca.sapon.golite.semantic.type.Type;
 import ca.sapon.golite.util.NodePosition;
 import golite.analysis.AnalysisAdapter;
+import golite.node.AAppendExpr;
 import golite.node.AArrayType;
+import golite.node.ACallExpr;
 import golite.node.AFloatExpr;
 import golite.node.AFuncDecl;
 import golite.node.AIdentExpr;
+import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
@@ -31,6 +40,7 @@ import golite.node.ANameType;
 import golite.node.AParam;
 import golite.node.AProg;
 import golite.node.ARuneExpr;
+import golite.node.ASelectExpr;
 import golite.node.ASliceType;
 import golite.node.AStringIntrExpr;
 import golite.node.AStringRawExpr;
@@ -57,6 +67,7 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseStart(Start node) {
+        context = UniverseContext.INSTANCE;
         node.getPProg().apply(this);
     }
 
@@ -84,19 +95,19 @@ public class TypeChecker extends AnalysisAdapter {
             // Check that the values have the same type as the variable (this is skipped if there are no values)
             for (int i = 0; i < valueTypes.size(); i++) {
                 final Type valueType = valueTypes.get(i);
-                if (!valueType.equals(type)) {
+                if (valueType != type) {
                     throw new TypeCheckerException(node.getExpr().get(i), String.format("Cannot assign type %s to %s", valueType, type));
                 }
             }
             // Declare the variables
             node.getIdenf().stream()
                     .map(idenf -> new Variable(position, idenf.getText(), type, false))
-                    .forEach(context::declareVariable);
+                    .forEach(context::declareSymbol);
         } else {
             // Otherwise declare the variable for each identifier using the value types
             final List<TIdenf> idenfs = node.getIdenf();
             for (int i = 0; i < idenfs.size(); i++) {
-                context.declareVariable(new Variable(position, idenfs.get(i).getText(), valueTypes.get(i), false));
+                context.declareSymbol(new Variable(position, idenfs.get(i).getText(), valueTypes.get(i), false));
             }
         }
     }
@@ -104,7 +115,7 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseATypeDecl(ATypeDecl node) {
         node.getType().apply(this);
-        context.declareType(new NamedType(new NodePosition(node), node.getIdenf().getText(), typeNodeTypes.get(node.getType())));
+        context.declareSymbol(new NamedType(new NodePosition(node), node.getIdenf().getText(), typeNodeTypes.get(node.getType())));
     }
 
     @Override
@@ -126,14 +137,19 @@ public class TypeChecker extends AnalysisAdapter {
         } else {
             returnType = null;
         }
+        // Create the function type
+        final List<Parameter> parameterTypes = params.stream()
+                .map(param -> new Parameter(param.getName(), param.getType()))
+                .collect(Collectors.toList());
+        final FunctionType type = new FunctionType(parameterTypes, returnType);
         // Now declare the function
-        final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), params, returnType);
-        context.declareFunction(function);
+        final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), type);
+        context.declareSymbol(function);
         // Enter the function body
         context = new FunctionContext((TopLevelContext) context, function);
         nodeContexts.put(node, context);
         // Declare the parameters as variables
-        params.forEach(context::declareVariable);
+        params.forEach(context::declareSymbol);
         // TODO: type check the statements
         // TODO: check that the function returns on each path
         // Exit the function body
@@ -142,12 +158,20 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
+        // Resolve the symbol for the name
         final String name = node.getIdenf().getText();
-        final Optional<Variable> variable = context.resolveVariable(name);
-        if (!variable.isPresent()) {
-            throw new TypeCheckerException(node, "Undeclared variable " + name);
+        final Optional<Symbol> optSymbol = context.resolveSymbol(name);
+        if (!optSymbol.isPresent()) {
+            throw new TypeCheckerException(node, "Undeclared symbol " + name);
         }
-        exprNodeTypes.put(node, variable.get().getType());
+        final Symbol symbol = optSymbol.get();
+        // If the symbol is a variable or function, add the type
+        if (symbol instanceof Variable || symbol instanceof Function) {
+            exprNodeTypes.put(node, symbol.getType());
+            return;
+        }
+        // Otherwise the symbol can't be used an expression
+        throw new TypeCheckerException(node, "Cannot use symbol " + symbol + " as an expression");
     }
 
     @Override
@@ -186,13 +210,66 @@ public class TypeChecker extends AnalysisAdapter {
     }
 
     @Override
-    public void caseANameType(ANameType node) {
-        final String name = node.getIdenf().getText();
-        final Optional<NamedType> namedType = context.resolveType(name);
-        if (!namedType.isPresent()) {
-            throw new TypeCheckerException(node, "Undeclared type " + name);
+    public void caseASelectExpr(ASelectExpr node) {
+        // Check that the value is a struct type
+        node.getValue().apply(this);
+        final Type type = exprNodeTypes.get(node.getValue());
+        if (!(type instanceof StructType)) {
+            throw new TypeCheckerException(node.getValue(), "Not a struct type: " + type);
         }
-        typeNodeTypes.put(node, namedType.get().getType());
+        // Check that the struct has a field with the selected name
+        final String fieldName = node.getIdenf().getText();
+        final Optional<Field> optField = ((StructType) type).getField(fieldName);
+        if (!optField.isPresent()) {
+            throw new TypeCheckerException(node.getIdenf(), "No field named " + fieldName + " in type " + type);
+        }
+        // The type is that of the field
+        exprNodeTypes.put(node, optField.get().getType());
+    }
+
+    @Override
+    public void caseAIndexExpr(AIndexExpr node) {
+        // Check that the value is a slice or array type (indexable type)
+        node.getValue().apply(this);
+        final Type type = exprNodeTypes.get(node.getValue());
+        if (!(type instanceof IndexableType)) {
+            throw new TypeCheckerException(node.getValue(), "Not a slice or array type: " + type);
+        }
+        // Check the the index expression has type int
+        node.getIndex().apply(this);
+        final Type indexType = exprNodeTypes.get(node.getIndex());
+        if (indexType != BasicType.INT) {
+            throw new TypeCheckerException(node.getIndex(), "Not an int " + type);
+        }
+        // The type is that of the component
+        exprNodeTypes.put(node, ((IndexableType) type).getComponent());
+    }
+
+    @Override
+    public void caseACallExpr(ACallExpr node) {
+        super.caseACallExpr(node);
+    }
+
+    @Override
+    public void caseAAppendExpr(AAppendExpr node) {
+        super.caseAAppendExpr(node);
+    }
+
+    @Override
+    public void caseANameType(ANameType node) {
+        // Resolve the symbol for the name
+        final String name = node.getIdenf().getText();
+        final Optional<Symbol> optSymbol = context.resolveSymbol(name);
+        if (!optSymbol.isPresent()) {
+            throw new TypeCheckerException(node.getIdenf(), "Undeclared symbol " + name);
+        }
+        // Check that the symbol is a type
+        final Symbol symbol = optSymbol.get();
+        if (!(symbol instanceof NamedType)) {
+            throw new TypeCheckerException(node.getIdenf(), "Not a type " + symbol);
+        }
+        // The type is that of the resolved type
+        typeNodeTypes.put(node, symbol.getType());
     }
 
     @Override
