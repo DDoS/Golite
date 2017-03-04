@@ -10,6 +10,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 
+import ca.sapon.golite.semantic.SemanticException;
 import ca.sapon.golite.syntax.SyntaxException;
 import ca.sapon.golite.syntax.print.PrinterException;
 import golite.node.Start;
@@ -21,69 +22,49 @@ import org.apache.commons.cli.ParseException;
 
 public final class App {
     private static final String PRETTY_EXTENSION = "pretty.go";
+    private static final String SYMBOL_TABLE_EXTENSION = "symtab";
+    private static final String TYPE_ANNOTATION_EXTENSION = "pptype.go";
+    private String[] args;
+    private File inputFile = null;
+    private File outputFile = null;
+    private Start ast = null;
 
-    private App() throws Exception {
-        throw new Exception("No");
+    private App(String[] args) {
+        this.args = args;
     }
 
     public static void main(String[] args) {
-        int exitCode;
-        if (args.length < 1) {
-            System.err.println("Expected a command");
-            exitCode = 1;
-        } else {
-            exitCode = executeCommands(args);
-        }
-        System.exit(exitCode);
+        System.exit(new App(args).executeCommand());
     }
 
-    private static int executeCommands(String[] args) {
+    private int executeCommand() {
+        if (args.length <= 0) {
+            System.err.println("Expected a command");
+            return 1;
+        }
         // Find the command to execute
         final String command = args[0];
-        final Executor executor;
+        args = subArray(args, 1);
         switch (command) {
+            case "parse":
+                return parseCommand();
             case "print":
-                executor = App::printCommand;
-                break;
+                return printCommand();
+            case "typecheck":
+                return typecheckCommand();
             default:
                 System.err.println("Not a command: " + command);
                 return 1;
         }
-        args = subArray(args, 1);
-        // Find the input and output files
-        final File inputFile;
-        final File outputFile;
-        final String[] commandArgs;
-        try {
-            final CommandLine line = new DefaultParser().parse(buildOptions(), args);
-            commandArgs = line.getArgs();
-            if (commandArgs.length != 1) {
-                System.err.println("Expected one input file, not " + commandArgs.length);
-                return 1;
-            }
-            inputFile = new File(commandArgs[0]);
-            outputFile = (File) line.getParsedOptionValue("output");
-        } catch (ParseException exception) {
-            System.err.println("Invalid arguments: " + exception.getMessage());
+    }
+
+    private int parseCommand() {
+        // Get the input file
+        if (args.length != 1) {
+            System.err.println("Expected one input file, not " + args.length);
             return 1;
         }
-        // Execute the command
-        return executor.execute(inputFile, outputFile);
-    }
-
-    private static Options buildOptions() {
-        final Options options = new Options();
-        final Option outputFileOption = Option.builder("o").longOpt("output").hasArg().argName("file")
-                .desc("The output file").type(File.class).build();
-        options.addOption(outputFileOption);
-        return options;
-    }
-
-    private static int printCommand(File inputFile, File outputFile) {
-        // Derive the output file from the input one if missing
-        if (outputFile == null) {
-            outputFile = defaultOutputFile(inputFile, PRETTY_EXTENSION);
-        }
+        inputFile = new File(args[0]);
         // Create the source reader
         final Reader source;
         try {
@@ -92,8 +73,7 @@ public final class App {
             System.err.println("Input file not found: " + exception.getMessage());
             return 1;
         }
-        // First do the lexing, parsing and weeding
-        final Start ast;
+        // Do the lexing, parsing and weeding
         try {
             ast = Golite.parse(source);
         } catch (SyntaxException exception) {
@@ -103,6 +83,29 @@ public final class App {
             System.err.println("Error when reading source: " + exception.getMessage());
             return 1;
         }
+        // Close the input file
+        try {
+            source.close();
+        } catch (IOException exception) {
+            System.err.println("Error when closing input file: " + exception.getMessage());
+            return 1;
+        }
+        return 0;
+    }
+
+    private int printCommand() {
+        // Parse the output file argument first
+        int result = findOutputFile(true);
+        if (result != 0) {
+            return result;
+        }
+        // Then run the parse command
+        result = parseCommand();
+        if (result != 0) {
+            return result;
+        }
+        // Derive the output file from the input one if missing
+        defaultOutputFile(PRETTY_EXTENSION);
         // Create the output writer
         final Writer pretty;
         try {
@@ -118,13 +121,7 @@ public final class App {
             System.err.println("Error when printing: " + exception.getMessage());
             return 1;
         }
-        // Close the files
-        try {
-            source.close();
-        } catch (IOException exception) {
-            System.err.println("Error when closing input file: " + exception.getMessage());
-            return 1;
-        }
+        // Close the output file
         try {
             pretty.close();
         } catch (IOException exception) {
@@ -134,7 +131,68 @@ public final class App {
         return 0;
     }
 
-    private static File defaultOutputFile(File inputFile, String extension) {
+    private int typecheckCommand() {
+        // Parse the output file argument first
+        int result = findOutputFile(false);
+        if (result != 0) {
+            return result;
+        }
+        // Parse the arguments for the type check command
+        final boolean dumpSymTab, dumpSymTabAll, ppType;
+        try {
+            final Options options = new Options();
+            options.addOption("dumpsymtab", "Write the top of the symbol table at the end of each scope");
+            options.addOption("dumpsymtaball", "Write the full symbol table at the end of each scope");
+            options.addOption("pptype", "Add type annotations to the pretty-printed output");
+            final CommandLine line = new DefaultParser().parse(options, args);
+            dumpSymTab = line.hasOption("dumpsymtab");
+            dumpSymTabAll = line.hasOption("dumpsymtaball");
+            ppType = line.hasOption("pptype");
+            // Set the arguments to the remaining ones
+            args = line.getArgs();
+        } catch (ParseException exception) {
+            System.err.println("Invalid arguments: " + exception.getMessage());
+            return 1;
+        }
+        // Then run the parse command
+        result = parseCommand();
+        if (result != 0) {
+            return result;
+        }
+        // Derive the output file from the input one if missing
+        defaultOutputFile(SYMBOL_TABLE_EXTENSION);
+        // Do the type checking
+        try {
+            Golite.typeCheck(ast);
+        } catch (SemanticException exception) {
+            System.err.println(exception.getMessage());
+            return 1;
+        }
+        // TODO: print the type output
+        return 0;
+    }
+
+    private int findOutputFile(boolean lastOption) {
+        try {
+            final Options options = new Options();
+            final Option outputFileOption = Option.builder("o").longOpt("output").hasArg().argName("file")
+                    .desc("The output file").type(File.class).build();
+            options.addOption(outputFileOption);
+            final CommandLine line = new DefaultParser().parse(options, args, !lastOption);
+            outputFile = (File) line.getParsedOptionValue("output");
+            // Set the arguments to the remaining ones
+            args = line.getArgs();
+        } catch (ParseException exception) {
+            System.err.println("Invalid arguments: " + exception.getMessage());
+            return 1;
+        }
+        return 0;
+    }
+
+    private void defaultOutputFile(String extension) {
+        if (outputFile != null) {
+            return;
+        }
         final String inputName = inputFile.getName();
         final int index = inputName.lastIndexOf('.');
         final String outputName;
@@ -143,7 +201,7 @@ public final class App {
         } else {
             outputName = inputName.substring(0, index + 1) + extension;
         }
-        return new File(inputFile.getParent(), outputName);
+        outputFile = new File(inputFile.getParent(), outputName);
     }
 
     private static <T> T[] subArray(T[] array, int start) {
@@ -153,10 +211,5 @@ public final class App {
         final T[] sub = (T[]) Array.newInstance(array.getClass().getComponentType(), newLength);
         System.arraycopy(array, start, sub, 0, newLength);
         return sub;
-    }
-
-    @FunctionalInterface
-    private interface Executor {
-        int execute(File inputFile, File outputFile);
     }
 }

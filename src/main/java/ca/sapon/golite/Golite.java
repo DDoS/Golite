@@ -5,10 +5,13 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.Writer;
 
+import ca.sapon.golite.semantic.SemanticException;
+import ca.sapon.golite.semantic.check.TypeChecker;
+import ca.sapon.golite.semantic.check.TypeCheckerException;
 import ca.sapon.golite.syntax.GoliteLexer;
+import ca.sapon.golite.syntax.SyntaxException;
 import ca.sapon.golite.syntax.print.PrettyPrinter;
 import ca.sapon.golite.syntax.print.PrinterException;
-import ca.sapon.golite.syntax.SyntaxException;
 import ca.sapon.golite.syntax.weed.Weeder;
 import ca.sapon.golite.syntax.weed.WeederException;
 import golite.lexer.Lexer;
@@ -47,5 +50,17 @@ public final class Golite {
 
     public static void prettyPrint(Start ast, Writer pretty) throws PrinterException {
         ast.apply(new PrettyPrinter(pretty));
+    }
+
+    public static void typeCheck(Reader source) throws IOException, SyntaxException, SemanticException {
+        typeCheck(parse(source));
+    }
+
+    public static void typeCheck(Start ast) throws SemanticException {
+        try {
+            ast.apply(new TypeChecker());
+        } catch (TypeCheckerException exception) {
+            throw new SemanticException(exception);
+        }
     }
 }
