@@ -29,6 +29,7 @@ import ca.sapon.golite.util.NodePosition;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
+import golite.node.AAssignStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.AContinueStmt;
@@ -124,10 +125,10 @@ public class TypeChecker extends AnalysisAdapter {
             }
         }
     }
-    
+
     @Override
     public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
-        
+     //TODO   
     }
 
     @Override
@@ -207,6 +208,21 @@ public class TypeChecker extends AnalysisAdapter {
                 throw new TypeCheckerException(node, "This function should return " + noOptionalRetType + " instead of " + exprType);
             }
         } 
+    }
+    
+    @Override
+    public void caseAAssignStmt(AAssignStmt node) {
+        //Check that both sides have valid exprs
+        node.getLeft().forEach(lExpr -> lExpr.apply(this));
+        node.getRight().forEach(rExpr -> rExpr.apply(this));
+        //Compare elements at the same position in both sides
+        for (int i = 0; i < node.getLeft().size(); i++) {
+            Type l = exprNodeTypes.get((node.getLeft().get(i)));
+            Type r = exprNodeTypes.get((node.getRight().get(i)));
+            if (!l.equals(r)) {
+                throw new TypeCheckerException(node, "Cannot use type " + r  + " as type " +  l + " in assignment" );
+            }
+        }
     }
 
     @Override
