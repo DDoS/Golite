@@ -2,15 +2,14 @@ package ca.sapon.golite.semantic.type;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  *
  */
 public class StructType implements Type {
-    private final Field[] fields;
+    private final List<Field> fields;
 
-    public StructType(Field[] fields) {
+    public StructType(List<Field> fields) {
         this.fields = fields;
     }
 
@@ -21,7 +20,7 @@ public class StructType implements Type {
 
     @Override
     public String toString() {
-        final List<String> fieldStrings = Stream.of(fields).map(Object::toString).collect(Collectors.toList());
+        final List<String> fieldStrings = fields.stream().map(Object::toString).collect(Collectors.toList());
         return String.format("struct {%s}", String.join("; ", fieldStrings));
     }
 

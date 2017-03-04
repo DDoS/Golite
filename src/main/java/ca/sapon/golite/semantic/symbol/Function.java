@@ -1,5 +1,6 @@
 package ca.sapon.golite.semantic.symbol;
 
+import java.util.List;
 import java.util.Optional;
 
 import ca.sapon.golite.semantic.type.Type;
@@ -8,22 +9,22 @@ import ca.sapon.golite.semantic.type.Type;
  *
  */
 public class Function extends Symbol {
-    private final Variable[] parameters;
+    private final List<Variable> parameters;
     private final Type type;
 
-    public Function(String name, Type type, Variable... parameters) {
+    public Function(String name, List<Variable> parameters, Type type) {
         super(name);
-        this.type = type;
         this.parameters = parameters;
+        this.type = type;
     }
 
-    public Function(int startLine, int endLine, int startPos, int endPos, String name, Type type, Variable... parameters) {
+    public Function(int startLine, int endLine, int startPos, int endPos, String name, List<Variable> parameters, Type type) {
         super(startLine, endLine, startPos, endPos, name);
-        this.type = type;
         this.parameters = parameters;
+        this.type = type;
     }
 
-    public Variable[] getParameters() {
+    public List<Variable> getParameters() {
         return parameters;
     }
 
