@@ -116,7 +116,9 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseATypeDecl(ATypeDecl node) {
         node.getType().apply(this);
-        context.declareSymbol(new DeclaredType(new NodePosition(node), node.getIdenf().getText(), typeNodeTypes.get(node.getType())));
+        // The type to declare is an alias to that type
+        final AliasType alias = new AliasType(node.getIdenf().getText(), typeNodeTypes.get(node.getType()));
+        context.declareSymbol(new DeclaredType(new NodePosition(node), node.getIdenf().getText(), alias));
     }
 
     @Override
@@ -307,8 +309,8 @@ public class TypeChecker extends AnalysisAdapter {
         if (!(symbol instanceof DeclaredType)) {
             throw new TypeCheckerException(node.getIdenf(), "Not a type " + symbol);
         }
-        // The type is an alias to that type
-        typeNodeTypes.put(node, new AliasType(name, symbol.getType()));
+        // The type is that of the found type symbol
+        typeNodeTypes.put(node, symbol.getType());
     }
 
     @Override
