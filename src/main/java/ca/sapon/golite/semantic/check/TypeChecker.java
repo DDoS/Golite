@@ -43,6 +43,7 @@ import golite.node.PExpr;
 import golite.node.PParam;
 import golite.node.PStructField;
 import golite.node.PType;
+import golite.node.Start;
 import golite.node.TIdenf;
 
 /**
@@ -53,6 +54,11 @@ public class TypeChecker extends AnalysisAdapter {
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
     private final Map<Node, Context> nodeContexts = new HashMap<>();
     private Context context;
+
+    @Override
+    public void caseStart(Start node) {
+        node.getPProg().apply(this);
+    }
 
     @Override
     public void caseAProg(AProg node) {
