@@ -65,6 +65,7 @@ public class TypeChecker extends AnalysisAdapter {
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
     private final Map<Node, Context> nodeContexts = new HashMap<>();
     private Context context;
+    private int nextContextID = 2;
 
     @Override
     public void caseStart(Start node) {
@@ -123,7 +124,7 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseATypeDecl(ATypeDecl node) {
         node.getType().apply(this);
         // The type to declare is an alias to that type
-        final AliasType alias = new AliasType(node.getIdenf().getText(), typeNodeTypes.get(node.getType()));
+        final AliasType alias = new AliasType(context.getID(), node.getIdenf().getText(), typeNodeTypes.get(node.getType()));
         context.declareSymbol(new DeclaredType(new NodePosition(node), node.getIdenf().getText(), alias));
     }
 
@@ -155,7 +156,8 @@ public class TypeChecker extends AnalysisAdapter {
         final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), type);
         context.declareSymbol(function);
         // Enter the function body
-        context = new FunctionContext((TopLevelContext) context, function);
+        context = new FunctionContext((TopLevelContext) context, nextContextID, function);
+        nextContextID++;
         nodeContexts.put(node, context);
         // Declare the parameters as variables
         params.forEach(context::declareSymbol);

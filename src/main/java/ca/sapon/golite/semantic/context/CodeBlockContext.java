@@ -9,13 +9,13 @@ import ca.sapon.golite.semantic.symbol.Symbol;
 public class CodeBlockContext extends Context {
     private final Kind kind;
 
-    public CodeBlockContext(FunctionContext parent, Kind kind) {
-        super(parent);
+    public CodeBlockContext(FunctionContext parent, int id, Kind kind) {
+        super(parent, id);
         this.kind = kind;
     }
 
-    public CodeBlockContext(CodeBlockContext parent, Kind kind) {
-        super(parent);
+    public CodeBlockContext(CodeBlockContext parent, int id, Kind kind) {
+        super(parent, id);
         this.kind = kind;
     }
 

@@ -9,8 +9,8 @@ import ca.sapon.golite.semantic.symbol.Symbol;
 public class FunctionContext extends Context {
     private final Function function;
 
-    public FunctionContext(TopLevelContext parent, Function function) {
-        super(parent);
+    public FunctionContext(TopLevelContext parent, int id, Function function) {
+        super(parent, id);
         this.function = function;
     }
 

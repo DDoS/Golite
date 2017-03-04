@@ -14,7 +14,7 @@ public final class UniverseContext extends Context {
     public static final UniverseContext INSTANCE = new UniverseContext();
 
     private UniverseContext() {
-        super(null);
+        super(null, 0);
         BasicType.ALL.forEach(type -> symbols.put(type.getName(), new DeclaredType(type.getName(), type)));
         symbols.put(TRUE_VARIABLE.getName(), TRUE_VARIABLE);
         symbols.put(FALSE_VARIABLE.getName(), FALSE_VARIABLE);

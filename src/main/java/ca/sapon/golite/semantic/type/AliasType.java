@@ -4,10 +4,12 @@ package ca.sapon.golite.semantic.type;
  *
  */
 public class AliasType extends Type {
+    private final int contextID;
     private final String name;
     private final Type inner;
 
-    public AliasType(String name, Type inner) {
+    public AliasType(int contextID, String name, Type inner) {
+        this.contextID = contextID;
         this.name = name;
         this.inner = inner;
     }
@@ -36,11 +38,20 @@ public class AliasType extends Type {
 
     @Override
     public boolean equals(Object other) {
-        return this == other || other instanceof AliasType && name.equals(((AliasType) other).name);
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof AliasType)) {
+            return false;
+        }
+        final AliasType aliasType = (AliasType) other;
+        return contextID == aliasType.contextID && name.equals((aliasType).name);
     }
 
     @Override
     public int hashCode() {
-        return name.hashCode();
+        int result = contextID;
+        result = 31 * result + name.hashCode();
+        return result;
     }
 }
