@@ -39,15 +39,15 @@ public abstract class Context {
         return resolveShadowed(parent::resolveFunction, functions, name);
     }
 
-    protected void declareType(NamedType type) {
+    public void declareType(NamedType type) {
         declareSymbol(types, type);
     }
 
-    protected void declareVariable(Variable variable) {
+    public void declareVariable(Variable variable) {
         declareSymbol(variables, variable);
     }
 
-    protected void declareFunction(Function function) {
+    public void declareFunction(Function function) {
         declareSymbol(functions, function);
     }
 

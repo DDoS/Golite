@@ -1,7 +1,6 @@
 package ca.sapon.golite.semantic.context;
 
-import ca.sapon.golite.semantic.symbol.NamedType;
-import ca.sapon.golite.semantic.symbol.Variable;
+import ca.sapon.golite.semantic.symbol.Function;
 
 /**
  *
@@ -12,12 +11,7 @@ public class FunctionContext extends Context {
     }
 
     @Override
-    public void declareType(NamedType type) {
-        super.declareType(type);
-    }
-
-    @Override
-    public void declareVariable(Variable variable) {
-        super.declareVariable(variable);
+    public void declareFunction(Function function) {
+        throw new IllegalStateException("Cannot declare a function in a function context");
     }
 }
