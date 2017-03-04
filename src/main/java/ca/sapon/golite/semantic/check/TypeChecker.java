@@ -32,6 +32,7 @@ import golite.node.AArrayType;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.AContinueStmt;
+import golite.node.ADeclVarShortStmt;
 import golite.node.AEmptyStmt;
 import golite.node.AFloatExpr;
 import golite.node.AFuncDecl;
@@ -123,6 +124,11 @@ public class TypeChecker extends AnalysisAdapter {
             }
         }
     }
+    
+    @Override
+    public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
+        
+    }
 
     @Override
     public void caseATypeDecl(ATypeDecl node) {
@@ -171,23 +177,16 @@ public class TypeChecker extends AnalysisAdapter {
         // Exit the function body
         context = context.getParent();
     }
- /** No need?   
+  
     @Override
-    public void caseAEmptyStmt(AEmptyStmt node) {
-        
-    }
+    public void caseAEmptyStmt(AEmptyStmt node) {}
     
     @Override 
-    public void caseABreakStmt(ABreakStmt node) {
-        
-    }
+    public void caseABreakStmt(ABreakStmt node) {}
     
     @Override 
-    public void caseAContinueStmt(AContinueStmt node) {
-        
-    }
-    **/
-    
+    public void caseAContinueStmt(AContinueStmt node) {}
+
     @Override 
     public void caseAReturnStmt(AReturnStmt node) {
 
