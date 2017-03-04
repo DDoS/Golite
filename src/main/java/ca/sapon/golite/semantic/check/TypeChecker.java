@@ -7,26 +7,42 @@ import java.util.Map;
 import java.util.Optional;
 
 import ca.sapon.golite.semantic.context.Context;
+import ca.sapon.golite.semantic.context.FunctionContext;
 import ca.sapon.golite.semantic.context.TopLevelContext;
+import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.NamedType;
+import ca.sapon.golite.semantic.symbol.Variable;
 import ca.sapon.golite.semantic.type.ArrayType;
+import ca.sapon.golite.semantic.type.BasicType;
 import ca.sapon.golite.semantic.type.SliceType;
 import ca.sapon.golite.semantic.type.StructType;
 import ca.sapon.golite.semantic.type.StructType.Field;
 import ca.sapon.golite.semantic.type.Type;
+import ca.sapon.golite.util.NodePosition;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AArrayType;
+import golite.node.AFloatExpr;
+import golite.node.AFuncDecl;
+import golite.node.AIdentExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
 import golite.node.ANameType;
+import golite.node.AParam;
 import golite.node.AProg;
+import golite.node.ARuneExpr;
 import golite.node.ASliceType;
+import golite.node.AStringIntrExpr;
+import golite.node.AStringRawExpr;
 import golite.node.AStructField;
 import golite.node.AStructType;
+import golite.node.ATypeDecl;
+import golite.node.AVarDecl;
 import golite.node.PExpr;
+import golite.node.PParam;
 import golite.node.PStructField;
 import golite.node.PType;
+import golite.node.TIdenf;
 
 /**
  *
@@ -39,6 +55,124 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseAProg(AProg node) {
         context = new TopLevelContext();
+        node.getDecl().forEach(decl -> decl.apply(this));
+    }
+
+    @Override
+    public void caseAVarDecl(AVarDecl node) {
+        final NodePosition position = new NodePosition(node);
+        // Type-check the values
+        final List<Type> valueTypes = new ArrayList<>();
+        for (PExpr exprNode : node.getExpr()) {
+            exprNode.apply(this);
+            valueTypes.add(exprNodeTypes.get(exprNode));
+        }
+        // Declare the variables
+        if (node.getType() != null) {
+            // If we have the type, then declare a variable for each identifier, all with the same type
+            node.getType().apply(this);
+            final Type type = typeNodeTypes.get(node.getType());
+            // Check that the values are assignable to the type (this is skipped if there are no values)
+            for (int i = 0; i < valueTypes.size(); i++) {
+                final Type valueType = valueTypes.get(i);
+                if (!valueType.assignableTo(type)) {
+                    throw new TypeCheckerException(node.getExpr().get(i), String.format("Cannot assign type %s to %s", valueType, type));
+                }
+            }
+            // Declare the variables
+            node.getIdenf().stream()
+                    .map(idenf -> new Variable(position, idenf.getText(), type, false))
+                    .forEach(context::declareVariable);
+        } else {
+            // Otherwise declare the variable for each identifier using the value types
+            final List<TIdenf> idenfs = node.getIdenf();
+            for (int i = 0; i < idenfs.size(); i++) {
+                context.declareVariable(new Variable(position, idenfs.get(i).getText(), valueTypes.get(i), false));
+            }
+        }
+    }
+
+    @Override
+    public void caseATypeDecl(ATypeDecl node) {
+        node.getType().apply(this);
+        context.declareType(new NamedType(new NodePosition(node), node.getIdenf().getText(), typeNodeTypes.get(node.getType())));
+    }
+
+    @Override
+    public void caseAFuncDecl(AFuncDecl node) {
+        // Create variables for the parameters, which will be declared into the function context
+        final List<Variable> params = new ArrayList<>();
+        for (PParam pParam : node.getParam()) {
+            final NodePosition paramPos = new NodePosition(pParam);
+            final AParam param = (AParam) pParam;
+            param.getType().apply(this);
+            final Type paramType = typeNodeTypes.get(param.getType());
+            param.getIdenf().forEach(idenf -> params.add(new Variable(paramPos, idenf.getText(), paramType, false)));
+        }
+        // Now check the return type (if it exists)
+        final Type returnType;
+        if (node.getType() != null) {
+            node.getType().apply(this);
+            returnType = typeNodeTypes.get(node.getType());
+        } else {
+            returnType = null;
+        }
+        // Now declare the function
+        final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), params, returnType);
+        context.declareFunction(function);
+        // Enter the function body
+        context = new FunctionContext((TopLevelContext) context, function);
+        // Declare the parameters as variables
+        params.forEach(context::declareVariable);
+        // TODO: type check the statements
+        // TODO: check that the function returns on each path
+        // Exit the function body
+        context = context.getParent();
+    }
+
+    @Override
+    public void caseAIdentExpr(AIdentExpr node) {
+        final String name = node.getIdenf().getText();
+        final Optional<Variable> variable = context.resolveVariable(name);
+        if (!variable.isPresent()) {
+            throw new TypeCheckerException(node, "Undeclared variable " + name);
+        }
+        exprNodeTypes.put(node, variable.get().getType());
+    }
+
+    @Override
+    public void caseAIntDecExpr(AIntDecExpr node) {
+        exprNodeTypes.put(node, BasicType.INT);
+    }
+
+    @Override
+    public void caseAIntOctExpr(AIntOctExpr node) {
+        exprNodeTypes.put(node, BasicType.INT);
+    }
+
+    @Override
+    public void caseAIntHexExpr(AIntHexExpr node) {
+        exprNodeTypes.put(node, BasicType.INT);
+    }
+
+    @Override
+    public void caseAFloatExpr(AFloatExpr node) {
+        exprNodeTypes.put(node, BasicType.FLOAT64);
+    }
+
+    @Override
+    public void caseARuneExpr(ARuneExpr node) {
+        exprNodeTypes.put(node, BasicType.RUNE);
+    }
+
+    @Override
+    public void caseAStringIntrExpr(AStringIntrExpr node) {
+        exprNodeTypes.put(node, BasicType.STRING);
+    }
+
+    @Override
+    public void caseAStringRawExpr(AStringRawExpr node) {
+        exprNodeTypes.put(node, BasicType.STRING);
     }
 
     @Override
@@ -46,7 +180,7 @@ public class TypeChecker extends AnalysisAdapter {
         final String name = node.getIdenf().getText();
         final Optional<NamedType> namedType = context.resolveType(name);
         if (!namedType.isPresent()) {
-            throw new TypeCheckerException(node, "No type for name: " + name);
+            throw new TypeCheckerException(node, "Undeclared type " + name);
         }
         typeNodeTypes.put(node, namedType.get().getType());
     }
