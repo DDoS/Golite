@@ -81,10 +81,10 @@ public class TypeChecker extends AnalysisAdapter {
             // If we have the type, then declare a variable for each identifier, all with the same type
             node.getType().apply(this);
             final Type type = typeNodeTypes.get(node.getType());
-            // Check that the values are assignable to the type (this is skipped if there are no values)
+            // Check that the values have the same type as the variable (this is skipped if there are no values)
             for (int i = 0; i < valueTypes.size(); i++) {
                 final Type valueType = valueTypes.get(i);
-                if (!valueType.assignableTo(type)) {
+                if (!valueType.equals(type)) {
                     throw new TypeCheckerException(node.getExpr().get(i), String.format("Cannot assign type %s to %s", valueType, type));
                 }
             }

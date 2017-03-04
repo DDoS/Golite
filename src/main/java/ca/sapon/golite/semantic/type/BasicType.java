@@ -28,12 +28,6 @@ public final class BasicType implements Type {
     }
 
     @Override
-    public boolean assignableTo(Type type) {
-        // The types must be the same
-        return this == type;
-    }
-
-    @Override
     public String toString() {
         return name;
     }

@@ -11,13 +11,17 @@ public class SliceType implements Type {
     }
 
     @Override
-    public boolean assignableTo(Type type) {
-        // The types must be the same
-        return this == type;
+    public String toString() {
+        return "[]" + component.toString();
     }
 
     @Override
-    public String toString() {
-        return "[]" + component.toString();
+    public boolean equals(Object other) {
+        return this == other || other instanceof SliceType && component.equals(((SliceType) other).component);
+    }
+
+    @Override
+    public int hashCode() {
+        return component.hashCode();
     }
 }

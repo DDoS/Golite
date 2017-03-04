@@ -8,7 +8,7 @@ import ca.sapon.golite.util.SourcePositioned;
 public abstract class Symbol implements SourcePositioned {
     private final int startLine, endLine;
     private final int startPos, endPos;
-    private final String name;
+    protected final String name;
 
     protected Symbol(String name) {
         this(0, 0, 0, 0, name);

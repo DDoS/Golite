@@ -33,4 +33,9 @@ public class Variable extends Symbol {
     public boolean isConstant() {
         return constant;
     }
+
+    @Override
+    public String toString() {
+        return String.format("var %s %s", name, type);
+    }
 }

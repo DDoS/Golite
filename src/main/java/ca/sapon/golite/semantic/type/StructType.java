@@ -22,12 +22,6 @@ public class StructType implements Type {
     }
 
     @Override
-    public boolean assignableTo(Type type) {
-        // The types must be the same
-        return this == type;
-    }
-
-    @Override
     public String toString() {
         final List<String> fieldStrings = fields.stream().map(Object::toString).collect(Collectors.toList());
         return String.format("struct {%s}", String.join("; ", fieldStrings));

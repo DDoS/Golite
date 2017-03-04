@@ -13,13 +13,26 @@ public class ArrayType implements Type {
     }
 
     @Override
-    public boolean assignableTo(Type type) {
-        // The types must be the same
-        return this == type;
+    public String toString() {
+        return String.format("[%d]%s", length, component);
     }
 
     @Override
-    public String toString() {
-        return String.format("[%d]%s", length, component);
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof ArrayType)) {
+            return false;
+        }
+        final ArrayType arrayType = (ArrayType) other;
+        return length == arrayType.length && component.equals(arrayType.component);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = component.hashCode();
+        result = 31 * result + length;
+        return result;
     }
 }

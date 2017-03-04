@@ -2,6 +2,7 @@ package ca.sapon.golite.semantic.symbol;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import ca.sapon.golite.semantic.type.Type;
 import ca.sapon.golite.util.SourcePositioned;
@@ -35,5 +36,15 @@ public class Function extends Symbol {
 
     public Optional<Type> getType() {
         return Optional.ofNullable(type);
+    }
+
+    @Override
+    public String toString() {
+        final List<String> paramStrings = parameters.stream().map(Function::paramToString).collect(Collectors.toList());
+        return String.format("func %s(%s)%s", name, String.join(", ", paramStrings), type == null ? "" : " " + type);
+    }
+
+    private static String paramToString(Variable param) {
+        return String.format("%s %s", param.getName(), param.getType());
     }
 }

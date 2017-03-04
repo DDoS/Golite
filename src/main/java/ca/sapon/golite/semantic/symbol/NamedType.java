@@ -26,4 +26,9 @@ public class NamedType extends Symbol {
     public Type getType() {
         return type;
     }
+
+    @Override
+    public String toString() {
+        return String.format("type %s %s", name, type);
+    }
 }
