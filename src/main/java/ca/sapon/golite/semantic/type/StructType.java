@@ -14,16 +14,17 @@ public class StructType implements Type {
         this.fields = fields;
     }
 
-    @Override
-    public boolean assignableTo(Type type) {
-        return false;
-    }
-
     public Optional<Field> getField(String name) {
         if (name.equals("_")) {
             throw new IllegalArgumentException("Cannot access fields with the blank identifier");
         }
         return fields.stream().filter(field -> field.name.equals(name)).findAny();
+    }
+
+    @Override
+    public boolean assignableTo(Type type) {
+        // The types must be the same
+        return this == type;
     }
 
     @Override

@@ -12,7 +12,8 @@ public class SliceType implements Type {
 
     @Override
     public boolean assignableTo(Type type) {
-        return false;
+        // The types must be the same
+        return this == type;
     }
 
     @Override

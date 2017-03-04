@@ -29,9 +29,8 @@ public final class BasicType implements Type {
 
     @Override
     public boolean assignableTo(Type type) {
-        // Same type or
-        // Can widen an int to a float
-        return this == type || this == INT && type == FLOAT64;
+        // The types must be the same
+        return this == type;
     }
 
     @Override
