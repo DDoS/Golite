@@ -186,7 +186,6 @@ public class TypeChecker extends AnalysisAdapter {
                 Optional<Symbol> optVar = context.lookupSymbol(idenf);
                 Variable var; Type lType;
                 if (optVar.isPresent() && optVar.get() instanceof Variable) {
-                    System.out.println("decld var: " + idenf);
                     var = (Variable) optVar.get();
                     lType = var.getType();
                     if (lType != rType) {
