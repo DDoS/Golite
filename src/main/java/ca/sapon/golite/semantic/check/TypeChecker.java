@@ -360,6 +360,32 @@ public class TypeChecker extends AnalysisAdapter {
     }
     
     @Override
+    public void caseAEmptyForCondition(AEmptyForCondition node) {
+    }
+
+    @Override
+    public void caseAExprForCondition(AExprForCondition node) {
+        node.getExpr().apply(this);
+        final Type conditionType = exprNodeTypes.get(node.getExpr()).resolve();
+        if (!conditionType.equals(BasicType.BOOL)) {
+            throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
+        }
+    }
+
+    @Override
+    public void caseAClauseForCondition(AClauseForCondition node) {
+        node.getInit().apply(this);
+        if (node.getCond() != null) {
+            node.getCond().apply(this);
+            final Type conditionType = exprNodeTypes.get(node.getCond()).resolve();
+            if (!conditionType.equals(BasicType.BOOL)) {
+                throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
+            }
+        }
+        // The post condition is checked in the scope of the body, not of the condition!
+    }
+    
+    @Override
     public void caseAIfBlock(AIfBlock node) {
 
         if (node.getInit() != null) {
@@ -411,32 +437,6 @@ public class TypeChecker extends AnalysisAdapter {
         context = context.getParent(); 
     }
     
-
-    @Override
-    public void caseAEmptyForCondition(AEmptyForCondition node) {
-    }
-
-    @Override
-    public void caseAExprForCondition(AExprForCondition node) {
-        node.getExpr().apply(this);
-        final Type conditionType = exprNodeTypes.get(node.getExpr()).resolve();
-        if (!conditionType.equals(BasicType.BOOL)) {
-            throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
-        }
-    }
-
-    @Override
-    public void caseAClauseForCondition(AClauseForCondition node) {
-        node.getInit().apply(this);
-        if (node.getCond() != null) {
-            node.getCond().apply(this);
-            final Type conditionType = exprNodeTypes.get(node.getCond()).resolve();
-            if (!conditionType.equals(BasicType.BOOL)) {
-                throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
-            }
-        }
-        // The post condition is checked in the scope of the body, not of the condition!
-    }
     
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
