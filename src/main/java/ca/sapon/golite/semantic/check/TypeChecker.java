@@ -399,6 +399,10 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseACallExpr(ACallExpr node) {
+        typeCheckCall(node, true);
+    }
+
+    private void typeCheckCall(ACallExpr node, boolean mustReturn) {
         // The call might be a cast. In this case the identifier will be a single symbol pointing to a type
         final PExpr value = node.getValue();
         if (value instanceof AIdentExpr) {
@@ -417,8 +421,8 @@ public class TypeChecker extends AnalysisAdapter {
             throw new TypeCheckerException(value, "Not a function type " + valueType);
         }
         final FunctionType functionType = (FunctionType) valueType;
-        // The function should have a return type
-        if (!functionType.getReturnType().isPresent()) {
+        // Enforce the presence of a return type if needed
+        if (mustReturn && !functionType.getReturnType().isPresent()) {
             throw new TypeCheckerException(value, "The function type " + functionType + " does not return");
         }
         // Get the argument types
@@ -436,8 +440,10 @@ public class TypeChecker extends AnalysisAdapter {
                 throw new TypeCheckerException(node.getArgs().get(i), "Cannot assign type " + argTypes.get(i) + " to " + paramType);
             }
         }
-        // The return type if the type of the expression
-        exprNodeTypes.put(node, functionType.getReturnType().get());
+        // The return type (if any) is the type of the expression
+        if (functionType.getReturnType().isPresent()) {
+            exprNodeTypes.put(node, functionType.getReturnType().get());
+        }
     }
 
     private void typeCheckCast(ACallExpr node, Type castType) {

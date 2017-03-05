@@ -1,5 +1,8 @@
 package test
 
+func noRet() {
+}
+
 func test(b bool, i int) float64 {
     var b = true
     for b  {
