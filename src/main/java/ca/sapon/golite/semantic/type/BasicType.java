@@ -34,18 +34,16 @@ public final class BasicType extends Type {
         if (!CAST_TYPES.contains(this)) {
             throw new IllegalStateException("This isn't a cast-able type: " + this);
         }
-        // Identity is allowed
+        // The type being cast must also be a basic cast type
+        if (!(type instanceof BasicType) || !CAST_TYPES.contains(type)) {
+            return false;
+        }
+        // Identity is always allowed
         if (this.equals(type)) {
             return true;
         }
-        // Int or rune to float (and vice-versa)
-        if ((this.equals(BasicType.INT) || this.equals(BasicType.RUNE)) && type.equals(BasicType.FLOAT64)
-                || this.equals(BasicType.FLOAT64) && (type.equals(BasicType.INT) || type.equals(BasicType.RUNE))) {
-            return true;
-        }
-        // Int to rune (and vice-versa)
-        return this.equals(BasicType.INT) && type.equals(BasicType.RUNE)
-                || this.equals(BasicType.RUNE) && type.equals(BasicType.INT);
+        // Can cast from int, float64 or rune to any other (in other words: exclude booleans)
+        return !this.equals(BOOL) && !type.equals(BOOL);
     }
 
     @Override
