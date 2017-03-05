@@ -32,6 +32,10 @@ public abstract class Context {
     }
 
     public Optional<Symbol> lookupSymbol(String name) {
+        return lookupSymbol(name, true);
+    }
+
+    public Optional<Symbol> lookupSymbol(String name, boolean recursive) {
         if (name.equals("_")) {
             throw new IllegalArgumentException("Cannot resolve the blank identifier");
         }
@@ -39,7 +43,7 @@ public abstract class Context {
         if (symbol != null) {
             return Optional.of(symbol);
         }
-        return parent == null ? Optional.empty() : parent.lookupSymbol(name);
+        return recursive && parent != null ? parent.lookupSymbol(name) : Optional.empty();
     }
 
     public void declareSymbol(Symbol symbol) {
