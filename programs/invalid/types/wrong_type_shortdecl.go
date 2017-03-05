@@ -4,5 +4,5 @@ var a int
 var b float64
 
 func x() {
-	a, b, c := (1.0+b), 2.0, a
+	a, c, b, _ := 1, 2, (a+a), 4
 }

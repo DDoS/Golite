@@ -165,7 +165,6 @@ public class TypeChecker extends AnalysisAdapter {
         for (PExpr left : node.getLeft()) {
             if (left instanceof AIdentExpr) {
                 String idenf = ((AIdentExpr) left).getIdenf().getText();
-
                 if (!idenf.equals("_") && !context.lookupSymbol(idenf).isPresent()) {
                     undeclaredVar = true;
                 }
@@ -174,28 +173,34 @@ public class TypeChecker extends AnalysisAdapter {
         if (!undeclaredVar) {
             throw new TypeCheckerException(node, "No new variables on LHS of :=");
         }
-        
         //Check that all exprs on RHS are well-typed
         node.getRight().forEach(exp -> exp.apply(this));
-        
         //Check that vars already declared are assigned to expressions of the same type
+        final NodePosition position = new NodePosition(node);
         for (int i = 0; i < node.getLeft().size(); i++) {
-            node.getLeft().get(i).apply(this);
+
             String idenf = ((AIdentExpr) node.getLeft().get(i)).getIdenf().getText();
             node.getRight().get(i).apply(this);
-            
             Type rType = exprNodeTypes.get(node.getRight().get(i));
-            Optional<Symbol> optVar = context.lookupSymbol(idenf);
-            Variable var; Type lType;
-            if (optVar.isPresent() && optVar.get() instanceof Variable) {
-                var = (Variable) optVar.get();
-                lType = var.getType();
-                if (lType != rType) {
-                    throw new TypeCheckerException(node, "Cannot use " + rType + " as " + lType + " in assignment");
-                }
+            if (!idenf.equals("_")) {
+                Optional<Symbol> optVar = context.lookupSymbol(idenf);
+                Variable var; Type lType;
+                if (optVar.isPresent() && optVar.get() instanceof Variable) {
+                    System.out.println("decld var: " + idenf);
+                    var = (Variable) optVar.get();
+                    lType = var.getType();
+                    if (lType != rType) {
+                        throw new TypeCheckerException(node, "Cannot use " + rType + " as " + lType + " in assignment");
+                    } }
+                else {
+                        System.out.println("hi");
+                        System.out.println(idenf + " " + rType);
+                        context.declareSymbol(new Variable(position, idenf, rType, false));   
+                }   
             }
         }
-        
+        //System.out.println(context.lookupSymbol("c").get() + " var c");
+        //System.out.println(context.lookupSymbol("d").get() + " var d");
     }
 
     @Override
