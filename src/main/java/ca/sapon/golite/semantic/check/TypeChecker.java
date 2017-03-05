@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import ca.sapon.golite.semantic.context.CodeBlockContext;
+import ca.sapon.golite.semantic.context.CodeBlockContext.Kind;
 import ca.sapon.golite.semantic.context.Context;
 import ca.sapon.golite.semantic.context.FunctionContext;
 import ca.sapon.golite.semantic.context.TopLevelContext;
@@ -32,10 +34,14 @@ import golite.node.AArrayType;
 import golite.node.AAssignStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
+import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
 import golite.node.ADeclVarShortStmt;
+import golite.node.AEmptyForCondition;
 import golite.node.AEmptyStmt;
+import golite.node.AExprForCondition;
 import golite.node.AFloatExpr;
+import golite.node.AForStmt;
 import golite.node.AFuncDecl;
 import golite.node.AIdentExpr;
 import golite.node.AIndexExpr;
@@ -272,6 +278,47 @@ public class TypeChecker extends AnalysisAdapter {
             }
         }
     }
+    
+    @Override
+    public void caseAForStmt(AForStmt node) {
+        //handle for conditions separately
+        node.getForCondition().apply(this);
+        
+        if (context instanceof CodeBlockContext) {
+            context = new CodeBlockContext((CodeBlockContext) context, nextContextID, Kind.FOR);
+        } else {
+            context = new CodeBlockContext((FunctionContext) context, nextContextID, Kind.FOR);
+        }
+        nextContextID++;
+        nodeContexts.put(node, context);
+        node.getStmt().forEach(stmt -> stmt.apply(this));
+        context = context.getParent();
+    }
+    
+    @Override
+    public void caseAEmptyForCondition(AEmptyForCondition node) {}
+    
+    @Override
+    public void caseAExprForCondition(AExprForCondition node) {
+        node.getExpr().apply(this);
+        if (!exprNodeTypes.get(node.getExpr()).equals(BasicType.BOOL)) {
+            throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
+        }
+    }
+    
+    @Override
+    public void caseAClauseForCondition(AClauseForCondition node) {
+        //TODO: init should 'shadow' variables declared in the same scope
+        //as the for statement
+        node.getInit().apply(this);
+        node.getCond().apply(this);
+        System.out.println(node.getCond());
+        if (!exprNodeTypes.get(node.getCond()).equals(BasicType.BOOL)) {
+            throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
+        }
+        node.getPost().apply(this);
+    }
+    
 
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
