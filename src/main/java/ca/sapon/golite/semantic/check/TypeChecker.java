@@ -182,9 +182,11 @@ public class TypeChecker extends AnalysisAdapter {
             String idenf = ((AIdentExpr) node.getLeft().get(i)).getIdenf().getText();
             node.getRight().get(i).apply(this);
             Type rType = exprNodeTypes.get(node.getRight().get(i));
+            //If blank identifier, skip to the next idenf
             if (!idenf.equals("_")) {
                 Optional<Symbol> optVar = context.lookupSymbol(idenf);
                 Variable var; Type lType;
+                //If the var has already been declared, make sure RHS expr has the same type
                 if (optVar.isPresent() && optVar.get() instanceof Variable) {
                     var = (Variable) optVar.get();
                     lType = var.getType();
@@ -192,6 +194,7 @@ public class TypeChecker extends AnalysisAdapter {
                         throw new TypeCheckerException(node, "Cannot use " + rType + " as " + lType + " in assignment");
                     } 
                 } else {
+                    //Var hasn't been declared - declare as new var with the same type as RHS expr
                     context.declareSymbol(new Variable(position, idenf, rType, false));   
                 }
             }
