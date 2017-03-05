@@ -392,7 +392,7 @@ public class TypeChecker extends AnalysisAdapter {
         final LinkedList<PIfBlock> ifBlocks = node.getIfBlock();
         if (ifBlocks != null) {
             for (int i = 0, ifBlocksSize = ifBlocks.size(); i < ifBlocksSize; i++) {
-                ifBlocks.get(i).apply(this);         
+                ifBlocks.get(i).apply(this);          
             }
         }
         final LinkedList<PStmt> ifElseBlocks = node.getElse();        
