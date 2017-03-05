@@ -37,7 +37,7 @@ Helpers
     zero = '0';
     non_zero = [num_ch - '0'];
 
-    hex_num_ch = num_ch | alpha;
+    hex_num_ch = num_ch | ['a' .. 'f'] | ['A' .. 'F'];
     single_quot = ''';
     double_quot = '"';
     back_q = '`';
