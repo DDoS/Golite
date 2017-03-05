@@ -65,6 +65,7 @@ import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.PExpr;
+import golite.node.PForCondition;
 import golite.node.PParam;
 import golite.node.PStructField;
 import golite.node.PType;
@@ -269,17 +270,22 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseAForStmt(AForStmt node) {
-        // Open a block to place the clause in a new context
+        // Open a block to place the condition in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
         nextContextID++;
         // Type check the condition
-        node.getForCondition().apply(this);
+        final PForCondition condition = node.getForCondition();
+        condition.apply(this);
         // Open a new context for the "for" body
         context = new CodeBlockContext(context, nextContextID, Kind.FOR);
         nextContextID++;
         nodeContexts.put(node, context);
         // Type check the for statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
+        // If the condition is a clause, then we need to type check the post with the rest of the body
+        if (condition instanceof AClauseForCondition) {
+            ((AClauseForCondition) condition).getPost().apply(this);
+        }
         // Close the "for" body
         context = context.getParent();
         // Close the outer block
@@ -307,7 +313,7 @@ public class TypeChecker extends AnalysisAdapter {
         if (!conditionType.equals(BasicType.BOOL)) {
             throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
         }
-        node.getPost().apply(this);
+        // The post condition is checked in the scope of the body, not of the condition!
     }
 
     @Override

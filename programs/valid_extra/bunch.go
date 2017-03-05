@@ -14,6 +14,10 @@ func test(b bool, i int) float64 {
 
     for b2 {
     }
+
+    for i = 0; ; i++ {
+
+    }
 }
 
 type Data []int
