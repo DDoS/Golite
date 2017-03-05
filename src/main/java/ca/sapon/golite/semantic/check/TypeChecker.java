@@ -31,6 +31,7 @@ import ca.sapon.golite.util.NodePosition;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
+import golite.node.AAssignAddStmt;
 import golite.node.AAssignStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
@@ -241,6 +242,7 @@ public class TypeChecker extends AnalysisAdapter {
         }
     }
     
+
     @Override
     public void caseAPrintStmt(APrintStmt node) {
         for (int i = 0; i< node.getExpr().size(); i++)
@@ -250,11 +252,8 @@ public class TypeChecker extends AnalysisAdapter {
             
             // Checks if all expressions resolve to a base type
             Type type = exprNodeTypes.get(exp);
-            if (!(type.toString().equals("int")) 
-                    || type.toString().equals("rune")
-                    || type.toString().equals("float64") 
-                    || type.toString().equals("bool") 
-                    || type.toString().equals("string")) {
+            
+            if (!BasicType.ALL.contains(type)) {
                 throw new TypeCheckerException(node, "Invalid use of following type in Println : " + type.toString()); 
             }
         }
@@ -269,11 +268,7 @@ public class TypeChecker extends AnalysisAdapter {
             
             // Checks if all expressions resolve to a base type
             Type type = exprNodeTypes.get(exp);
-            if (!(type.toString().equals("int")) 
-                    || type.toString().equals("rune")
-                    || type.toString().equals("float64") 
-                    || type.toString().equals("bool") 
-                    || type.toString().equals("string")) {
+            if (!BasicType.ALL.contains(type)) {
                 throw new TypeCheckerException(node, "Invalid use of following type in Println : " + type.toString());
             }
         }
