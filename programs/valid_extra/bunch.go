@@ -1,7 +1,10 @@
 package test
 
 func test(b bool, i int) float64 {
-
+    var b = true
+    for b  {
+        var b = false
+    }
 }
 
 type Data []int

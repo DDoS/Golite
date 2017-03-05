@@ -9,14 +9,12 @@ import ca.sapon.golite.semantic.symbol.Symbol;
 public class CodeBlockContext extends Context {
     private final Kind kind;
 
-    public CodeBlockContext(FunctionContext parent, int id, Kind kind) {
+    public CodeBlockContext(Context parent, int id, Kind kind) {
         super(parent, id);
         this.kind = kind;
-    }
-
-    public CodeBlockContext(CodeBlockContext parent, int id, Kind kind) {
-        super(parent, id);
-        this.kind = kind;
+        if (!(parent instanceof FunctionContext) && !(parent instanceof CodeBlockContext)) {
+            throw new IllegalArgumentException("The parent context should be a function or another code block");
+        }
     }
 
     public Kind getKind() {
@@ -32,6 +30,6 @@ public class CodeBlockContext extends Context {
     }
 
     public enum Kind {
-        IF, FOR, SWITCH
+        IF, FOR, SWITCH, BLOCK
     }
 }

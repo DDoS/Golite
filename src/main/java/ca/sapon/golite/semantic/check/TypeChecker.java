@@ -276,17 +276,20 @@ public class TypeChecker extends AnalysisAdapter {
     
     @Override
     public void caseAForStmt(AForStmt node) {
-        //handle for conditions separately
+        // Open a block to place the clause in a new context
+        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+        nextContextID++;
+        // Type check the condition
         node.getForCondition().apply(this);
-        
-        if (context instanceof CodeBlockContext) {
-            context = new CodeBlockContext((CodeBlockContext) context, nextContextID, Kind.FOR);
-        } else {
-            context = new CodeBlockContext((FunctionContext) context, nextContextID, Kind.FOR);
-        }
+        // Open a new context for the "for" body
+        context = new CodeBlockContext(context, nextContextID, Kind.FOR);
         nextContextID++;
         nodeContexts.put(node, context);
+        // Type check the for statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
+        // Close the "for" body
+        context = context.getParent();
+        // Close the outer block
         context = context.getParent();
     }
     
