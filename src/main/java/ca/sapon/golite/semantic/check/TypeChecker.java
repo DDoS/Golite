@@ -31,7 +31,6 @@ import ca.sapon.golite.util.NodePosition;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
-import golite.node.AAssignAddStmt;
 import golite.node.AAssignStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
@@ -137,7 +136,7 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
-     //TODO   
+        //TODO
     }
 
     @Override
@@ -187,93 +186,87 @@ public class TypeChecker extends AnalysisAdapter {
         // Exit the function body
         context = context.getParent();
     }
-  
+
     @Override
-    public void caseAEmptyStmt(AEmptyStmt node) {}
-    
-    @Override 
-    public void caseABreakStmt(ABreakStmt node) {}
-    
-    @Override 
-    public void caseAContinueStmt(AContinueStmt node) {}
-
-    @Override 
-    public void caseAReturnStmt(AReturnStmt node) {
-
-        Function func = ((FunctionContext) context).getFunction();
-        //look up the return type of the function
-        Optional<Type> retType = ((FunctionType) func.getType()).getReturnType();
-        if (!retType.isPresent()) {
-            if (node.getExpr() != null)
-                throw new TypeCheckerException(node, "This function should not return anything.");
-        } else if(node.getExpr() == null) {
-            throw new TypeCheckerException(node, "A return expression is required.");
-        }
-        else {
-            Type noOptionalRetType = retType.get();
-            node.getExpr().apply(this);
-            Type exprType = exprNodeTypes.get(node.getExpr());
-            if (!exprType.equals(noOptionalRetType)) {
-                throw new TypeCheckerException(node, "This function should return " + noOptionalRetType + " instead of " + exprType);
-            }
-        } 
+    public void caseAEmptyStmt(AEmptyStmt node) {
     }
-    
+
+    @Override
+    public void caseABreakStmt(ABreakStmt node) {
+    }
+
+    @Override
+    public void caseAContinueStmt(AContinueStmt node) {
+    }
+
+    @Override
+    public void caseAReturnStmt(AReturnStmt node) {
+        final Function func = ((FunctionContext) context).getFunction();
+        // If the function returns, check that the expression has the same type
+        final Optional<Type> optReturnType = ((FunctionType) func.getType()).getReturnType();
+        if (!optReturnType.isPresent()) {
+            if (node.getExpr() != null) {
+                throw new TypeCheckerException(node, "This function should not return anything");
+            }
+        } else if (node.getExpr() == null) {
+            throw new TypeCheckerException(node, "A return expression is required");
+        } else {
+            final Type returnType = optReturnType.get();
+            node.getExpr().apply(this);
+            final Type exprType = exprNodeTypes.get(node.getExpr());
+            if (!exprType.equals(returnType)) {
+                throw new TypeCheckerException(node, "This function should return " + returnType + " instead of " + exprType);
+            }
+        }
+    }
+
     @Override
     public void caseAAssignStmt(AAssignStmt node) {
-        //Check that both sides have valid exprs
-        for (PExpr exp : node.getLeft()) {
-            AIdentExpr e = (AIdentExpr) exp;
-            if (!e.getIdenf().getText().equals("_")) {
-                e.apply(this);
+        // Check that the left side has valid expressions (ignore blank identifiers)
+        for (PExpr left : node.getLeft()) {
+            if (left instanceof AIdentExpr && ((AIdentExpr) left).getIdenf().getText().equals("_")) {
+                continue;
+            }
+            left.apply(this);
+        }
+        // Check tht the right side has valid expressions too
+        node.getRight().forEach(rExpr -> rExpr.apply(this));
+        // Compare elements at the same position in both sides
+        for (int i = 0; i < node.getLeft().size(); i++) {
+            final PExpr left = node.getLeft().get(i);
+            // Blank identifiers can always be assigned to
+            if (left instanceof AIdentExpr && ((AIdentExpr) left).getIdenf().getText().equals("_")) {
+                continue;
+            }
+            final Type leftType = exprNodeTypes.get(left);
+            final Type rightType = exprNodeTypes.get(node.getRight().get(i));
+            if (!leftType.equals(rightType)) {
+                throw new TypeCheckerException(node, "Cannot use type " + rightType + " as type " + leftType + " in assignment");
             }
         }
-        node.getRight().forEach(rExpr -> rExpr.apply(this));
-        //Compare elements at the same position in both sides
-        for (int i = 0; i < node.getLeft().size(); i++) {
-            AIdentExpr lExp = (AIdentExpr) node.getLeft().get(i);
-            if (!lExp.getIdenf().getText().equals("_")) {
-                Type l = exprNodeTypes.get((node.getLeft().get(i)));
-                Type r = exprNodeTypes.get((node.getRight().get(i)));
-                if (!l.equals(r)) {
-                    throw new TypeCheckerException(node, "Cannot use type " + r  + " as type " +  l + " in assignment" );
-                }
-            }   
-        }
     }
-    
 
     @Override
     public void caseAPrintStmt(APrintStmt node) {
-        for (int i = 0; i< node.getExpr().size(); i++)
-        {
-            PExpr exp = (node.getExpr().get(i));
-            exp.apply(this);
-            
-            // Checks if all expressions resolve to a base type
-            Type type = exprNodeTypes.get(exp);
-            
-            if (!BasicType.ALL.contains(type)) {
-                throw new TypeCheckerException(node, "Invalid use of following type in Println : " + type.toString()); 
-            }
-        }
+        typeCheckPrintArgs(node.getExpr());
     }
-    
+
     @Override
     public void caseAPrintlnStmt(APrintlnStmt node) {
-        for (int i = 0; i< node.getExpr().size(); i++)
-        {
-            PExpr exp = (node.getExpr().get(i));
-            exp.apply(this);
-            
+        typeCheckPrintArgs(node.getExpr());
+    }
+
+    private void typeCheckPrintArgs(List<PExpr> args) {
+        for (PExpr arg : args) {
+            arg.apply(this);
             // Checks if all expressions resolve to a base type
-            Type type = exprNodeTypes.get(exp);
-            if (!BasicType.ALL.contains(type)) {
-                throw new TypeCheckerException(node, "Invalid use of following type in Println : " + type.toString());
+            final Type argType = exprNodeTypes.get(arg).resolve();
+            if (!(argType instanceof BasicType) || !BasicType.ALL.contains(argType)) {
+                throw new TypeCheckerException(arg, "Not a printable type " + argType);
             }
         }
     }
-    
+
     @Override
     public void caseAForStmt(AForStmt node) {
         // Open a block to place the clause in a new context
@@ -292,10 +285,11 @@ public class TypeChecker extends AnalysisAdapter {
         // Close the outer block
         context = context.getParent();
     }
-    
+
     @Override
-    public void caseAEmptyForCondition(AEmptyForCondition node) {}
-    
+    public void caseAEmptyForCondition(AEmptyForCondition node) {
+    }
+
     @Override
     public void caseAExprForCondition(AExprForCondition node) {
         node.getExpr().apply(this);
@@ -303,20 +297,16 @@ public class TypeChecker extends AnalysisAdapter {
             throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
         }
     }
-    
+
     @Override
     public void caseAClauseForCondition(AClauseForCondition node) {
-        //TODO: init should 'shadow' variables declared in the same scope
-        //as the for statement
         node.getInit().apply(this);
         node.getCond().apply(this);
-        System.out.println(node.getCond());
         if (!exprNodeTypes.get(node.getCond()).equals(BasicType.BOOL)) {
             throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
         }
         node.getPost().apply(this);
     }
-    
 
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
