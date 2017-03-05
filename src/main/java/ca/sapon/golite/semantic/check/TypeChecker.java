@@ -32,6 +32,7 @@ import golite.analysis.AnalysisAdapter;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
 import golite.node.AAssignStmt;
+import golite.node.ABitNotExpr;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.AClauseForCondition;
@@ -48,11 +49,14 @@ import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
+import golite.node.ALogicNotExpr;
 import golite.node.ANameType;
+import golite.node.ANegateExpr;
 import golite.node.AParam;
 import golite.node.APrintStmt;
 import golite.node.APrintlnStmt;
 import golite.node.AProg;
+import golite.node.AReaffirmExpr;
 import golite.node.AReturnStmt;
 import golite.node.ARuneExpr;
 import golite.node.ASelectExpr;
@@ -276,7 +280,7 @@ public class TypeChecker extends AnalysisAdapter {
             arg.apply(this);
             // Checks if all expressions resolve to a base type
             final Type argType = exprNodeTypes.get(arg).resolve();
-            if (!(argType instanceof BasicType) || !BasicType.ALL.contains(argType)) {
+            if (!(argType instanceof BasicType)) {
                 throw new TypeCheckerException(arg, "Not a printable type " + argType);
             }
         }
@@ -471,10 +475,14 @@ public class TypeChecker extends AnalysisAdapter {
     }
 
     private void typeCheckCast(ACallExpr node, Type castType) {
-        // Check that the inner type can be used for a cast
-        final Type innerType = castType.resolve();
-        if (!(innerType instanceof BasicType) || !BasicType.CAST_TYPES.contains(innerType)) {
-            throw new TypeCheckerException(node.getValue(), "Cannot cast to type " + innerType);
+        // Check that the resolved type can be used for a cast
+        final Type resolvedCast = castType.resolve();
+        if (!(resolvedCast instanceof BasicType)) {
+            throw new TypeCheckerException(node.getValue(), "Cannot cast to non-basic type " + resolvedCast);
+        }
+        final BasicType basicCastType = (BasicType) resolvedCast;
+        if (!basicCastType.canCastTo()) {
+            throw new TypeCheckerException(node.getValue(), "Cannot cast to type " + basicCastType);
         }
         // Get the argument types
         node.getArgs().forEach(arg -> arg.apply(this));
@@ -484,7 +492,7 @@ public class TypeChecker extends AnalysisAdapter {
             throw new TypeCheckerException(node, "Expected only one argument for a cast");
         }
         // Check that we can cast the argument to the cast type
-        if (!((BasicType) innerType).canCastFrom(argTypes.get(0))) {
+        if (!basicCastType.canCastFrom(argTypes.get(0))) {
             throw new TypeCheckerException(node, "Cannot cast from " + argTypes.get(0) + " to " + castType);
         }
         // The type is that of the cast, without the resolution
