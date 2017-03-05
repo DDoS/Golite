@@ -2,6 +2,7 @@ package ca.sapon.golite.semantic.check;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +55,8 @@ import golite.node.AFuncDecl;
 import golite.node.AGreatEqExpr;
 import golite.node.AGreatExpr;
 import golite.node.AIdentExpr;
+import golite.node.AIfBlock;
+import golite.node.AIfStmt;
 import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
@@ -89,7 +92,9 @@ import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.PExpr;
 import golite.node.PForCondition;
+import golite.node.PIfBlock;
 import golite.node.PParam;
+import golite.node.PStmt;
 import golite.node.PStructField;
 import golite.node.PType;
 import golite.node.Start;
@@ -353,6 +358,59 @@ public class TypeChecker extends AnalysisAdapter {
         // Close the outer block
         context = context.getParent();
     }
+    
+    @Override
+    public void caseAIfBlock(AIfBlock node) {
+
+        if (node.getInit() != null) {
+            node.getInit().apply(this);
+        }
+        if (node.getCond() != null) {
+            node.getCond().apply(this);
+        }
+        
+        if (node.getBlock()!= null) {
+            // Open a block to place the clause in a new context
+            context = new CodeBlockContext(context, nextContextID, Kind.IF);
+            nextContextID++;
+
+            for (PStmt stmt : node.getBlock()) {
+                stmt.apply(this);
+            }
+            // Close the context
+            context = context.getParent();
+        }
+    }
+    
+    @Override
+    public void caseAIfStmt(AIfStmt node) {
+
+        // Open a block to place the clause in a new context
+        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+        nextContextID++;
+        
+        final LinkedList<PIfBlock> ifBlocks = node.getIfBlock();
+        if (ifBlocks != null) {
+            for (int i = 0, ifBlocksSize = ifBlocks.size(); i < ifBlocksSize; i++) {
+                ifBlocks.get(i).apply(this);         
+            }
+        }
+        final LinkedList<PStmt> ifElseBlocks = node.getElse();        
+        if (ifElseBlocks != null) {
+            // Open a block to place the clause in a new context
+            context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+            nextContextID++;
+            
+            for (int i = 0, ifElseBlocksSize = ifElseBlocks.size(); i < ifElseBlocksSize; i++) {
+                ifElseBlocks.get(i).apply(this);         
+            }
+            // Close the context
+            context = context.getParent();
+        }
+        // Close the context
+        context = context.getParent();
+    }
+    
 
     @Override
     public void caseAEmptyForCondition(AEmptyForCondition node) {
