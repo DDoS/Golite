@@ -2,7 +2,6 @@ package ca.sapon.golite.semantic.check;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,9 +91,7 @@ import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.PExpr;
 import golite.node.PForCondition;
-import golite.node.PIfBlock;
 import golite.node.PParam;
-import golite.node.PStmt;
 import golite.node.PStructField;
 import golite.node.PType;
 import golite.node.Start;
@@ -384,52 +381,39 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseAIfBlock(AIfBlock node) {
-
+        // Open a block to place the condition in a new context
+        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+        nextContextID++;
+        // Type-check the init statement
         if (node.getInit() != null) {
             node.getInit().apply(this);
         }
-        if (node.getCond() != null) {
-            node.getCond().apply(this);
+        // Type-check the condition: it should be a bool
+        node.getCond().apply(this);
+        final Type conditionType = exprNodeTypes.get(node.getCond()).resolve();
+        if (conditionType != BasicType.BOOL) {
+            throw new TypeCheckerException(node.getCond(), "Not a bool");
         }
-
-        if (node.getBlock() != null) {
-            // Open a block to place the clause in a new context
-            context = new CodeBlockContext(context, nextContextID, Kind.IF);
-            nextContextID++;
-
-            for (PStmt stmt : node.getBlock()) {
-                stmt.apply(this);
-            }
-            // Close the context
-            context = context.getParent();
-        }
+        // Open a block to place the body in a new context
+        context = new CodeBlockContext(context, nextContextID, Kind.IF);
+        nextContextID++;
+        // Type-check the body
+        node.getBlock().forEach(stmt -> stmt.apply(this));
+        // Close the body context
+        context = context.getParent();
+        // Close the condition context
+        context = context.getParent();
     }
 
     @Override
     public void caseAIfStmt(AIfStmt node) {
-
-        // Open a block to place the clause in a new context
-        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+        // Type-check the if blocks
+        node.getIfBlock().forEach(ifBlock -> ifBlock.apply(this));
+        // Open a block to place the else block in a new context
+        context = new CodeBlockContext(context, nextContextID, Kind.IF);
         nextContextID++;
-
-        final LinkedList<PIfBlock> ifBlocks = node.getIfBlock();
-        if (ifBlocks != null) {
-            for (int i = 0, ifBlocksSize = ifBlocks.size(); i < ifBlocksSize; i++) {
-                ifBlocks.get(i).apply(this);
-            }
-        }
-        final LinkedList<PStmt> ifElseBlocks = node.getElse();
-        if (ifElseBlocks != null) {
-            // Open a block to place the clause in a new context
-            context = new CodeBlockContext(context, nextContextID, Kind.ELSE); 
-            nextContextID++;
-
-            for (int i = 0, ifElseBlocksSize = ifElseBlocks.size(); i < ifElseBlocksSize; i++) {
-                ifElseBlocks.get(i).apply(this);
-            }
-            // Close the context
-            context = context.getParent();
-        }
+        // Type-check the else block
+        node.getElse().forEach(stmt -> stmt.apply(this));
         // Close the context
         context = context.getParent();
     }
