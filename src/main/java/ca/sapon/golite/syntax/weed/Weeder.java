@@ -25,6 +25,7 @@ import golite.node.AAssignStmt;
 import golite.node.AAssignSubStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
+import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
 import golite.node.ADeclVarShortStmt;
 import golite.node.ADecrStmt;
@@ -194,6 +195,13 @@ public class Weeder extends DepthFirstAdapter {
     @Override
     public void outAAssignBitXorStmt(AAssignBitXorStmt node) {
         node.getLeft().apply(AssignableWeeder.INSTANCE);
+    }
+
+    @Override
+    public void outAClauseForCondition(AClauseForCondition node) {
+        if (node.getPost() instanceof ADeclVarShortStmt) {
+            throw new WeederException(node.getPost(), "Cannot have a short variable declaration as the post statement of a \"for\" clause");
+        }
     }
 
     @Override
