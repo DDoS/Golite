@@ -255,7 +255,7 @@ public class TypeChecker extends AnalysisAdapter {
                     || type.toString().equals("float64") 
                     || type.toString().equals("bool") 
                     || type.toString().equals("string")) {
-                throw new TypeCheckerException(node, "Invalid use of following type in Println : " + type.toString());
+                throw new TypeCheckerException(node, "Invalid use of following type in Println : " + type.toString()); 
             }
         }
     }
