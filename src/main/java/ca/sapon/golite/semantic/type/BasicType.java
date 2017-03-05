@@ -36,10 +36,22 @@ public final class BasicType extends Type {
         return name;
     }
 
+    @Override
+    public boolean isComparable() {
+        return true;
+    }
+
+    @Override
+    public boolean isOrdered() {
+        return this != BOOL;
+    }
+
+    @Override
     public boolean isNumeric() {
         return NUMERICS.contains(this);
     }
 
+    @Override
     public boolean isInteger() {
         return INTEGERS.contains(this);
     }

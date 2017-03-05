@@ -29,35 +29,53 @@ import ca.sapon.golite.semantic.type.StructType.Field;
 import ca.sapon.golite.semantic.type.Type;
 import ca.sapon.golite.util.NodePosition;
 import golite.analysis.AnalysisAdapter;
+import golite.node.AAddExpr;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
 import golite.node.AAssignStmt;
+import golite.node.ABitAndExpr;
+import golite.node.ABitAndNotExpr;
 import golite.node.ABitNotExpr;
+import golite.node.ABitOrExpr;
+import golite.node.ABitXorExpr;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
 import golite.node.ADeclVarShortStmt;
+import golite.node.ADivExpr;
 import golite.node.AEmptyForCondition;
 import golite.node.AEmptyStmt;
+import golite.node.AEqExpr;
 import golite.node.AExprForCondition;
 import golite.node.AFloatExpr;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
+import golite.node.AGreatEqExpr;
+import golite.node.AGreatExpr;
 import golite.node.AIdentExpr;
 import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
+import golite.node.ALessEqExpr;
+import golite.node.ALessExpr;
+import golite.node.ALogicAndExpr;
 import golite.node.ALogicNotExpr;
+import golite.node.ALogicOrExpr;
+import golite.node.ALshiftExpr;
+import golite.node.AMulExpr;
 import golite.node.ANameType;
 import golite.node.ANegateExpr;
+import golite.node.ANeqExpr;
 import golite.node.AParam;
 import golite.node.APrintStmt;
 import golite.node.APrintlnStmt;
 import golite.node.AProg;
 import golite.node.AReaffirmExpr;
+import golite.node.ARemExpr;
 import golite.node.AReturnStmt;
+import golite.node.ARshiftExpr;
 import golite.node.ARuneExpr;
 import golite.node.ASelectExpr;
 import golite.node.ASliceType;
@@ -65,6 +83,7 @@ import golite.node.AStringIntrExpr;
 import golite.node.AStringRawExpr;
 import golite.node.AStructField;
 import golite.node.AStructType;
+import golite.node.ASubExpr;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
@@ -146,9 +165,10 @@ public class TypeChecker extends AnalysisAdapter {
         for (PExpr left : node.getLeft()) {
             if (left instanceof AIdentExpr) {
                 String idenf = ((AIdentExpr) left).getIdenf().getText();
-                if (!idenf.equals("_") && !context.lookupSymbol(idenf).isPresent())
-                    //boolean isVar = context.lookupSymbol(idenf).get() instanceof Variable;
+
+                if (!idenf.equals("_") && !context.lookupSymbol(idenf).isPresent()) {
                     undeclaredVar = true;
+                }
             }
         }
         if (!undeclaredVar) {
@@ -566,7 +586,7 @@ public class TypeChecker extends AnalysisAdapter {
         inner.apply(this);
         final Type innerType = exprNodeTypes.get(inner);
         final Type resolvedType = innerType.resolve();
-        if (!(resolvedType instanceof BasicType) || !((BasicType) resolvedType).isNumeric()) {
+        if (!resolvedType.isNumeric()) {
             throw new TypeCheckerException(inner, "Not a numeric type");
         }
         // The type is the same as the inner
@@ -579,11 +599,167 @@ public class TypeChecker extends AnalysisAdapter {
         node.getInner().apply(this);
         final Type innerType = exprNodeTypes.get(node.getInner());
         final Type resolvedType = innerType.resolve();
-        if (!(resolvedType instanceof BasicType) || !((BasicType) resolvedType).isInteger()) {
+        if (!resolvedType.isInteger()) {
             throw new TypeCheckerException(node.getInner(), "Not an integer type");
         }
         // The type is the same as the inner
         exprNodeTypes.put(node, innerType);
+    }
+
+    @Override
+    public void caseAMulExpr(AMulExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.MUL);
+    }
+
+    @Override
+    public void caseADivExpr(ADivExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.DIV);
+    }
+
+    @Override
+    public void caseARemExpr(ARemExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.REM);
+    }
+
+    @Override
+    public void caseALshiftExpr(ALshiftExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.LSHIFT);
+    }
+
+    @Override
+    public void caseARshiftExpr(ARshiftExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.RSHIFT);
+    }
+
+    @Override
+    public void caseABitAndExpr(ABitAndExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_AND);
+    }
+
+    @Override
+    public void caseABitAndNotExpr(ABitAndNotExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_AND_NOT);
+    }
+
+    @Override
+    public void caseAAddExpr(AAddExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.ADD);
+    }
+
+    @Override
+    public void caseASubExpr(ASubExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.SUB);
+    }
+
+    @Override
+    public void caseABitOrExpr(ABitOrExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_OR);
+    }
+
+    @Override
+    public void caseABitXorExpr(ABitXorExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_XOR);
+    }
+
+    @Override
+    public void caseAEqExpr(AEqExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.EQ);
+    }
+
+    @Override
+    public void caseANeqExpr(ANeqExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.NEQ);
+    }
+
+    @Override
+    public void caseALessExpr(ALessExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.LESS);
+    }
+
+    @Override
+    public void caseALessEqExpr(ALessEqExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.LESS_EQ);
+    }
+
+    @Override
+    public void caseAGreatExpr(AGreatExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.GREAT);
+    }
+
+    @Override
+    public void caseAGreatEqExpr(AGreatEqExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.GREAT_EQ);
+    }
+
+    @Override
+    public void caseALogicAndExpr(ALogicAndExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.LOGIC_AND);
+    }
+
+    @Override
+    public void caseALogicOrExpr(ALogicOrExpr node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.LOGIC_OR);
+    }
+
+    private void typeCheckBinary(PExpr node, PExpr left, PExpr right, BinaryOperator operator) {
+        // Check that the left and right are well typed
+        left.apply(this);
+        final Type leftType = exprNodeTypes.get(left);
+        right.apply(this);
+        final Type rightType = exprNodeTypes.get(right);
+        // Check if they are the same type
+        if (!leftType.equals(rightType)) {
+            throw new TypeCheckerException(node, "Cannot operate on differing types: " + leftType + " != " + rightType);
+        }
+        // Check that the type resolves to something valid for the operation (types are equal, so we only need to check one)
+        final Type leftResolved = leftType.resolve();
+        final boolean valid;
+        final Type resultType;
+        switch (operator) {
+            case MUL:
+            case DIV:
+            case SUB:
+                valid = leftResolved.isNumeric();
+                resultType = leftType;
+                break;
+            case ADD:
+                valid = leftResolved.isNumeric() || leftResolved == BasicType.STRING;
+                resultType = leftType;
+                break;
+            case REM:
+            case LSHIFT:
+            case RSHIFT:
+            case BIT_AND:
+            case BIT_AND_NOT:
+            case BIT_OR:
+            case BIT_XOR:
+                valid = leftResolved.isInteger();
+                resultType = leftType;
+                break;
+            case EQ:
+            case NEQ:
+                valid = leftResolved.isComparable();
+                resultType = BasicType.BOOL;
+                break;
+            case LESS:
+            case LESS_EQ:
+            case GREAT:
+            case GREAT_EQ:
+                valid = leftResolved.isOrdered();
+                resultType = BasicType.BOOL;
+                break;
+            case LOGIC_AND:
+            case LOGIC_OR:
+                valid = leftResolved == BasicType.BOOL;
+                resultType = BasicType.BOOL;
+                break;
+            default:
+                throw new IllegalStateException("Missing switch case for operator: " + operator);
+        }
+        if (!valid) {
+            throw new TypeCheckerException(node, "Cannot use the operator " + operator + " on the type " + leftType);
+        }
+        exprNodeTypes.put(node, resultType);
     }
 
     @Override
@@ -647,5 +823,10 @@ public class TypeChecker extends AnalysisAdapter {
         } catch (NumberFormatException exception) {
             throw new TypeCheckerException(intLit, "Signed integer overflow");
         }
+    }
+
+    private enum BinaryOperator {
+        MUL, DIV, REM, LSHIFT, RSHIFT, BIT_AND, BIT_AND_NOT, ADD, SUB, BIT_OR,
+        BIT_XOR, EQ, NEQ, LESS, LESS_EQ, GREAT, GREAT_EQ, LOGIC_AND, LOGIC_OR
     }
 }

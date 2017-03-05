@@ -14,6 +14,11 @@ public class StructType extends Type {
         this.fields = fields;
     }
 
+    @Override
+    public boolean isComparable() {
+        return fields.stream().allMatch(field -> field.getType().isComparable());
+    }
+
     public Optional<Field> getField(String name) {
         if (name.equals("_")) {
             throw new IllegalArgumentException("Cannot access fields with the blank identifier");
