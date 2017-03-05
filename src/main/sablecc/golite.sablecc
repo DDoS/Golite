@@ -35,7 +35,7 @@ Helpers
     oct_num_ch = ['0' .. '7'];
 
     zero = '0';
-    nozero = [num_ch - '0'];
+    non_zero = [num_ch - '0'];
 
     hex_num_ch = num_ch | alpha;
     single_quot = ''';
@@ -162,7 +162,7 @@ Tokens
 
     // LITERALS
     // Int
-    int_lit = zero | num_ch num_ch*;
+    int_lit = zero | non_zero num_ch*;
     oct_lit = zero oct_num_ch+;
     hex_lit = zero ['x' + 'X'] hex_num_ch+;
 
