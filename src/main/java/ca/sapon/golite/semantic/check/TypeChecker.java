@@ -191,16 +191,12 @@ public class TypeChecker extends AnalysisAdapter {
                     lType = var.getType();
                     if (lType != rType) {
                         throw new TypeCheckerException(node, "Cannot use " + rType + " as " + lType + " in assignment");
-                    } }
-                else {
-                        System.out.println("hi");
-                        System.out.println(idenf + " " + rType);
-                        context.declareSymbol(new Variable(position, idenf, rType, false));   
-                }   
+                    } 
+                } else {
+                    context.declareSymbol(new Variable(position, idenf, rType, false));   
+                }
             }
         }
-        //System.out.println(context.lookupSymbol("c").get() + " var c");
-        //System.out.println(context.lookupSymbol("d").get() + " var d");
     }
 
     @Override
