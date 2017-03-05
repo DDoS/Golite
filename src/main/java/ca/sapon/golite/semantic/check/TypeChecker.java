@@ -141,14 +141,13 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
-        //TODO - Check vars already declared are assigned exprs of same type
-        
         //Check for at least one non-blank undeclared idenf
         boolean undeclaredVar = false;
         for (PExpr left : node.getLeft()) {
             if (left instanceof AIdentExpr) {
                 String idenf = ((AIdentExpr) left).getIdenf().getText();
                 if (!idenf.equals("_") && !context.lookupSymbol(idenf).isPresent())
+                    //boolean isVar = context.lookupSymbol(idenf).get() instanceof Variable;
                     undeclaredVar = true;
             }
         }
@@ -158,6 +157,24 @@ public class TypeChecker extends AnalysisAdapter {
         
         //Check that all exprs on RHS are well-typed
         node.getRight().forEach(exp -> exp.apply(this));
+        
+        //Check that vars already declared are assigned to expressions of the same type
+        for (int i = 0; i < node.getLeft().size(); i++) {
+            node.getLeft().get(i).apply(this);
+            String idenf = ((AIdentExpr) node.getLeft().get(i)).getIdenf().getText();
+            node.getRight().get(i).apply(this);
+            
+            Type rType = exprNodeTypes.get(node.getRight().get(i));
+            Optional<Symbol> optVar = context.lookupSymbol(idenf);
+            Variable var; Type lType;
+            if (optVar.isPresent() && optVar.get() instanceof Variable) {
+                var = (Variable) optVar.get();
+                lType = var.getType();
+                if (lType != rType) {
+                    throw new TypeCheckerException(node, "Cannot use " + rType + " as " + lType + " in assignment");
+                }
+            }
+        }
         
     }
 
