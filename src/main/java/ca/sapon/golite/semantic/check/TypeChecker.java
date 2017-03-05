@@ -237,12 +237,40 @@ public class TypeChecker extends AnalysisAdapter {
     
     @Override
     public void caseAPrintStmt(APrintStmt node) {
-        node.getExpr().forEach(exp -> exp.apply(this));
+        for (int i = 0; i< node.getExpr().size(); i++)
+        {
+            PExpr exp = (node.getExpr().get(i));
+            exp.apply(this);
+            
+            // Checks if all expressions resolve to a base type
+            Type type = exprNodeTypes.get(exp);
+            if (!(type.toString().equals("int")) 
+                    || type.toString().equals("rune")
+                    || type.toString().equals("float64") 
+                    || type.toString().equals("bool") 
+                    || type.toString().equals("string")) {
+                throw new TypeCheckerException(node, "Invalid use of following type in Println : " + type.toString());
+            }
+        }
     }
     
     @Override
     public void caseAPrintlnStmt(APrintlnStmt node) {
-        node.getExpr().forEach(exp -> exp.apply(this));
+        for (int i = 0; i< node.getExpr().size(); i++)
+        {
+            PExpr exp = (node.getExpr().get(i));
+            exp.apply(this);
+            
+            // Checks if all expressions resolve to a base type
+            Type type = exprNodeTypes.get(exp);
+            if (!(type.toString().equals("int")) 
+                    || type.toString().equals("rune")
+                    || type.toString().equals("float64") 
+                    || type.toString().equals("bool") 
+                    || type.toString().equals("string")) {
+                throw new TypeCheckerException(node, "Invalid use of following type in Println : " + type.toString());
+            }
+        }
     }
 
     @Override
