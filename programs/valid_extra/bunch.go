@@ -3,10 +3,16 @@ package test
 func noRet() {
 }
 
+type boolean bool
+var b2 boolean = boolean(true)
+
 func test(b bool, i int) float64 {
     var b = true
     for b  {
         var b = false
+    }
+
+    for b2 {
     }
 }
 

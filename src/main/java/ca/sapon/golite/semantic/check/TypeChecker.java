@@ -293,7 +293,8 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseAExprForCondition(AExprForCondition node) {
         node.getExpr().apply(this);
-        if (!exprNodeTypes.get(node.getExpr()).equals(BasicType.BOOL)) {
+        final Type conditionType = exprNodeTypes.get(node.getExpr()).resolve();
+        if (!conditionType.equals(BasicType.BOOL)) {
             throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
         }
     }
@@ -302,7 +303,8 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseAClauseForCondition(AClauseForCondition node) {
         node.getInit().apply(this);
         node.getCond().apply(this);
-        if (!exprNodeTypes.get(node.getCond()).equals(BasicType.BOOL)) {
+        final Type conditionType = exprNodeTypes.get(node.getCond()).resolve();
+        if (!conditionType.equals(BasicType.BOOL)) {
             throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
         }
         node.getPost().apply(this);
