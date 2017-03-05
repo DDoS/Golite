@@ -30,6 +30,6 @@ public class CodeBlockContext extends Context {
     }
 
     public enum Kind {
-        IF, FOR, SWITCH, BLOCK, ELSE 
+        IF, FOR, SWITCH, BLOCK, ELSE
     }
 }

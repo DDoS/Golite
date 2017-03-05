@@ -410,7 +410,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Type-check the if blocks
         node.getIfBlock().forEach(ifBlock -> ifBlock.apply(this));
         // Open a block to place the else block in a new context
-        context = new CodeBlockContext(context, nextContextID, Kind.IF);
+        context = new CodeBlockContext(context, nextContextID, Kind.ELSE);
         nextContextID++;
         // Type-check the else block
         node.getElse().forEach(stmt -> stmt.apply(this));
