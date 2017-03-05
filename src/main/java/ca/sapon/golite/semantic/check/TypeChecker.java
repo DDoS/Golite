@@ -137,7 +137,19 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
-        //TODO
+        //TODO - Check that all exprs on RHS are well-typed
+        //TODO - At least one var on LHS is not declared
+        //TODO - Check vars already declared are assigned exprs of same type
+        //Check for at least one undeclared var
+        boolean undeclaredVar = false;
+        for (PExpr left : node.getLeft()) {
+            if (left instanceof AIdentExpr && !context.lookupSymbol(((AIdentExpr) left).getIdenf().getText()).isPresent()) {
+                undeclaredVar = true;
+            }
+        }
+        if (!undeclaredVar) {
+            throw new TypeCheckerException(node, "No new variables on LHS of :=");
+        }
     }
 
     @Override
