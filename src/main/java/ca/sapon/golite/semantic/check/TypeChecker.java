@@ -141,7 +141,6 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
-        //TODO - Check that all exprs on RHS are well-typed
         //TODO - Check vars already declared are assigned exprs of same type
         
         //Check for at least one non-blank undeclared idenf
@@ -156,6 +155,10 @@ public class TypeChecker extends AnalysisAdapter {
         if (!undeclaredVar) {
             throw new TypeCheckerException(node, "No new variables on LHS of :=");
         }
+        
+        //Check that all exprs on RHS are well-typed
+        node.getRight().forEach(exp -> exp.apply(this));
+        
     }
 
     @Override
