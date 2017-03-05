@@ -34,3 +34,7 @@ var e = append(a, d)
 var f = b.age
 var g = e[0]
 var h = rune(41.32)
+var i = !b2
+var j = ^'1'
+var k = +3.4
+var l = -2

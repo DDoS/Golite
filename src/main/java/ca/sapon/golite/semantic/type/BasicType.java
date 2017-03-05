@@ -17,6 +17,12 @@ public final class BasicType extends Type {
     public static final Set<BasicType> ALL = Collections.unmodifiableSet(Stream.of(
             INT, FLOAT64, BOOL, RUNE, STRING
     ).collect(Collectors.toSet()));
+    private static final Set<BasicType> NUMERICS = Collections.unmodifiableSet(Stream.of(
+            INT, FLOAT64, RUNE
+    ).collect(Collectors.toSet()));
+    private static final Set<BasicType> INTEGERS = Collections.unmodifiableSet(Stream.of(
+            INT, RUNE
+    ).collect(Collectors.toSet()));
     private static final Set<BasicType> CAST_TYPES = Collections.unmodifiableSet(Stream.of(
             INT, FLOAT64, BOOL, RUNE
     ).collect(Collectors.toSet()));
@@ -28,6 +34,14 @@ public final class BasicType extends Type {
 
     public String getName() {
         return name;
+    }
+
+    public boolean isNumeric() {
+        return NUMERICS.contains(this);
+    }
+
+    public boolean isInteger() {
+        return INTEGERS.contains(this);
     }
 
     public boolean canCastTo() {

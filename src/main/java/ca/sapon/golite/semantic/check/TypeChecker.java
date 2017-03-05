@@ -520,6 +520,53 @@ public class TypeChecker extends AnalysisAdapter {
     }
 
     @Override
+    public void caseALogicNotExpr(ALogicNotExpr node) {
+        // Check that the inner type resolves to a bool
+        node.getInner().apply(this);
+        final Type innerType = exprNodeTypes.get(node.getInner());
+        if (innerType.resolve() != BasicType.BOOL) {
+            throw new TypeCheckerException(node.getInner(), "Not a bool");
+        }
+        // The type is the same as the inner
+        exprNodeTypes.put(node, innerType);
+    }
+
+    @Override
+    public void caseAReaffirmExpr(AReaffirmExpr node) {
+        typeCheckSign(node, node.getInner());
+    }
+
+    @Override
+    public void caseANegateExpr(ANegateExpr node) {
+        typeCheckSign(node, node.getInner());
+    }
+
+    private void typeCheckSign(PExpr node, PExpr inner) {
+        // Check that the inner type resolves to a numeric
+        inner.apply(this);
+        final Type innerType = exprNodeTypes.get(inner);
+        final Type resolvedType = innerType.resolve();
+        if (!(resolvedType instanceof BasicType) || !((BasicType) resolvedType).isNumeric()) {
+            throw new TypeCheckerException(inner, "Not a numeric type");
+        }
+        // The type is the same as the inner
+        exprNodeTypes.put(node, innerType);
+    }
+
+    @Override
+    public void caseABitNotExpr(ABitNotExpr node) {
+        // Check that the inner type resolves to an integer
+        node.getInner().apply(this);
+        final Type innerType = exprNodeTypes.get(node.getInner());
+        final Type resolvedType = innerType.resolve();
+        if (!(resolvedType instanceof BasicType) || !((BasicType) resolvedType).isInteger()) {
+            throw new TypeCheckerException(node.getInner(), "Not an integer type");
+        }
+        // The type is the same as the inner
+        exprNodeTypes.put(node, innerType);
+    }
+
+    @Override
     public void caseANameType(ANameType node) {
         // Resolve the symbol for the name
         final String name = node.getIdenf().getText();
