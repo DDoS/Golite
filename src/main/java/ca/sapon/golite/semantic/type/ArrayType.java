@@ -12,6 +12,11 @@ public class ArrayType extends IndexableType {
     }
 
     @Override
+    public boolean isComparable() {
+        return component.isComparable();
+    }
+
+    @Override
     public String toString() {
         return String.format("[%d]%s", length, component);
     }
