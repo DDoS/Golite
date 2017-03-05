@@ -180,7 +180,7 @@ public class TypeChecker extends AnalysisAdapter {
         nodeContexts.put(node, context);
         // Declare the parameters as variables
         params.forEach(context::declareSymbol);
-        // TODO: type check the statements
+        // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
         // TODO: check that the function returns on each path
         // Exit the function body
