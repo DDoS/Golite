@@ -38,16 +38,19 @@ import golite.node.ABitAndNotExpr;
 import golite.node.ABitNotExpr;
 import golite.node.ABitOrExpr;
 import golite.node.ABitXorExpr;
+import golite.node.ABlockStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
+import golite.node.ADeclStmt;
 import golite.node.ADeclVarShortStmt;
 import golite.node.ADivExpr;
 import golite.node.AEmptyForCondition;
 import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
 import golite.node.AExprForCondition;
+import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
@@ -167,7 +170,7 @@ public class TypeChecker extends AnalysisAdapter {
         for (PExpr left : node.getLeft()) {
             // The weeder pass guarantees that the left contains only identifier expressions
             final String idenf = ((AIdentExpr) left).getIdenf().getText();
-            if (!idenf.equals("_") && !context.lookupSymbol(idenf).isPresent()) {
+            if (!idenf.equals("_") && !context.lookupSymbol(idenf, false).isPresent()) {
                 undeclaredVar = true;
                 break;
             }
@@ -188,7 +191,7 @@ public class TypeChecker extends AnalysisAdapter {
                 continue;
             }
             // If the var has already been declared, make sure RHS expr has the same type
-            final Optional<Symbol> optVar = context.lookupSymbol(idenf);
+            final Optional<Symbol> optVar = context.lookupSymbol(idenf, false);
             if (optVar.isPresent() && optVar.get() instanceof Variable) {
                 final Type leftType = optVar.get().getType();
                 if (!leftType.equals(rightType)) {
@@ -248,7 +251,15 @@ public class TypeChecker extends AnalysisAdapter {
         // Exit the function body
         context = context.getParent();
     }
-
+    
+    @Override
+    public void caseABlockStmt(ABlockStmt node) {
+        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+        nextContextID++;
+        node.getStmt().forEach(stmt -> stmt.apply(this));
+        context = context.getParent();
+    }
+    
     @Override
     public void caseAEmptyStmt(AEmptyStmt node) {
     }
@@ -327,6 +338,16 @@ public class TypeChecker extends AnalysisAdapter {
                 throw new TypeCheckerException(arg, "Not a printable type " + argType);
             }
         }
+    }
+    
+    @Override
+    public void caseADeclStmt(ADeclStmt node) {
+        node.getDecl().forEach(decl -> decl.apply(this));
+    }
+    
+    @Override
+    public void caseAExprStmt(AExprStmt node) {
+        node.getExpr().apply(this);
     }
 
     @Override
