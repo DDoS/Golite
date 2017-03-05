@@ -48,7 +48,8 @@ Helpers
     // Exclusions
     no_carr_nl = [ch_set - [carriage + newln]] ;
     no_carr_nl_bsl = [no_carr_nl - backslash];
-    no_carr_nl_sl_dlq = [no_carr_nl_bsl - double_quot];
+    no_carr_nl_bsl_slq = [no_carr_nl_bsl - single_quot];
+    no_carr_nl_bsl_dlq = [no_carr_nl_bsl - double_quot];
     no_back_q = [ch_set - back_q];
 
     letter = alpha | underscore;
@@ -56,7 +57,7 @@ Helpers
     comment_singleln = '//' not_endln* endln;
     comment_multiln = '/*' not_star* '*'+ (not_star_not_slash not_star* '*'+)* '/';
 
-    string_ch = no_carr_nl_sl_dlq | backslash double_quot | escapes;
+    string_ch = no_carr_nl_bsl_dlq | backslash double_quot | escapes;
     string_ch_sequence = string_ch+;
 
 Tokens
@@ -176,7 +177,7 @@ Tokens
     raw_string_lit = back_q no_back_q* back_q;
 
     // Rune
-    rune_lit = single_quot (no_carr_nl_bsl | escapes |  backslash single_quot) single_quot;
+    rune_lit = single_quot (no_carr_nl_bsl_slq | escapes | backslash single_quot) single_quot;
 
 Ignored Tokens
     space, endln, comment_singleln, comment_multiln;
