@@ -165,44 +165,41 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
-        //Check for at least one non-blank undeclared idenf
+        // Check for at least one non-blank undeclared idenf
         boolean undeclaredVar = false;
         for (PExpr left : node.getLeft()) {
-            if (left instanceof AIdentExpr) {
-                String idenf = ((AIdentExpr) left).getIdenf().getText();
-                if (!idenf.equals("_") && !context.lookupSymbol(idenf).isPresent()) {
-                    undeclaredVar = true;
-                }
+            // The weeder pass guarantees that the left contains only identifier expressions
+            final String idenf = ((AIdentExpr) left).getIdenf().getText();
+            if (!idenf.equals("_") && !context.lookupSymbol(idenf).isPresent()) {
+                undeclaredVar = true;
+                break;
             }
         }
         if (!undeclaredVar) {
-            throw new TypeCheckerException(node, "No new variables on LHS of :=");
+            throw new TypeCheckerException(node, "No new variables on the left of :=");
         }
-        //Check that all exprs on RHS are well-typed
+        // Check that all exprs on RHS are well-typed
         node.getRight().forEach(exp -> exp.apply(this));
-        
-        //Check that vars already declared are assigned to expressions of the same type
-        final NodePosition position = new NodePosition(node);
+        // Check that vars already declared are assigned to expressions of the same type
         for (int i = 0; i < node.getLeft().size(); i++) {
-
-            String idenf = ((AIdentExpr) node.getLeft().get(i)).getIdenf().getText();
             node.getRight().get(i).apply(this);
-            Type rType = exprNodeTypes.get(node.getRight().get(i));
-            //If blank identifier, skip to the next idenf
-            if (!idenf.equals("_")) {
-                Optional<Symbol> optVar = context.lookupSymbol(idenf);
-                Variable var; Type lType;
-                //If the var has already been declared, make sure RHS expr has the same type
-                if (optVar.isPresent() && optVar.get() instanceof Variable) {
-                    var = (Variable) optVar.get();
-                    lType = var.getType();
-                    if (!lType.equals(rType)) {
-                        throw new TypeCheckerException(node, "Cannot use " + rType + " as " + lType + " in assignment");
-                    } 
-                } else {
-                    //Var hasn't been declared - declare as new var with the same type as RHS expr
-                    context.declareSymbol(new Variable(position, idenf, rType, false));   
+            final Type rightType = exprNodeTypes.get(node.getRight().get(i));
+            // If blank identifier, skip to the next idenf
+            final AIdentExpr leftNode = (AIdentExpr) node.getLeft().get(i);
+            final String idenf = leftNode.getIdenf().getText();
+            if (idenf.equals("_")) {
+                continue;
+            }
+            // If the var has already been declared, make sure RHS expr has the same type
+            final Optional<Symbol> optVar = context.lookupSymbol(idenf);
+            if (optVar.isPresent() && optVar.get() instanceof Variable) {
+                final Type leftType = optVar.get().getType();
+                if (!leftType.equals(rightType)) {
+                    throw new TypeCheckerException(node, "Cannot use " + rightType + " as " + leftType + " in assignment");
                 }
+            } else {
+                // Var hasn't been declared - declare as new var with the same type as RHS expr
+                context.declareSymbol(new Variable(new NodePosition(leftNode), idenf, rightType, false));
             }
         }
     }
@@ -358,7 +355,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Close the outer block
         context = context.getParent();
     }
-    
+
     @Override
     public void caseAEmptyForCondition(AEmptyForCondition node) {
     }
@@ -384,7 +381,7 @@ public class TypeChecker extends AnalysisAdapter {
         }
         // The post condition is checked in the scope of the body, not of the condition!
     }
-    
+
     @Override
     public void caseAIfBlock(AIfBlock node) {
 
@@ -394,8 +391,8 @@ public class TypeChecker extends AnalysisAdapter {
         if (node.getCond() != null) {
             node.getCond().apply(this);
         }
-        
-        if (node.getBlock()!= null) {
+
+        if (node.getBlock() != null) {
             // Open a block to place the clause in a new context
             context = new CodeBlockContext(context, nextContextID, Kind.IF);
             nextContextID++;
@@ -407,37 +404,36 @@ public class TypeChecker extends AnalysisAdapter {
             context = context.getParent();
         }
     }
-    
+
     @Override
     public void caseAIfStmt(AIfStmt node) {
 
         // Open a block to place the clause in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
         nextContextID++;
-        
+
         final LinkedList<PIfBlock> ifBlocks = node.getIfBlock();
         if (ifBlocks != null) {
             for (int i = 0, ifBlocksSize = ifBlocks.size(); i < ifBlocksSize; i++) {
-                ifBlocks.get(i).apply(this);          
+                ifBlocks.get(i).apply(this);
             }
         }
-        final LinkedList<PStmt> ifElseBlocks = node.getElse();        
+        final LinkedList<PStmt> ifElseBlocks = node.getElse();
         if (ifElseBlocks != null) {
             // Open a block to place the clause in a new context
             context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
             nextContextID++;
-            
+
             for (int i = 0, ifElseBlocksSize = ifElseBlocks.size(); i < ifElseBlocksSize; i++) {
-                ifElseBlocks.get(i).apply(this);         
+                ifElseBlocks.get(i).apply(this);
             }
             // Close the context
             context = context.getParent();
         }
         // Close the context
-        context = context.getParent(); 
+        context = context.getParent();
     }
-    
-    
+
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
         // Resolve the symbol for the name
