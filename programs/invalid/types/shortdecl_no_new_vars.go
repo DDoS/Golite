@@ -3,5 +3,5 @@ package test
 var a, b int
 
 func x() {
-	a, b := 1, 2
+	a, b, _ := 1, 2, 4
 }
