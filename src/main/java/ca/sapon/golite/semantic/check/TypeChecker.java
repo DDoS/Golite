@@ -408,7 +408,7 @@ public class TypeChecker extends AnalysisAdapter {
             context = context.getParent();
         }
         // Close the context
-        context = context.getParent();
+        context = context.getParent(); 
     }
     
 
