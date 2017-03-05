@@ -421,7 +421,7 @@ public class TypeChecker extends AnalysisAdapter {
         final LinkedList<PStmt> ifElseBlocks = node.getElse();
         if (ifElseBlocks != null) {
             // Open a block to place the clause in a new context
-            context = new CodeBlockContext(context, nextContextID, Kind.ELSE);
+            context = new CodeBlockContext(context, nextContextID, Kind.ELSE); 
             nextContextID++;
 
             for (int i = 0, ifElseBlocksSize = ifElseBlocks.size(); i < ifElseBlocksSize; i++) {
