@@ -175,6 +175,7 @@ public class TypeChecker extends AnalysisAdapter {
         }
         //Check that all exprs on RHS are well-typed
         node.getRight().forEach(exp -> exp.apply(this));
+        
         //Check that vars already declared are assigned to expressions of the same type
         final NodePosition position = new NodePosition(node);
         for (int i = 0; i < node.getLeft().size(); i++) {
@@ -190,7 +191,7 @@ public class TypeChecker extends AnalysisAdapter {
                 if (optVar.isPresent() && optVar.get() instanceof Variable) {
                     var = (Variable) optVar.get();
                     lType = var.getType();
-                    if (lType != rType) {
+                    if (!lType.equals(rType)) {
                         throw new TypeCheckerException(node, "Cannot use " + rType + " as " + lType + " in assignment");
                     } 
                 } else {
@@ -378,7 +379,7 @@ public class TypeChecker extends AnalysisAdapter {
         }
         // The post condition is checked in the scope of the body, not of the condition!
     }
-
+    
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
         // Resolve the symbol for the name
