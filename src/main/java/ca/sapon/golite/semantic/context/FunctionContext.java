@@ -1,5 +1,7 @@
 package ca.sapon.golite.semantic.context;
 
+import java.util.Optional;
+
 import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.Symbol;
 
@@ -24,5 +26,10 @@ public class FunctionContext extends Context {
             throw new IllegalStateException("Cannot declare a function in a block context");
         }
         super.declareSymbol(symbol);
+    }
+
+    @Override
+    public Optional<Function> getEnclosingFunction() {
+        return Optional.of(getFunction());
     }
 }

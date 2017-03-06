@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import ca.sapon.golite.semantic.check.TypeCheckerException;
+import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.Symbol;
 
 /**
@@ -55,6 +56,13 @@ public abstract class Context {
             throw new TypeCheckerException(symbol, "Cannot redeclare symbol " + symbol.getName());
         }
         symbols.put(symbol.getName(), symbol);
+    }
+
+    public Optional<Function> getEnclosingFunction() {
+        if (parent != null) {
+            return parent.getEnclosingFunction();
+        }
+        return Optional.empty();
     }
 
     @Override
