@@ -269,7 +269,9 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseAReturnStmt(AReturnStmt node) {
-        final Function func = ((FunctionContext) context).getFunction();
+        //No need to check if return appears in a function (the weeder already does that)
+        Optional<Function> f = context.getEnclosingFunction();
+        final Function func = f.get();
         // If the function returns, check that the expression has the same type
         final Optional<Type> optReturnType = ((FunctionType) func.getType()).getReturnType();
         if (!optReturnType.isPresent()) {
