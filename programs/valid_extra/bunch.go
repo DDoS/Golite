@@ -16,13 +16,13 @@ type boolean bool
 var b2 boolean = boolean(true)
 
 func test1(b bool, i int) float64 {
-    var b = true
     for b  {
         var b = false
     }
 
     for b2 {
         var s = ""
+        return
     }
 
     for i := 0; i < 10; i++ {

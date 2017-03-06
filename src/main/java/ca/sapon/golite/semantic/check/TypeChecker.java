@@ -246,7 +246,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Exit the function body
         context = context.getParent();
     }
-    
+
     @Override
     public void caseABlockStmt(ABlockStmt node) {
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
@@ -254,7 +254,7 @@ public class TypeChecker extends AnalysisAdapter {
         node.getStmt().forEach(stmt -> stmt.apply(this));
         context = context.getParent();
     }
-    
+
     @Override
     public void caseAEmptyStmt(AEmptyStmt node) {
     }
@@ -334,22 +334,19 @@ public class TypeChecker extends AnalysisAdapter {
             }
         }
     }
-    
+
     @Override
     public void caseADeclStmt(ADeclStmt node) {
         node.getDecl().forEach(decl -> decl.apply(this));
     }
-    
+
     @Override
     public void caseAExprStmt(AExprStmt node) {
-        //node.getExpr().apply(this);
-        if (!(node.getExpr() instanceof ACallExpr || node.getExpr() instanceof AAppendExpr)) {
-            throw new TypeCheckerException(node, "Only function calls can be used as expression statements");
-        }
-        if (node.getExpr() instanceof AAppendExpr) {
-            node.getExpr().apply(this);
-        } if (node.getExpr() instanceof ACallExpr) {
+        // This is already weeded, but we still have a special case for calls (no return is allowed)
+        if (node.getExpr() instanceof ACallExpr) {
             typeCheckCall((ACallExpr) node.getExpr(), false);
+        } else {
+            node.getExpr().apply(this);
         }
     }
 
