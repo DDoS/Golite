@@ -347,7 +347,15 @@ public class TypeChecker extends AnalysisAdapter {
     
     @Override
     public void caseAExprStmt(AExprStmt node) {
-        node.getExpr().apply(this);
+        //node.getExpr().apply(this);
+        if (!(node.getExpr() instanceof ACallExpr || node.getExpr() instanceof AAppendExpr)) {
+            throw new TypeCheckerException(node, "Only function calls can be used as expression statements");
+        }
+        if (node.getExpr() instanceof AAppendExpr) {
+            node.getExpr().apply(this);
+        } if (node.getExpr() instanceof ACallExpr) {
+            typeCheckCall((ACallExpr) node.getExpr(), false);
+        }
     }
 
     @Override
