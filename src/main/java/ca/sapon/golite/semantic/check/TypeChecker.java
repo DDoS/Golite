@@ -121,12 +121,6 @@ public class TypeChecker extends AnalysisAdapter {
         context = new TopLevelContext();
         nodeContexts.put(node, context);
         node.getDecl().forEach(decl -> decl.apply(this));
-
-        System.out.println(exprNodeTypes);
-        System.out.println();
-        System.out.println(typeNodeTypes);
-        System.out.println();
-        System.out.println(context);
     }
 
     @Override
@@ -247,7 +241,8 @@ public class TypeChecker extends AnalysisAdapter {
         params.forEach(context::declareSymbol);
         // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
-        // TODO: check that the function returns on each path
+        // Check that the function returns on each path
+        node.apply(new CodePathChecker());
         // Exit the function body
         context = context.getParent();
     }
