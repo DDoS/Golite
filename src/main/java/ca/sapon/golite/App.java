@@ -10,6 +10,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 
+import ca.sapon.golite.semantic.SemanticData;
 import ca.sapon.golite.semantic.SemanticException;
 import ca.sapon.golite.syntax.SyntaxException;
 import ca.sapon.golite.syntax.print.PrinterException;
@@ -28,6 +29,7 @@ public final class App {
     private File inputFile = null;
     private File outputFile = null;
     private Start ast = null;
+    private SemanticData semantics = null;
 
     private App(String[] args) {
         this.args = args;
@@ -94,18 +96,62 @@ public final class App {
     }
 
     private int printCommand() {
-        // Parse the output file argument first
-        int result = findOutputFile(true);
-        if (result != 0) {
-            return result;
+        // Parse the arguments first
+        final CommandLine line = parseOptions(outputFileOption());
+        if (line == null) {
+            return 1;
         }
         // Then run the parse command
-        result = parseCommand();
+        int result = parseCommand();
         if (result != 0) {
             return result;
         }
-        // Derive the output file from the input one if missing
-        defaultOutputFile(PRETTY_EXTENSION);
+        // Get the output file (now that we have the input one)
+        result = getOutputFile(line, PRETTY_EXTENSION);
+        if (result != 0) {
+            return result;
+        }
+        // Finally do the printing
+        return printAST();
+    }
+
+    private int typecheckCommand() {
+        // Parse the arguments first
+        final CommandLine line = parseOptions(
+                outputFileOption(),
+                new Option("pptype", "Add type annotations to the pretty-printed output"),
+                new Option("dumpsymtab", "Write the top of the symbol table at the end of each scope"),
+                new Option("dumpsymtaball", "Write the full symbol table at the end of each scope")
+        );
+        if (line == null) {
+            return 1;
+        }
+        // Then run the parse command
+        int result = parseCommand();
+        if (result != 0) {
+            return result;
+        }
+        // Get the output file (now that we have the input one)
+        result = getOutputFile(line, TYPE_ANNOTATION_EXTENSION);
+        if (result != 0) {
+            return result;
+        }
+        // Do the type checking
+        try {
+            semantics = Golite.typeCheck(ast);
+        } catch (SemanticException exception) {
+            System.err.println(exception.getMessage());
+            return 1;
+        }
+        // Enable the semantic printing according to the flags
+        semantics.printTypes(line.hasOption("pptype"));
+        semantics.printContexts(line.hasOption("dumpsymtab"));
+        semantics.printAllContexts(line.hasOption("dumpsymtaball"));
+        // Finally do the printing
+        return printAST();
+    }
+
+    private int printAST() {
         // Create the output writer
         final Writer pretty;
         try {
@@ -116,7 +162,7 @@ public final class App {
         }
         // Then do the pretty printing
         try {
-            Golite.prettyPrint(ast, pretty);
+            Golite.prettyPrint(ast, semantics, pretty);
         } catch (PrinterException exception) {
             System.err.println("Error when printing: " + exception.getMessage());
             return 1;
@@ -131,84 +177,48 @@ public final class App {
         return 0;
     }
 
-    private int typecheckCommand() {
-        // Parse the output file argument first
-        int result = findOutputFile(false);
-        if (result != 0) {
-            return result;
-        }
-        // Parse the arguments for the type check command
-        final boolean dumpSymTab, dumpSymTabAll, ppType;
+    private CommandLine parseOptions(Option... options) {
         try {
-            final Options options = new Options();
-            options.addOption("dumpsymtab", "Write the top of the symbol table at the end of each scope");
-            options.addOption("dumpsymtaball", "Write the full symbol table at the end of each scope");
-            options.addOption("pptype", "Add type annotations to the pretty-printed output");
-            final CommandLine line = new DefaultParser().parse(options, args);
-            dumpSymTab = line.hasOption("dumpsymtab");
-            dumpSymTabAll = line.hasOption("dumpsymtaball");
-            ppType = line.hasOption("pptype");
-            // Set the arguments to the remaining ones
-            args = line.getArgs();
-        } catch (ParseException exception) {
-            System.err.println("Invalid arguments: " + exception.getMessage());
-            return 1;
-        }
-        // Then run the parse command
-        result = parseCommand();
-        if (result != 0) {
-            return result;
-        }
-        // Derive the output file from the input one if missing
-        defaultOutputFile(SYMBOL_TABLE_EXTENSION);
-        // Do the type checking
-        try {
-            Golite.typeCheck(ast);
-        } catch (SemanticException exception) {
-            System.err.println(exception.getMessage());
-            return 1;
-        }
-        // TODO: print the type output
-        return 0;
-    }
-
-    private int findOutputFile(boolean lastOption) {
-        try {
-            final Options options = new Options();
-            final Option outputFileOption = Option.builder("o").hasArg().argName("file")
-                    .desc("The output file").type(File.class).build();
-            options.addOption(outputFileOption);
-            final CommandLine line = new DefaultParser().parse(options, args, !lastOption);
-            outputFile = (File) line.getParsedOptionValue("o");
-            // Fix for a bug with CLI: remove the output file option manually (it should not be remaining)
-            if (!lastOption) {
-                final int i = line.getArgList().indexOf("-o");
-                if (i >= 0) {
-                    line.getArgList().subList(i, i + 2).clear();
-                }
+            final Options optionsObject = new Options();
+            for (Option option : options) {
+                optionsObject.addOption(option);
             }
+            final CommandLine line = new DefaultParser().parse(optionsObject, args);
             // Set the arguments to the remaining ones
             args = line.getArgs();
+            return line;
+        } catch (ParseException exception) {
+            System.err.println("Invalid arguments: " + exception.getMessage());
+            return null;
+        }
+    }
+
+    private Option outputFileOption() {
+        return Option.builder("o").hasArg().argName("file").desc("The output file").type(File.class).build();
+    }
+
+    private int getOutputFile(CommandLine line, String defaultExtension) {
+        // Try to get it from the command line
+        try {
+            outputFile = (File) line.getParsedOptionValue("o");
+            if (outputFile != null) {
+                return 0;
+            }
         } catch (ParseException exception) {
             System.err.println("Invalid arguments: " + exception.getMessage());
             return 1;
         }
-        return 0;
-    }
-
-    private void defaultOutputFile(String extension) {
-        if (outputFile != null) {
-            return;
-        }
+        // Otherwise derive it from the input file
         final String inputName = inputFile.getName();
         final int index = inputName.lastIndexOf('.');
         final String outputName;
         if (index < 0) {
-            outputName = inputName + '.' + extension;
+            outputName = inputName + '.' + defaultExtension;
         } else {
-            outputName = inputName.substring(0, index + 1) + extension;
+            outputName = inputName.substring(0, index + 1) + defaultExtension;
         }
         outputFile = new File(inputFile.getParent(), outputName);
+        return 0;
     }
 
     private static <T> T[] subArray(T[] array, int start) {

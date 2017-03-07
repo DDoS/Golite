@@ -5,6 +5,7 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.Writer;
 
+import ca.sapon.golite.semantic.SemanticData;
 import ca.sapon.golite.semantic.SemanticException;
 import ca.sapon.golite.semantic.check.TypeChecker;
 import ca.sapon.golite.semantic.check.TypeCheckerException;
@@ -49,16 +50,22 @@ public final class Golite {
     }
 
     public static void prettyPrint(Start ast, Writer pretty) throws PrinterException {
-        ast.apply(new PrettyPrinter(pretty));
+        prettyPrint(ast, null, pretty);
+    }
+
+    public static void prettyPrint(Start ast, SemanticData semantics, Writer pretty) throws PrinterException {
+        ast.apply(new PrettyPrinter(semantics, pretty));
     }
 
     public static void typeCheck(Reader source) throws IOException, SyntaxException, SemanticException {
         typeCheck(parse(source));
     }
 
-    public static void typeCheck(Start ast) throws SemanticException {
+    public static SemanticData typeCheck(Start ast) throws SemanticException {
         try {
-            ast.apply(new TypeChecker());
+            final TypeChecker typeChecker = new TypeChecker();
+            ast.apply(typeChecker);
+            return typeChecker.getGeneratedData();
         } catch (TypeCheckerException exception) {
             throw new SemanticException(exception);
         }
