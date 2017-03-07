@@ -100,6 +100,7 @@ import golite.node.PCase;
 import golite.node.PExpr;
 import golite.node.PForCondition;
 import golite.node.PParam;
+import golite.node.PStmt;
 import golite.node.PStructField;
 import golite.node.PType;
 import golite.node.Start;
@@ -477,9 +478,17 @@ public class TypeChecker extends AnalysisAdapter {
 
         // Individual case blocks
         for (PCase pCase : node.getCase()) {
+            
+            // Open a block to place the condition in a new context
+            context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+            nextContextID++; 
+            
             pCase.apply(this);
+            
+            // Close the condition context
+            context = context.getParent();
         }
-
+        
         // Close the condition context
         context = context.getParent();
     }
@@ -488,15 +497,20 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseAExprCase(AExprCase node) {
 
         for (PExpr pExpr : node.getExpr()) {
-            // Can't find the type here so breaks as of now with a nullpointer
+           
+            pExpr.apply(this);            
             final Type caseConditionType = exprNodeTypes.get(pExpr).resolve();
+            // If the type in the case is the same as the one specified in switch condition
             if (!(switchCondType.equals(caseConditionType))) {
                 throw new TypeCheckerException(node, "Case Type: " + caseConditionType 
                         + " does not match Switch condition's type " + this.switchCondType);
             }
         }
+        
+        for (PStmt pStmt : node.getStmt()) {
+            pStmt.apply(this);
+        }
     } 
-    
     @Override
     public void caseADefaultCase(ADefaultCase node) {
     
