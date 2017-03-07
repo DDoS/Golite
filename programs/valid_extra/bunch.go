@@ -1,23 +1,81 @@
 package test
 
 func noRet() {
+    var i int
+    {
+        var i int
+        {
+            i = 0
+            j := i
+        }
+    }
+    var j int
 }
 
 type boolean bool
 var b2 boolean = boolean(true)
 
-func test(b bool, i int) float64 {
-    var b = true
+func test1(b bool, i int) float64 {
     for b  {
         var b = false
     }
 
     for b2 {
+        var s = ""
+        return
     }
 
-    for i = 0; i < 10; i++ {
-
+    for i := 0; i < 10; i++ {
+        var r = 'l'
     }
+}
+
+func test2(i int) {
+    if i := 0; true {
+        var b = false
+	} else if i := 0; b2 {
+        var s = ""
+	}
+}
+
+func test3(i int) {
+    if i := 0; true {
+        var b = false
+	} else if i := 0; b2 {
+        var s = ""
+	} else {
+	    var r = 'l'
+	}
+}
+
+func test4() {
+    var a, b int
+    a, b := 1, 2
+}
+
+func test5(i int) {
+    switch i {
+    case 0:
+        var b = false
+    case 1:
+        var s = ""
+    }
+}
+
+func test6(i int) {
+    switch i {
+    default:
+        var r = 'l'
+    case 0:
+        var b = false
+    case 1:
+        var s = ""
+    }
+}
+
+func test4() {
+    var a, b int
+    a, b := 1, 2
 }
 
 type Data []int
@@ -28,7 +86,7 @@ type Person struct {
 
 var a Data
 var b Person
-var c = test(true, 1)
+var c = test1(true, 1)
 var d = int('a')
 var e = append(a, d)
 var f = b.age

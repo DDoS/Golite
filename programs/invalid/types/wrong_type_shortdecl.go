@@ -2,7 +2,9 @@ package test
 
 var a int
 var b float64
+var c int
 
 func x() {
-	a, c, b, _ := 1, 2, (a+a), 4
+    var a, b float64
+	a, c, b := 1, 2, (a+a)
 }

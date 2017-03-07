@@ -38,10 +38,12 @@ import golite.node.ABitAndNotExpr;
 import golite.node.ABitNotExpr;
 import golite.node.ABitOrExpr;
 import golite.node.ABitXorExpr;
+import golite.node.ABlockStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
 import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
+import golite.node.ADeclStmt;
 import golite.node.ADeclVarShortStmt;
 import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
@@ -50,6 +52,7 @@ import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
 import golite.node.AExprCase;
 import golite.node.AExprForCondition;
+import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
@@ -123,12 +126,6 @@ public class TypeChecker extends AnalysisAdapter {
         context = new TopLevelContext();
         nodeContexts.put(node, context);
         node.getDecl().forEach(decl -> decl.apply(this));
-
-        System.out.println(exprNodeTypes);
-        System.out.println();
-        System.out.println(typeNodeTypes);
-        System.out.println();
-        System.out.println(context);
     }
 
     @Override
@@ -172,7 +169,7 @@ public class TypeChecker extends AnalysisAdapter {
         for (PExpr left : node.getLeft()) {
             // The weeder pass guarantees that the left contains only identifier expressions
             final String idenf = ((AIdentExpr) left).getIdenf().getText();
-            if (!idenf.equals("_") && !context.lookupSymbol(idenf).isPresent()) {
+            if (!idenf.equals("_") && !context.lookupSymbol(idenf, false).isPresent()) {
                 undeclaredVar = true;
                 break;
             }
@@ -193,7 +190,7 @@ public class TypeChecker extends AnalysisAdapter {
                 continue;
             }
             // If the var has already been declared, make sure RHS expr has the same type
-            final Optional<Symbol> optVar = context.lookupSymbol(idenf);
+            final Optional<Symbol> optVar = context.lookupSymbol(idenf, false);
             if (optVar.isPresent() && optVar.get() instanceof Variable) {
                 final Type leftType = optVar.get().getType();
                 if (!leftType.equals(rightType)) {
@@ -249,8 +246,17 @@ public class TypeChecker extends AnalysisAdapter {
         params.forEach(context::declareSymbol);
         // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
-        // TODO: check that the function returns on each path
+        // Check that the function returns on each path
+        node.apply(new CodePathChecker());
         // Exit the function body
+        context = context.getParent();
+    }
+
+    @Override
+    public void caseABlockStmt(ABlockStmt node) {
+        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+        nextContextID++;
+        node.getStmt().forEach(stmt -> stmt.apply(this));
         context = context.getParent();
     }
 
@@ -268,9 +274,11 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseAReturnStmt(AReturnStmt node) {
-        final Function func = ((FunctionContext) context).getFunction();
+        //No need to check if return appears in a function (the weeder already does that)
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        final Function function = context.getEnclosingFunction().get();
         // If the function returns, check that the expression has the same type
-        final Optional<Type> optReturnType = ((FunctionType) func.getType()).getReturnType();
+        final Optional<Type> optReturnType = ((FunctionType) function.getType()).getReturnType();
         if (!optReturnType.isPresent()) {
             if (node.getExpr() != null) {
                 throw new TypeCheckerException(node, "This function should not return anything");
@@ -331,6 +339,21 @@ public class TypeChecker extends AnalysisAdapter {
             if (!(argType instanceof BasicType)) {
                 throw new TypeCheckerException(arg, "Not a printable type " + argType);
             }
+        }
+    }
+
+    @Override
+    public void caseADeclStmt(ADeclStmt node) {
+        node.getDecl().forEach(decl -> decl.apply(this));
+    }
+
+    @Override
+    public void caseAExprStmt(AExprStmt node) {
+        // This is already weeded, but we still have a special case for calls (no return is allowed)
+        if (node.getExpr() instanceof ACallExpr) {
+            typeCheckCall((ACallExpr) node.getExpr(), false);
+        } else {
+            node.getExpr().apply(this);
         }
     }
 

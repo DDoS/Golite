@@ -255,9 +255,9 @@ Productions
             | {println} println args_list
                     {-> New stmt.println([args_list.expr])}
             | {return} kw_return
-                    {-> New stmt.return(Null)}
+                    {-> New stmt.return(kw_return, Null)}
             | {return_exp} kw_return expr
-                    {-> New stmt.return(expr.expr)}
+                    {-> New stmt.return(kw_return, expr.expr)}
             | {break} kw_break
                     {-> New stmt.break(kw_break)}
             | {continue} kw_continue
@@ -489,7 +489,7 @@ Abstract Syntax Tree
     stmt = {empty}
             | {print} expr*
             | {println} expr*
-            | {return} expr?
+            | {return} kw_return expr?
             | {break} kw_break
             | {continue} kw_continue
             | {block} stmt*
