@@ -450,7 +450,7 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseASwitchStmt(ASwitchStmt node) {
         // Open a block to place the condition in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
-        nextContextID++;
+        nextContextID++; 
 
         // Type-check the init statement
         if (node.getInit() != null) {
