@@ -43,10 +43,12 @@ import golite.node.ACallExpr;
 import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
 import golite.node.ADeclVarShortStmt;
+import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
 import golite.node.AEmptyForCondition;
 import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
+import golite.node.AExprCase;
 import golite.node.AExprForCondition;
 import golite.node.AFloatExpr;
 import golite.node.AForStmt;
@@ -86,9 +88,11 @@ import golite.node.AStringRawExpr;
 import golite.node.AStructField;
 import golite.node.AStructType;
 import golite.node.ASubExpr;
+import golite.node.ASwitchStmt;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
+import golite.node.PCase;
 import golite.node.PExpr;
 import golite.node.PForCondition;
 import golite.node.PParam;
@@ -106,6 +110,7 @@ public class TypeChecker extends AnalysisAdapter {
     private final Map<Node, Context> nodeContexts = new HashMap<>();
     private Context context;
     private int nextContextID = 2;
+    private Type switchCondType;
 
     @Override
     public void caseStart(Start node) {
@@ -416,6 +421,54 @@ public class TypeChecker extends AnalysisAdapter {
         node.getElse().forEach(stmt -> stmt.apply(this));
         // Close the context
         context = context.getParent();
+    }
+    
+    @Override
+    public void caseASwitchStmt(ASwitchStmt node) {
+        // Open a block to place the condition in a new context
+        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+        nextContextID++;
+
+        // Type-check the init statement
+        if (node.getInit() != null) {
+            node.getInit().apply(this);
+        }
+        // Type-check the expression
+        if (node.getValue() != null) {
+            node.getValue().apply(this);
+
+            switchCondType = exprNodeTypes.get(node.getValue()).resolve();
+
+        } else {
+            // Empty Condition
+            switchCondType = BasicType.BOOL;
+        }
+
+        // Individual case blocks
+        for (PCase pCase : node.getCase()) {
+            pCase.apply(this);
+        }
+
+        // Close the condition context
+        context = context.getParent();
+    }
+
+    @Override
+    public void caseAExprCase(AExprCase node) {
+
+        for (PExpr pExpr : node.getExpr()) {
+            // Can't find the type here so breaks as of now with a nullpointer
+            final Type caseConditionType = exprNodeTypes.get(pExpr).resolve();
+            if (!(switchCondType.equals(caseConditionType))) {
+                throw new TypeCheckerException(node, "Case Type: " + caseConditionType 
+                        + " does not match Switch condition's type " + this.switchCondType);
+            }
+        }
+    }
+    
+    @Override
+    public void caseADefaultCase(ADefaultCase node) {
+    
     }
 
     @Override
