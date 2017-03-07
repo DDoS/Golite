@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import ca.sapon.golite.semantic.SemanticData;
 import ca.sapon.golite.semantic.context.CodeBlockContext;
 import ca.sapon.golite.semantic.context.CodeBlockContext.Kind;
 import ca.sapon.golite.semantic.context.Context;
@@ -114,6 +115,10 @@ public class TypeChecker extends AnalysisAdapter {
     private Context context;
     private int nextContextID = 0;
     private Type switchCondType;
+
+    public SemanticData getGeneratedData() {
+        return new SemanticData(exprNodeTypes, nodeContexts);
+    }
 
     @Override
     public void caseStart(Start node) {
