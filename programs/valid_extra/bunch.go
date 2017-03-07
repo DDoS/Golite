@@ -41,6 +41,10 @@ func test1(b bool, i int) float64 {
 
 func test2(i int) string {
     if i := 0; true {
+        for i := 0; i < 10; i++ {
+            var r = 'l'
+            continue
+        }
         return "2"
 	} else if i := 0; b2 {
         return "1"

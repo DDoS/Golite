@@ -29,7 +29,12 @@ public class CodeBlockContext extends Context {
         super.declareSymbol(symbol);
     }
 
+    @Override
+    public String getSignature() {
+        return "CodeBlock: " + kind.toString().toLowerCase();
+    }
+
     public enum Kind {
-        IF, FOR, SWITCH, BLOCK, ELSE
+        IF, FOR, SWITCH, BLOCK
     }
 }

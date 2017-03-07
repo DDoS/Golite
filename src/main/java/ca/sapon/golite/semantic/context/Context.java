@@ -65,8 +65,28 @@ public abstract class Context {
         return Optional.empty();
     }
 
+    public abstract String getSignature();
+
+    private StringBuilder toStringBuilder(StringBuilder builder) {
+        builder.append('[').append(id).append("] ").append(getSignature()).append(System.lineSeparator());
+        symbols.values().forEach(symbol -> builder.append("    ").append(symbol).append(System.lineSeparator()));
+        return builder;
+    }
+
     @Override
     public String toString() {
-        return symbols.toString();
+        return toStringBuilder(new StringBuilder()).toString();
+    }
+
+    public StringBuilder toStringBuilderAll(StringBuilder builder) {
+        if (parent != null) {
+            parent.toStringBuilderAll(builder);
+            builder.append("-------------------").append(System.lineSeparator());
+        }
+        return toStringBuilder(builder);
+    }
+
+    public String toStringAll() {
+        return toStringBuilderAll(new StringBuilder()).toString();
     }
 }

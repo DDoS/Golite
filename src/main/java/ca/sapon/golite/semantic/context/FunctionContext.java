@@ -32,4 +32,9 @@ public class FunctionContext extends Context {
     public Optional<Function> getEnclosingFunction() {
         return Optional.of(getFunction());
     }
+
+    @Override
+    public String getSignature() {
+        return "Function: " + function;
+    }
 }

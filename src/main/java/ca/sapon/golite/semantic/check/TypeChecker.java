@@ -112,18 +112,21 @@ public class TypeChecker extends AnalysisAdapter {
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
     private final Map<Node, Context> nodeContexts = new HashMap<>();
     private Context context;
-    private int nextContextID = 2;
+    private int nextContextID = 0;
     private Type switchCondType;
 
     @Override
     public void caseStart(Start node) {
         context = UniverseContext.INSTANCE;
+        nextContextID++;
+        nodeContexts.put(node, context);
         node.getPProg().apply(this);
     }
 
     @Override
     public void caseAProg(AProg node) {
         context = new TopLevelContext();
+        nextContextID++;
         nodeContexts.put(node, context);
         node.getDecl().forEach(decl -> decl.apply(this));
     }
@@ -438,7 +441,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Type-check the if blocks
         node.getIfBlock().forEach(ifBlock -> ifBlock.apply(this));
         // Open a block to place the else block in a new context
-        context = new CodeBlockContext(context, nextContextID, Kind.ELSE);
+        context = new CodeBlockContext(context, nextContextID, Kind.IF);
         nextContextID++;
         // Type-check the else block
         node.getElse().forEach(stmt -> stmt.apply(this));

@@ -24,4 +24,9 @@ public final class UniverseContext extends Context {
     public void declareSymbol(Symbol symbol) {
         throw new IllegalStateException("The universe context is unmodifiable");
     }
+
+    @Override
+    public String getSignature() {
+        return "Universe";
+    }
 }
