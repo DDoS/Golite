@@ -653,6 +653,7 @@ public class PrettyPrinter extends AnalysisAdapter {
     public void caseADefaultCase(ADefaultCase node) {
         printer.print("default:").newLine().indent();
         printStmtList(node.getStmt());
+        printer.dedent();
     }
 
     @Override
