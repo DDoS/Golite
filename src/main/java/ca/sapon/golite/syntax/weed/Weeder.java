@@ -11,7 +11,6 @@ import java.util.stream.Stream;
 
 import golite.analysis.AnalysisAdapter;
 import golite.analysis.DepthFirstAdapter;
-import golite.node.AAppendExpr;
 import golite.node.AAssignAddStmt;
 import golite.node.AAssignBitAndNotStmt;
 import golite.node.AAssignBitAndStmt;
@@ -48,7 +47,6 @@ import golite.node.ASwitchStmt;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
-import golite.node.PExpr;
 import golite.node.TIdenf;
 import golite.node.Token;
 
@@ -236,9 +234,8 @@ public class Weeder extends DepthFirstAdapter {
 
     @Override
     public void outAExprStmt(AExprStmt node) {
-        final Class<? extends PExpr> exprClass = node.getExpr().getClass();
-        if (exprClass != ACallExpr.class && exprClass != AAppendExpr.class) {
-            throw new WeederException(node.getExpr(), "Expected a call or append expression");
+        if (node.getExpr().getClass() != ACallExpr.class) {
+            throw new WeederException(node.getExpr(), "Expected a call expression");
         }
     }
 
