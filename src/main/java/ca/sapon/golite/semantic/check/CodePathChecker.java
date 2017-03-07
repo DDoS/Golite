@@ -3,6 +3,7 @@ package ca.sapon.golite.semantic.check;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -17,6 +18,7 @@ import golite.node.AForStmt;
 import golite.node.AFuncDecl;
 import golite.node.AIfBlock;
 import golite.node.AIfStmt;
+import golite.node.AReturnStmt;
 import golite.node.ASwitchStmt;
 import golite.node.Node;
 import golite.node.PCase;
@@ -27,12 +29,22 @@ import golite.node.PStmt;
  *
  */
 public class CodePathChecker extends AnalysisAdapter {
-    private List<Path> currents = new ArrayList<>();
+    private final boolean mustReturn;
+    private final List<Path> currents = new ArrayList<>();
+    private final Set<PStmt> statements = new LinkedHashSet<>();
+
+    public CodePathChecker(boolean mustReturn) {
+        this.mustReturn = mustReturn;
+    }
 
     @Override
     public void caseAFuncDecl(AFuncDecl node) {
         final List<PStmt> stmts = node.getStmt();
+        // Trivial case: an empty function
         if (stmts.isEmpty()) {
+            if (mustReturn) {
+                throw new TypeCheckerException(node, "Cannot have an empty function body if it returns a value");
+            }
             return;
         }
         // Create the root node
@@ -44,10 +56,19 @@ public class CodePathChecker extends AnalysisAdapter {
         firstStmt.apply(this);
         // Traverse the rest of the block normally
         traverseBlock(stmts.subList(1, stmts.size()));
+        // Mark all the last path nodes as ending the function
+        currents.forEach(Path::endsFunc);
         // Remove path nodes between breaks and continues and the end of the for or switch block
         root = shortenBreakAndContinue(root);
-
-        System.out.println(root);
+        // Check that all paths return
+        final boolean allReturn = tracePathsToReturn(root);
+        if (mustReturn && !allReturn) {
+            throw new TypeCheckerException(node, "Missing return statement on one or more paths");
+        }
+        // Check that all statements where reached when traversing the return paths
+        if (!statements.isEmpty()) {
+            throw new TypeCheckerException(statements.iterator().next(), "Unreachable statement");
+        }
     }
 
     @Override
@@ -88,7 +109,7 @@ public class CodePathChecker extends AnalysisAdapter {
             traverseConditionalBlock(Collections.emptyList(), ends);
         }
         // Mark all the final nodes as ending the switch-block
-        ends.forEach(end -> end.markEnd(BlockEnd.SWITCH));
+        ends.forEach(end -> end.endsBlock(BlockEnd.SWITCH));
         // Set the paths to the exiting ones, which we saved earlier for each block
         currents.clear();
         currents.addAll(ends);
@@ -104,7 +125,7 @@ public class CodePathChecker extends AnalysisAdapter {
         final List<Path> ends = new ArrayList<>();
         traverseConditionalBlock(node.getStmt(), ends);
         // Mark all the final nodes as ending the for-block
-        ends.forEach(end -> end.markEnd(BlockEnd.FOR));
+        ends.forEach(end -> end.endsBlock(BlockEnd.FOR));
         // Add the exiting paths to the current ones
         currents.addAll(ends);
     }
@@ -132,6 +153,10 @@ public class CodePathChecker extends AnalysisAdapter {
                 final Path next = currents.get(i).addChild(stmt);
                 // Then swap the path node for its child
                 currents.set(i, next);
+            }
+            // Add the stmt to the set of all stmts in the function
+            if (!statements.add(stmt)) {
+                throw new IllegalStateException("Statements are supposed to be unique");
             }
             // Apply to the stmt to traverse nested blocks
             stmt.apply(this);
@@ -167,11 +192,11 @@ public class CodePathChecker extends AnalysisAdapter {
             path.children.add(shortChild);
         }
         // Remove ends that aren't relevant to the block
-        end.ends.retainAll(breakEnds);
+        end.blockEnds.retainAll(breakEnds);
         // The shortened path now ends the block, so copy over the ends from the long path
-        final Set<BlockEnd> newEnds = EnumSet.copyOf(end.ends);
-        path.ends.clear();
-        path.ends.addAll(newEnds);
+        final Set<BlockEnd> newEnds = EnumSet.copyOf(end.blockEnds);
+        path.blockEnds.clear();
+        path.blockEnds.addAll(newEnds);
         // We are done shortening the path
         return path;
     }
@@ -179,7 +204,7 @@ public class CodePathChecker extends AnalysisAdapter {
     private static Path searchForAnyEnd(Path path, Set<BlockEnd> ends) {
         // If the path contains any of the block ends, then we found the end path node
         for (BlockEnd end : ends) {
-            if (path.ends.contains(end)) {
+            if (path.blockEnds.contains(end)) {
                 return path;
             }
         }
@@ -191,10 +216,26 @@ public class CodePathChecker extends AnalysisAdapter {
         return searchForAnyEnd(path.children.get(0), ends);
     }
 
+    private boolean tracePathsToReturn(Path path) {
+        // Remove the stmt from the set of all stmts to mark it as reachable
+        statements.remove(path.stmt);
+        // If the stmt is a return one, then the path ends here (possibly shortened)
+        if (path.stmt instanceof AReturnStmt) {
+            return true;
+        }
+        // If we reach a function end, then the path ends here, without reaching a return stmt
+        if (path.funcEnd) {
+            return false;
+        }
+        // Otherwise we keep tracing the children: they all need to have a path to a return
+        return path.children.stream().allMatch(this::tracePathsToReturn);
+    }
+
     private static class Path {
         private final PStmt stmt;
         private final List<Path> children = new ArrayList<>();
-        private final Set<BlockEnd> ends = EnumSet.noneOf(BlockEnd.class);
+        private final Set<BlockEnd> blockEnds = EnumSet.noneOf(BlockEnd.class);
+        private boolean funcEnd = false;
 
         private Path(PStmt stmt) {
             this.stmt = stmt;
@@ -206,8 +247,12 @@ public class CodePathChecker extends AnalysisAdapter {
             return next;
         }
 
-        private void markEnd(BlockEnd end) {
-            ends.add(end);
+        private void endsBlock(BlockEnd end) {
+            blockEnds.add(end);
+        }
+
+        private void endsFunc() {
+            funcEnd = true;
         }
 
         @Override
@@ -217,9 +262,12 @@ public class CodePathChecker extends AnalysisAdapter {
 
         private String toString(int depth) {
             String s = stmt.getClass().getSimpleName() + "(" + stmt + ")";
-            if (!ends.isEmpty()) {
-                s += " end ";
-                s += String.join(", ", ends.stream().map(Object::toString).collect(Collectors.toSet()));
+            final Set<String> endStrings = blockEnds.stream().map(Object::toString).collect(Collectors.toSet());
+            if (funcEnd) {
+                endStrings.add("FUNC");
+            }
+            if (!endStrings.isEmpty()) {
+                s += " ends " + String.join(", ", endStrings);
             }
             s += System.lineSeparator();
             for (Path child : children) {

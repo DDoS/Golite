@@ -1,7 +1,6 @@
 package ca.sapon.golite.semantic.symbol;
 
 import ca.sapon.golite.semantic.type.FunctionType;
-import ca.sapon.golite.semantic.type.Type;
 import ca.sapon.golite.util.SourcePositioned;
 
 /**
@@ -25,7 +24,7 @@ public class Function extends Symbol {
     }
 
     @Override
-    public Type getType() {
+    public FunctionType getType() {
         return type;
     }
 

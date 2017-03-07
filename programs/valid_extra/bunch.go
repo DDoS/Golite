@@ -18,64 +18,71 @@ var b2 boolean = boolean(true)
 func test1(b bool, i int) float64 {
     for b  {
         var b = false
+        return 7.1
     }
 
     for b2 {
-        var s = ""
-        return
+        var s1 = ""
+        switch i {
+        case 0:
+            break
+        case 1:
+            var s2 = ""
+        }
+        break
     }
 
     for i := 0; i < 10; i++ {
         var r = 'l'
+        continue
     }
+    return 4.7
 }
 
-func test2(i int) {
+func test2(i int) string {
     if i := 0; true {
-        var b = false
+        return "2"
 	} else if i := 0; b2 {
-        var s = ""
+        return "1"
 	}
+    return "3"
 }
 
-func test3(i int) {
+func test3(i int) string {
     if i := 0; true {
-        var b = false
+        return "3"
 	} else if i := 0; b2 {
-        var s = ""
+        return "2"
 	} else {
-	    var r = 'l'
+        return "1"
 	}
 }
 
-func test4() {
+func test4() int {
     var a, b int
-    a, b := 1, 2
+    a, b, c := 1, 2, 3
+    return a
 }
 
-func test5(i int) {
+func test5(i int) string {
     switch i {
     case 0:
-        var b = false
+        return "3"
     case 1:
-        var s = ""
+        return "2"
     }
+    return "1"
 }
 
-func test6(i int) {
+func test6(i int) string {
     switch i {
     default:
-        var r = 'l'
+        return "3"
     case 0:
-        var b = false
+        return "2"
     case 1:
-        var s = ""
+        return "1"
     }
-}
-
-func test4() {
-    var a, b int
-    a, b := 1, 2
 }
 
 type Data []int

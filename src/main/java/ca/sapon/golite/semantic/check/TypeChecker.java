@@ -246,8 +246,8 @@ public class TypeChecker extends AnalysisAdapter {
         params.forEach(context::declareSymbol);
         // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
-        // Check that the function returns on each path
-        node.apply(new CodePathChecker());
+        // Check that the function code paths are valid (all paths return if it returns, and no stmts are unreachable)
+        node.apply(new CodePathChecker(function.getType().getReturnType().isPresent()));
         // Exit the function body
         context = context.getParent();
     }
@@ -278,7 +278,7 @@ public class TypeChecker extends AnalysisAdapter {
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         final Function function = context.getEnclosingFunction().get();
         // If the function returns, check that the expression has the same type
-        final Optional<Type> optReturnType = ((FunctionType) function.getType()).getReturnType();
+        final Optional<Type> optReturnType = function.getType().getReturnType();
         if (!optReturnType.isPresent()) {
             if (node.getExpr() != null) {
                 throw new TypeCheckerException(node, "This function should not return anything");
