@@ -2,10 +2,15 @@ package ca.sapon.golite.semantic.check;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import golite.analysis.AnalysisAdapter;
 import golite.node.ABlockStmt;
+import golite.node.ABreakStmt;
+import golite.node.AContinueStmt;
 import golite.node.ADefaultCase;
 import golite.node.AExprCase;
 import golite.node.AForStmt;
@@ -39,8 +44,9 @@ public class CodePathChecker extends AnalysisAdapter {
         firstStmt.apply(this);
         // Traverse the rest of the block normally
         traverseBlock(stmts.subList(1, stmts.size()));
+        // Remove path nodes between breaks and continues and the end of the for or switch block
+        root = shortenBreakAndContinue(root);
 
-        currents.forEach(Path::terminate);
         System.out.println(root);
     }
 
@@ -81,8 +87,25 @@ public class CodePathChecker extends AnalysisAdapter {
         if (!hasDefault) {
             traverseConditionalBlock(Collections.emptyList(), ends);
         }
+        // Mark all the final nodes as ending the switch-block
+        ends.forEach(end -> end.markEnd(BlockEnd.SWITCH));
         // Set the paths to the exiting ones, which we saved earlier for each block
         currents.clear();
+        currents.addAll(ends);
+    }
+
+    @Override
+    public void caseAForStmt(AForStmt node) {
+        // No new paths to create if empty
+        if (node.getStmt().isEmpty()) {
+            return;
+        }
+        // Traverse the for-block
+        final List<Path> ends = new ArrayList<>();
+        traverseConditionalBlock(node.getStmt(), ends);
+        // Mark all the final nodes as ending the for-block
+        ends.forEach(end -> end.markEnd(BlockEnd.FOR));
+        // Add the exiting paths to the current ones
         currents.addAll(ends);
     }
 
@@ -96,19 +119,6 @@ public class CodePathChecker extends AnalysisAdapter {
         // Set the paths to the original ones entering the block
         currents.clear();
         currents.addAll(originals);
-    }
-
-    @Override
-    public void caseAForStmt(AForStmt node) {
-        // No new paths to create if empty
-        if (node.getStmt().isEmpty()) {
-            return;
-        }
-        // Traverse the for-block
-        final List<Path> ends = new ArrayList<>();
-        traverseConditionalBlock(node.getStmt(), ends);
-        // Add the exiting paths to the current ones
-        currents.addAll(ends);
     }
 
     @Override
@@ -128,9 +138,63 @@ public class CodePathChecker extends AnalysisAdapter {
         }
     }
 
+    private static Path shortenBreakAndContinue(Path path) {
+        // Start by shortening the child paths
+        final List<Path> children = path.children;
+        for (int i = 0; i < children.size(); i++) {
+            children.set(i, shortenBreakAndContinue(children.get(i)));
+        }
+        // Based on the stmt, find which block kind we are breaking or continuing (aborting) from
+        final EnumSet<BlockEnd> breakEnds;
+        if (path.stmt instanceof ABreakStmt) {
+            breakEnds = EnumSet.of(BlockEnd.FOR, BlockEnd.SWITCH);
+        } else if (path.stmt instanceof AContinueStmt) {
+            breakEnds = EnumSet.of(BlockEnd.FOR);
+        } else {
+            // No path to shorten, just return as is
+            return path;
+        }
+        // Find for the end of the block we are aborting (first one of the kind we encounter, on any path)
+        final Path end = searchForAnyEnd(path, breakEnds);
+        // If the bock end if the last path node, then so must the shortened path be
+        if (end.children.isEmpty()) {
+            path.children.clear();
+        } else {
+            // Otherwise its last child is always the one right after the block (the others might go deeper into nested blocks)
+            final Path shortChild = end.children.get(end.children.size() - 1);
+            // Replace the children of the abort stmt by the path after the block
+            path.children.clear();
+            path.children.add(shortChild);
+        }
+        // Remove ends that aren't relevant to the block
+        end.ends.retainAll(breakEnds);
+        // The shortened path now ends the block, so copy over the ends from the long path
+        final Set<BlockEnd> newEnds = EnumSet.copyOf(end.ends);
+        path.ends.clear();
+        path.ends.addAll(newEnds);
+        // We are done shortening the path
+        return path;
+    }
+
+    private static Path searchForAnyEnd(Path path, Set<BlockEnd> ends) {
+        // If the path contains any of the block ends, then we found the end path node
+        for (BlockEnd end : ends) {
+            if (path.ends.contains(end)) {
+                return path;
+            }
+        }
+        // We should never reach the end: the block must terminate before the function end
+        if (path.children.isEmpty()) {
+            throw new IllegalStateException("Should have found the end for " + ends);
+        }
+        // Since the block terminates on all paths, we can just search on the first one
+        return searchForAnyEnd(path.children.get(0), ends);
+    }
+
     private static class Path {
         private final PStmt stmt;
         private final List<Path> children = new ArrayList<>();
+        private final Set<BlockEnd> ends = EnumSet.noneOf(BlockEnd.class);
 
         private Path(PStmt stmt) {
             this.stmt = stmt;
@@ -142,8 +206,8 @@ public class CodePathChecker extends AnalysisAdapter {
             return next;
         }
 
-        private void terminate() {
-            children.add(new Path(null));
+        private void markEnd(BlockEnd end) {
+            ends.add(end);
         }
 
         @Override
@@ -152,10 +216,12 @@ public class CodePathChecker extends AnalysisAdapter {
         }
 
         private String toString(int depth) {
-            if (stmt == null) {
-                return "End" + System.lineSeparator();
+            String s = stmt.getClass().getSimpleName() + "(" + stmt + ")";
+            if (!ends.isEmpty()) {
+                s += " end ";
+                s += String.join(", ", ends.stream().map(Object::toString).collect(Collectors.toSet()));
             }
-            String s = stmt.getClass().getSimpleName() + "(" + stmt + ")" + System.lineSeparator();
+            s += System.lineSeparator();
             for (Path child : children) {
                 for (int i = 0; i < depth + 1; i++) {
                     s += "    ";
@@ -164,5 +230,9 @@ public class CodePathChecker extends AnalysisAdapter {
             }
             return s;
         }
+    }
+
+    private enum BlockEnd {
+        FOR, SWITCH
     }
 }
