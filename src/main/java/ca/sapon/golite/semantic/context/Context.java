@@ -1,5 +1,6 @@
 package ca.sapon.golite.semantic.context;
 
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -7,6 +8,7 @@ import java.util.Optional;
 import ca.sapon.golite.semantic.check.TypeCheckerException;
 import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.Symbol;
+import ca.sapon.golite.util.SourcePrinter;
 
 /**
  *
@@ -67,26 +69,31 @@ public abstract class Context {
 
     public abstract String getSignature();
 
-    private StringBuilder toStringBuilder(StringBuilder builder) {
-        builder.append('[').append(id).append("] ").append(getSignature()).append(System.lineSeparator());
-        symbols.values().forEach(symbol -> builder.append("    ").append(symbol).append(System.lineSeparator()));
-        return builder;
+    public void print(SourcePrinter printer) {
+        printer.print("[").print(Integer.toString(id)).print("] ").print(getSignature()).newLine();
+        printer.indent();
+        symbols.values().forEach(symbol -> printer.print(symbol.toString()).newLine());
+        printer.dedent();
+    }
+
+    public void printAll(SourcePrinter printer) {
+        if (parent != null) {
+            parent.print(printer);
+            printer.print("-------------------").newLine();
+        }
+        print(printer);
     }
 
     @Override
     public String toString() {
-        return toStringBuilder(new StringBuilder()).toString();
-    }
-
-    public StringBuilder toStringBuilderAll(StringBuilder builder) {
-        if (parent != null) {
-            parent.toStringBuilderAll(builder);
-            builder.append("-------------------").append(System.lineSeparator());
-        }
-        return toStringBuilder(builder);
+        final StringWriter writer = new StringWriter();
+        print(new SourcePrinter(writer));
+        return writer.toString();
     }
 
     public String toStringAll() {
-        return toStringBuilderAll(new StringBuilder()).toString();
+        final StringWriter writer = new StringWriter();
+        printAll(new SourcePrinter(writer));
+        return writer.toString();
     }
 }
