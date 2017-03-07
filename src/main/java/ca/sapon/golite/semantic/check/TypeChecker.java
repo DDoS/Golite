@@ -464,7 +464,7 @@ public class TypeChecker extends AnalysisAdapter {
                         + " does not match Switch condition's type " + this.switchCondType);
             }
         }
-    }
+    } 
     
     @Override
     public void caseADefaultCase(ADefaultCase node) {
