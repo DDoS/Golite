@@ -115,7 +115,6 @@ public class TypeChecker extends AnalysisAdapter {
     private final Map<Node, Context> nodeContexts = new HashMap<>();
     private Context context;
     private int nextContextID = 0;
-    private Type switchCondType;
 
     public SemanticData getGeneratedData() {
         return new SemanticData(exprNodeTypes, nodeContexts);
@@ -457,6 +456,9 @@ public class TypeChecker extends AnalysisAdapter {
     
     @Override
     public void caseASwitchStmt(ASwitchStmt node) {
+       // Keeps track of the type of switch's conditional
+        Type switchCondType;
+
         // Open a block to place the condition in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
         nextContextID++; 
@@ -478,42 +480,44 @@ public class TypeChecker extends AnalysisAdapter {
 
         // Individual case blocks
         for (PCase pCase : node.getCase()) {
-            
+
             // Open a block to place the condition in a new context
             context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
             nextContextID++; 
-            
+
             pCase.apply(this);
-            
+
+            if (pCase instanceof AExprCase)
+            {
+                AExprCase aExprCase = (AExprCase) pCase;
+                for (PExpr pExpr : aExprCase.getExpr()) {
+
+                    pExpr.apply(this);            
+                    final Type caseConditionType = exprNodeTypes.get(pExpr).resolve();
+                    // If the type in the case is the same as the one specified in switch condition
+                    if (!(switchCondType.equals(caseConditionType))) {
+                        throw new TypeCheckerException(node, "Case Type: " + caseConditionType 
+                                + " does not match Switch condition's type " + switchCondType);
+                    }
+                }
+                for (PStmt pStmt : aExprCase.getStmt()) {
+                    pStmt.apply(this);
+                }
+            }
+
+            if (pCase instanceof ADefaultCase)
+            {
+                ADefaultCase aDefaultCase = (ADefaultCase) pCase;
+                for (PStmt pStmt : aDefaultCase.getStmt()) {
+                    pStmt.apply(this);
+                }
+            }
             // Close the condition context
             context = context.getParent();
         }
-        
+
         // Close the condition context
         context = context.getParent();
-    }
-
-    @Override
-    public void caseAExprCase(AExprCase node) { 
-
-        for (PExpr pExpr : node.getExpr()) {
-           
-            pExpr.apply(this);            
-            final Type caseConditionType = exprNodeTypes.get(pExpr).resolve();
-            // If the type in the case is the same as the one specified in switch condition
-            if (!(switchCondType.equals(caseConditionType))) {
-                throw new TypeCheckerException(node, "Case Type: " + caseConditionType 
-                        + " does not match Switch condition's type " + this.switchCondType);
-            }
-        }
-        
-        for (PStmt pStmt : node.getStmt()) {
-            pStmt.apply(this);
-        }
-    } 
-    @Override
-    public void caseADefaultCase(ADefaultCase node) {
-    
     }
 
     @Override
