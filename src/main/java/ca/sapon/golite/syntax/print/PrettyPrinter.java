@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import ca.sapon.golite.semantic.SemanticData;
 import ca.sapon.golite.util.SourcePrinter;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAddExpr;
@@ -103,9 +104,15 @@ import golite.node.TIdenf;
  * The pretty printer.
  */
 public class PrettyPrinter extends AnalysisAdapter {
+    private final SemanticData semantics;
     private final SourcePrinter printer;
 
     public PrettyPrinter(Writer output) {
+        this(null, output);
+    }
+
+    public PrettyPrinter(SemanticData semantics, Writer output) {
+        this.semantics = semantics != null ? semantics : SemanticData.EMPTY;
         printer = new SourcePrinter(output);
     }
 
@@ -180,41 +187,49 @@ public class PrettyPrinter extends AnalysisAdapter {
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
         printer.print(node.getIdenf().getText());
+        printTypeComment(node);
     }
 
     @Override
     public void caseAIntDecExpr(AIntDecExpr node) {
         printer.print(node.getIntLit().getText());
+        printTypeComment(node);
     }
 
     @Override
     public void caseAIntOctExpr(AIntOctExpr node) {
         printer.print(node.getOctLit().getText());
+        printTypeComment(node);
     }
 
     @Override
     public void caseAIntHexExpr(AIntHexExpr node) {
         printer.print(node.getHexLit().getText());
+        printTypeComment(node);
     }
 
     @Override
     public void caseAFloatExpr(AFloatExpr node) {
         printer.print(node.getFloatLit().getText());
+        printTypeComment(node);
     }
 
     @Override
     public void caseARuneExpr(ARuneExpr node) {
         printer.print(node.getRuneLit().getText());
+        printTypeComment(node);
     }
 
     @Override
     public void caseAStringIntrExpr(AStringIntrExpr node) {
         printer.print(node.getInterpretedStringLit().getText());
+        printTypeComment(node);
     }
 
     @Override
     public void caseAStringRawExpr(AStringRawExpr node) {
         printer.print(node.getRawStringLit().getText());
+        printTypeComment(node);
     }
 
     @Override
@@ -759,14 +774,25 @@ public class PrettyPrinter extends AnalysisAdapter {
         }
         // Add parenthesis around lower precedence children
         // If the children is on the right, also do so for the same precedence to respect left associativity
-        final boolean needParenthesis = right ? childPrecedence >= parentPrecedence : childPrecedence > parentPrecedence;
+        boolean needParenthesis = right ? childPrecedence >= parentPrecedence : childPrecedence > parentPrecedence;
+        // Always add parentheses when printing type information, for readability
+        needParenthesis |= semantics.printTypes();
+        // Do the printing
         if (needParenthesis) {
             printer.print("(");
         }
         child.apply(this);
+        // TODO: print type here
         if (needParenthesis) {
             printer.print(")");
         }
+    }
+
+    private void printTypeComment(PExpr expr) {
+        if (!semantics.printTypes()) {
+            return;
+        }
+        semantics.getExprType(expr).ifPresent(type -> printer.print("/*").print(type.toString()).print("*/"));
     }
 
     private static final Map<Class<? extends PExpr>, Integer> EXPR_PRECEDENCE;
