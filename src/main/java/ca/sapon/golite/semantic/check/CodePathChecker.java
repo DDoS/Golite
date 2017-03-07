@@ -223,12 +223,13 @@ public class CodePathChecker extends AnalysisAdapter {
         if (path.stmt instanceof AReturnStmt) {
             return true;
         }
-        // If we reach a function end, then the path ends here, without reaching a return stmt
-        if (path.funcEnd) {
-            return false;
+        // If we reach the function end, then the path ends here, without reaching a return stmt
+        boolean pathReturns = !path.funcEnd;
+        // The children also all need to have a path to a return stmt
+        for (Path child : path.children) {
+            pathReturns &= tracePathsToReturn(child);
         }
-        // Otherwise we keep tracing the children: they all need to have a path to a return
-        return path.children.stream().allMatch(this::tracePathsToReturn);
+        return pathReturns;
     }
 
     private static class Path {
