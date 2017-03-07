@@ -494,7 +494,7 @@ public class TypeChecker extends AnalysisAdapter {
     }
 
     @Override
-    public void caseAExprCase(AExprCase node) {
+    public void caseAExprCase(AExprCase node) { 
 
         for (PExpr pExpr : node.getExpr()) {
            
