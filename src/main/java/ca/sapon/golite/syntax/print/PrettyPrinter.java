@@ -236,6 +236,7 @@ public class PrettyPrinter extends AnalysisAdapter {
     public void caseASelectExpr(ASelectExpr node) {
         printExprLeft(ASelectExpr.class, node.getValue());
         printer.print(".").print(node.getIdenf().getText());
+        printTypeComment(node);
     }
 
     @Override
@@ -244,6 +245,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printer.print("[");
         node.getIndex().apply(this);
         printer.print("]");
+        printTypeComment(node);
     }
 
     @Override
@@ -252,6 +254,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printer.print("(");
         printExprList(node.getArgs());
         printer.print(")");
+        printTypeComment(node);
     }
 
     @Override
@@ -261,12 +264,14 @@ public class PrettyPrinter extends AnalysisAdapter {
         printer.print(", ");
         node.getRight().apply(this);
         printer.print(")");
+        printTypeComment(node);
     }
 
     @Override
     public void caseALogicNotExpr(ALogicNotExpr node) {
         printer.print("!");
         printExprLeft(ALogicNotExpr.class, node.getInner());
+        printTypeComment(node);
     }
 
     @Override
@@ -277,6 +282,7 @@ public class PrettyPrinter extends AnalysisAdapter {
             printer.print(" ");
         }
         printExprLeft(AReaffirmExpr.class, node.getInner());
+        printTypeComment(node);
     }
 
     @Override
@@ -287,12 +293,14 @@ public class PrettyPrinter extends AnalysisAdapter {
             printer.print(" ");
         }
         printExprLeft(ANegateExpr.class, node.getInner());
+        printTypeComment(node);
     }
 
     @Override
     public void caseABitNotExpr(ABitNotExpr node) {
         printer.print("^");
         printExprLeft(ABitNotExpr.class, node.getInner());
+        printTypeComment(node);
     }
 
     @Override
@@ -300,6 +308,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(AMulExpr.class, node.getLeft());
         printer.print(" * ");
         printExprRight(AMulExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -307,6 +316,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ADivExpr.class, node.getLeft());
         printer.print(" / ");
         printExprRight(ADivExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -314,6 +324,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ARemExpr.class, node.getLeft());
         printer.print(" % ");
         printExprRight(ARemExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -321,6 +332,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ALshiftExpr.class, node.getLeft());
         printer.print(" << ");
         printExprRight(ALshiftExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -328,6 +340,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ARshiftExpr.class, node.getLeft());
         printer.print(" >> ");
         printExprRight(ARshiftExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -335,6 +348,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ABitAndExpr.class, node.getLeft());
         printer.print(" & ");
         printExprRight(ABitAndExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -342,6 +356,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ABitAndNotExpr.class, node.getLeft());
         printer.print(" &^ ");
         printExprRight(ABitAndNotExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -349,6 +364,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(AAddExpr.class, node.getLeft());
         printer.print(" + ");
         printExprRight(AAddExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -356,6 +372,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ASubExpr.class, node.getLeft());
         printer.print(" - ");
         printExprRight(ASubExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -363,6 +380,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ABitOrExpr.class, node.getLeft());
         printer.print(" | ");
         printExprRight(ABitOrExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -370,6 +388,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ABitXorExpr.class, node.getLeft());
         printer.print(" ^ ");
         printExprRight(ABitXorExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -377,6 +396,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(AEqExpr.class, node.getLeft());
         printer.print(" == ");
         printExprRight(AEqExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -384,6 +404,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ANeqExpr.class, node.getLeft());
         printer.print(" != ");
         printExprRight(ANeqExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -391,6 +412,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ALessExpr.class, node.getLeft());
         printer.print(" < ");
         printExprRight(ALessExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -398,6 +420,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ALessEqExpr.class, node.getLeft());
         printer.print(" <= ");
         printExprRight(ALessEqExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -405,6 +428,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(AGreatExpr.class, node.getLeft());
         printer.print(" > ");
         printExprRight(AGreatExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -412,6 +436,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(AGreatEqExpr.class, node.getLeft());
         printer.print(" >= ");
         printExprRight(AGreatEqExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -419,6 +444,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ALogicAndExpr.class, node.getLeft());
         printer.print(" && ");
         printExprRight(ALogicAndExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -426,6 +452,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         printExprLeft(ALogicOrExpr.class, node.getLeft());
         printer.print(" || ");
         printExprRight(ALogicOrExpr.class, node.getRight());
+        printTypeComment(node);
     }
 
     @Override
@@ -782,7 +809,6 @@ public class PrettyPrinter extends AnalysisAdapter {
             printer.print("(");
         }
         child.apply(this);
-        //printTypeComment(child);
         if (needParenthesis) {
             printer.print(")");
         }
@@ -800,7 +826,7 @@ public class PrettyPrinter extends AnalysisAdapter {
         precedences.putAll(Stream.of(
                 AIdentExpr.class, AIntDecExpr.class, AIntOctExpr.class, AIntHexExpr.class, AFloatExpr.class, ARuneExpr.class,
                 AStringIntrExpr.class, AStringRawExpr.class, AAppendExpr.class
-        ).collect(Collectors.toMap(key -> key, value -> -1)));
+        ).collect(Collectors.toMap(key -> key, value -> -2)));
         // Precedence -1
         precedences.putAll(Stream.of(
                 ASelectExpr.class, AIndexExpr.class, ACallExpr.class
