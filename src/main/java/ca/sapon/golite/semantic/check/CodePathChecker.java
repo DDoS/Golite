@@ -11,8 +11,10 @@ import java.util.stream.Collectors;
 import golite.analysis.AnalysisAdapter;
 import golite.node.ABlockStmt;
 import golite.node.ABreakStmt;
+import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
 import golite.node.ADefaultCase;
+import golite.node.AEmptyForCondition;
 import golite.node.AExprCase;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
@@ -22,6 +24,7 @@ import golite.node.AReturnStmt;
 import golite.node.ASwitchStmt;
 import golite.node.Node;
 import golite.node.PCase;
+import golite.node.PForCondition;
 import golite.node.PIfBlock;
 import golite.node.PStmt;
 
@@ -121,13 +124,24 @@ public class CodePathChecker extends AnalysisAdapter {
         if (node.getStmt().isEmpty()) {
             return;
         }
+        // Check if the for-block is entered conditionally
+        final PForCondition condition = node.getForCondition();
+        // If the condition is missing, then it is always true
+        final boolean unconditional = condition instanceof AEmptyForCondition
+                || condition instanceof AClauseForCondition && ((AClauseForCondition) condition).getCond() == null;
         // Traverse the for-block
-        final List<Path> ends = new ArrayList<>();
-        traverseConditionalBlock(node.getStmt(), ends);
-        // Mark all the final nodes as ending the for-block
-        ends.forEach(end -> end.endsBlock(BlockEnd.FOR));
-        // Add the exiting paths to the current ones
-        currents.addAll(ends);
+        if (unconditional) {
+            traverseBlock(node.getStmt());
+            // Mark all the current nodes as ending the for-block
+            currents.forEach(current -> current.endsBlock(BlockEnd.FOR));
+        } else {
+            final List<Path> ends = new ArrayList<>();
+            traverseConditionalBlock(node.getStmt(), ends);
+            // Mark all the final nodes as ending the for-block
+            ends.forEach(end -> end.endsBlock(BlockEnd.FOR));
+            // Add the exiting paths to the current ones
+            currents.addAll(ends);
+        }
     }
 
     private void traverseConditionalBlock(List<PStmt> block, List<Path> ends) {
