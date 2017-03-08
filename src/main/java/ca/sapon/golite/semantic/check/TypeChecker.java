@@ -454,70 +454,58 @@ public class TypeChecker extends AnalysisAdapter {
         // Close the context
         context = context.getParent();
     }
-    
+
     @Override
     public void caseASwitchStmt(ASwitchStmt node) {
-       // Keeps track of the type of switch's conditional
-        Type switchCondType;
-
-        // Open a block to place the condition in a new context
+        // Open a block to place the switch in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
-        nextContextID++; 
-
+        nextContextID++;
         // Type-check the init statement
         if (node.getInit() != null) {
             node.getInit().apply(this);
         }
         // Type-check the expression
+        final Type switchType;
         if (node.getValue() != null) {
             node.getValue().apply(this);
-
-            switchCondType = exprNodeTypes.get(node.getValue()).resolve();
-
+            switchType = exprNodeTypes.get(node.getValue());
         } else {
-            // Empty Condition
-            switchCondType = BasicType.BOOL;
+            // Empty condition defaults to the bool type
+            switchType = BasicType.BOOL;
         }
-
-        // Individual case blocks
-        for (PCase pCase : node.getCase()) {
-
-            // Open a block to place the condition in a new context
-            context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
-            nextContextID++; 
-
-            pCase.apply(this);
-
-            if (pCase instanceof AExprCase)
-            {
-                AExprCase aExprCase = (AExprCase) pCase;
-                for (PExpr pExpr : aExprCase.getExpr()) {
-
-                    pExpr.apply(this);            
-                    final Type caseConditionType = exprNodeTypes.get(pExpr).resolve();
+        // Type-check the case blocks
+        for (PCase case_ : node.getCase()) {
+            // Open a block to place the case in a new context
+            context = new CodeBlockContext(context, nextContextID, Kind.SWITCH);
+            nextContextID++;
+            // Get the stmts for the case, and do any extra type checking if necessary
+            final List<PStmt> stmts;
+            if (case_ instanceof AExprCase) {
+                final AExprCase exprCase = (AExprCase) case_;
+                // Type-check the condition expression for the case
+                for (PExpr expr : exprCase.getExpr()) {
+                    // Get the condition type
+                    expr.apply(this);
+                    final Type conditionType = exprNodeTypes.get(expr);
                     // If the type in the case is the same as the one specified in switch condition
-                    if (!(switchCondType.equals(caseConditionType))) {
-                        throw new TypeCheckerException(node, "Case Type: " + caseConditionType 
-                                + " does not match Switch condition's type " + switchCondType);
+                    if (!switchType.equals(conditionType)) {
+                        throw new TypeCheckerException(expr, "The condition type " + conditionType
+                                + " does not match the switching type " + switchType);
                     }
                 }
-                for (PStmt pStmt : aExprCase.getStmt()) {
-                    pStmt.apply(this);
-                }
+                stmts = exprCase.getStmt();
+            } else if (case_ instanceof ADefaultCase) {
+                // For the default case, we don't have any extra type-checking to do
+                stmts = ((ADefaultCase) case_).getStmt();
+            } else {
+                throw new IllegalStateException("Unknown kind of case: " + case_.getClass());
             }
-
-            if (pCase instanceof ADefaultCase)
-            {
-                ADefaultCase aDefaultCase = (ADefaultCase) pCase;
-                for (PStmt pStmt : aDefaultCase.getStmt()) {
-                    pStmt.apply(this);
-                }
-            }
-            // Close the condition context
+            // Type check the stmts of the case
+            stmts.forEach(stmt -> stmt.apply(this));
+            // Close the case context
             context = context.getParent();
         }
-
-        // Close the condition context
+        // Close the switch context
         context = context.getParent();
     }
 
@@ -540,7 +528,7 @@ public class TypeChecker extends AnalysisAdapter {
     }
 
     // Op-assignment
-    
+
     // Assign Add '+='
     @Override
     public void caseAAssignAddStmt(AAssignAddStmt node) {
@@ -554,16 +542,15 @@ public class TypeChecker extends AnalysisAdapter {
 
         // Check if type(LHS) == type(RHS)
         if (!(lhs.equals(rhs))) {
-            throw new TypeCheckerException(node, "Mismatched types in '+=' :" +lhs +" and " +rhs );
+            throw new TypeCheckerException(node, "Mismatched types in '+=' :" + lhs + " and " + rhs);
         }
 
         // Operation only allowed on following types
         if (!(BasicType.ALL.contains(lhs) && lhs != BasicType.BOOL)) {
-            throw new TypeCheckerException(node, "Can only use '+=' with int while " +node.getLeft().toString() +" is " +lhs);
+            throw new TypeCheckerException(node, "Can only use '+=' with int while " + node.getLeft().toString() + " is " + lhs);
         }
     }
 
-    
     @Override
     public void caseAIntDecExpr(AIntDecExpr node) {
         exprNodeTypes.put(node, BasicType.INT);
