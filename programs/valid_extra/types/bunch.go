@@ -10,6 +10,7 @@ func noRet() {
         }
     }
     var j int
+    i, j, k := 1, 2, 4
 }
 
 type boolean bool

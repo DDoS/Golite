@@ -205,6 +205,7 @@ public class TypeChecker extends AnalysisAdapter {
                 if (!leftType.equals(rightType)) {
                     throw new TypeCheckerException(node, "Cannot use " + rightType + " as " + leftType + " in assignment");
                 }
+                exprNodeTypes.put(leftNode, leftType);
             } else {
                 // Var hasn't been declared - declare as new var with the same type as RHS expr
                 context.declareSymbol(new Variable(new NodePosition(leftNode), idenf, rightType, false));
