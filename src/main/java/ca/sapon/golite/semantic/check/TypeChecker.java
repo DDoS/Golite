@@ -34,6 +34,7 @@ import golite.node.AAddExpr;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
 import golite.node.AAssignAddStmt;
+import golite.node.AAssignMulStmt;
 import golite.node.AAssignStmt;
 import golite.node.ABitAndExpr;
 import golite.node.ABitAndNotExpr;
@@ -533,23 +534,13 @@ public class TypeChecker extends AnalysisAdapter {
     // Assign Add '+='
     @Override
     public void caseAAssignAddStmt(AAssignAddStmt node) {
-        // Get type on LHS
-        node.getLeft().apply(this);
-        final Type lhs = exprNodeTypes.get(node.getLeft()).resolve();
-
-        // Get type on RHS
-        node.getRight().apply(this);
-        final Type rhs = exprNodeTypes.get(node.getRight()).resolve();
-
-        // Check if type(LHS) == type(RHS)
-        if (!(lhs.equals(rhs))) {
-            throw new TypeCheckerException(node, "Mismatched types in '+=' :" + lhs + " and " + rhs);
-        }
-
-        // Operation only allowed on following types
-        if (!(BasicType.ALL.contains(lhs) && lhs != BasicType.BOOL)) {
-            throw new TypeCheckerException(node, "Can only use '+=' with int while " + node.getLeft().toString() + " is " + lhs);
-        }
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.ADD);
+    }
+    
+    // Assign Multiply '*='
+    @Override
+    public void caseAAssignMulStmt(AAssignMulStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.MUL);
     }
 
     @Override
@@ -859,7 +850,7 @@ public class TypeChecker extends AnalysisAdapter {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.LOGIC_OR);
     }
 
-    private void typeCheckBinary(PExpr node, PExpr left, PExpr right, BinaryOperator operator) {
+    private void typeCheckBinary(Node node, PExpr left, PExpr right, BinaryOperator operator) {
         // Check that the left and right are well typed
         left.apply(this);
         final Type leftType = exprNodeTypes.get(left);
@@ -916,8 +907,10 @@ public class TypeChecker extends AnalysisAdapter {
         }
         if (!valid) {
             throw new TypeCheckerException(node, "Cannot use the operator " + operator + " on the type " + leftType);
+        } 
+        if (node instanceof PExpr) {
+        exprNodeTypes.put((PExpr) node, resultType);
         }
-        exprNodeTypes.put(node, resultType);
     }
 
     @Override
