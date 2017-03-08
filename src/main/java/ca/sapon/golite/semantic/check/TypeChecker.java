@@ -123,19 +123,19 @@ import golite.node.TIdenf;
 public class TypeChecker extends AnalysisAdapter {
     private final Map<PExpr, Type> exprNodeTypes = new HashMap<>();
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
-    private final Map<Node, Context> nodeContexts = new HashMap<>();
+    private final Map<Context, Node> contextNodes = new HashMap<>();
     private Context context;
     private int nextContextID = 0;
 
     public SemanticData getGeneratedData() {
-        return new SemanticData(exprNodeTypes, nodeContexts);
+        return new SemanticData(exprNodeTypes, contextNodes);
     }
 
     @Override
     public void caseStart(Start node) {
         context = UniverseContext.INSTANCE;
         nextContextID++;
-        nodeContexts.put(node, context);
+        contextNodes.put(context, node);
         node.getPProg().apply(this);
     }
 
@@ -143,7 +143,7 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseAProg(AProg node) {
         context = new TopLevelContext();
         nextContextID++;
-        nodeContexts.put(node, context);
+        contextNodes.put(context, node);
         node.getDecl().forEach(decl -> decl.apply(this));
     }
 
@@ -261,7 +261,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Enter the function body
         context = new FunctionContext((TopLevelContext) context, nextContextID, function);
         nextContextID++;
-        nodeContexts.put(node, context);
+        contextNodes.put(context, node);
         // Declare the parameters as variables
         params.forEach(context::declareSymbol);
         // Type check the statements
@@ -274,9 +274,13 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseABlockStmt(ABlockStmt node) {
+        // Open a context for the block
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
         nextContextID++;
+        contextNodes.put(context, node);
+        // Evaluate the stmts in the block
         node.getStmt().forEach(stmt -> stmt.apply(this));
+        // Close the context
         context = context.getParent();
     }
 
@@ -382,13 +386,14 @@ public class TypeChecker extends AnalysisAdapter {
         // Open a block to place the condition in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
         nextContextID++;
+        contextNodes.put(context, node);
         // Type check the condition
         final PForCondition condition = node.getForCondition();
         condition.apply(this);
         // Open a new context for the "for" body
         context = new CodeBlockContext(context, nextContextID, Kind.FOR);
         nextContextID++;
-        nodeContexts.put(node, context);
+        contextNodes.put(context, node);
         // Type check the for statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
         // If the condition is a clause, then we need to type check the post with the rest of the body
@@ -432,6 +437,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Open a block to place the condition in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
         nextContextID++;
+        contextNodes.put(context, node);
         // Type-check the init statement
         if (node.getInit() != null) {
             node.getInit().apply(this);
@@ -445,6 +451,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Open a block to place the body in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.IF);
         nextContextID++;
+        contextNodes.put(context, node);
         // Type-check the body
         node.getBlock().forEach(stmt -> stmt.apply(this));
         // Close the body context
@@ -460,6 +467,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Open a block to place the else block in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.IF);
         nextContextID++;
+        contextNodes.put(context, node);
         // Type-check the else block
         node.getElse().forEach(stmt -> stmt.apply(this));
         // Close the context
@@ -471,6 +479,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Open a block to place the switch in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
         nextContextID++;
+        contextNodes.put(context, node);
         // Type-check the init statement
         if (node.getInit() != null) {
             node.getInit().apply(this);
@@ -489,6 +498,7 @@ public class TypeChecker extends AnalysisAdapter {
             // Open a block to place the case in a new context
             context = new CodeBlockContext(context, nextContextID, Kind.SWITCH);
             nextContextID++;
+            contextNodes.put(context, node);
             // Get the stmts for the case, and do any extra type checking if necessary
             final List<PStmt> stmts;
             if (case_ instanceof AExprCase) {
