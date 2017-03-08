@@ -33,5 +33,4 @@ public class SemanticData {
             node = node.parent();
         } while (context == null && node != null);
         return Optional.ofNullable(context);
-    }
-}
+    }}

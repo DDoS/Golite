@@ -24,17 +24,17 @@ public class SyntaxTest {
 
     @Test
     public void testExtraValidPrograms() throws Exception {
-        testPrograms(true, "valid_extra");
+        testPrograms(true, "valid_extra", "syntax");
     }
 
     @Test
     public void testInvalidPrograms() throws Exception {
-        testPrograms(false, "invalid");
+        testPrograms(false, "invalid", "syntax");
     }
 
     @Test
     public void testExtraInvalidPrograms() throws Exception {
-        testPrograms(false, "invalid_extra");
+        testPrograms(false, "invalid_extra", "syntax");
     }
 
     private static void testPrograms(boolean valid, String... path) throws Exception {
