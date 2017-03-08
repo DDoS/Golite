@@ -57,8 +57,8 @@ public final class Golite {
         ast.apply(new PrettyPrinter(semantics, pretty));
     }
 
-    public static void typeCheck(Reader source) throws IOException, SyntaxException, SemanticException {
-        typeCheck(parse(source));
+    public static SemanticData typeCheck(Reader source) throws IOException, SyntaxException, SemanticException {
+        return typeCheck(parse(source));
     }
 
     public static SemanticData typeCheck(Start ast) throws SemanticException {
