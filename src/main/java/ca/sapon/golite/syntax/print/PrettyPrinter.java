@@ -6,12 +6,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import ca.sapon.golite.semantic.SemanticData;
-import ca.sapon.golite.semantic.context.Context;
 import ca.sapon.golite.util.SourcePrinter;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAddExpr;
@@ -93,7 +91,6 @@ import golite.node.ASubExpr;
 import golite.node.ASwitchStmt;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
-import golite.node.Node;
 import golite.node.PDecl;
 import golite.node.PExpr;
 import golite.node.PIfBlock;
@@ -710,7 +707,6 @@ public class PrettyPrinter extends AnalysisAdapter {
         printer.print(" {").newLine().indent();
         // Statements
         printStmtList(node.getStmt());
-        printContextComment(node);
         printer.dedent().print("}");
     }
 
@@ -780,41 +776,20 @@ public class PrettyPrinter extends AnalysisAdapter {
         // If the children is on the right, also do so for the same precedence to respect left associativity
         boolean needParenthesis = right ? childPrecedence >= parentPrecedence : childPrecedence > parentPrecedence;
         // Always add parentheses when printing type information, for readability
-        needParenthesis |= semantics.printTypes();
+        needParenthesis |= semantics.getExprType(child).isPresent();
         // Do the printing
         if (needParenthesis) {
             printer.print("(");
         }
         child.apply(this);
-        // TODO: print type here
+        //printTypeComment(child);
         if (needParenthesis) {
             printer.print(")");
         }
     }
 
     private void printTypeComment(PExpr expr) {
-        if (!semantics.printTypes()) {
-            return;
-        }
         semantics.getExprType(expr).ifPresent(type -> printer.print("/*").print(type.toString()).print("*/"));
-    }
-
-    private void printContextComment(Node node) {
-        if (!semantics.printContexts()) {
-            return;
-        }
-        final Optional<Context> optContext = semantics.getNodeContext(node);
-        if (!optContext.isPresent()) {
-            return;
-        }
-        printer.print("/*").newLine();
-        final Context context = optContext.get();
-        if (semantics.printAllContexts()) {
-            context.printAll(printer);
-        } else {
-            context.print(printer);
-        }
-        printer.print("*/").newLine();
     }
 
     private static final Map<Class<? extends PExpr>, Integer> EXPR_PRECEDENCE;

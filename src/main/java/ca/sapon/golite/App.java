@@ -29,7 +29,6 @@ public final class App {
     private File inputFile = null;
     private File outputFile = null;
     private Start ast = null;
-    private SemanticData semantics = null;
 
     private App(String[] args) {
         this.args = args;
@@ -112,7 +111,7 @@ public final class App {
             return result;
         }
         // Finally do the printing
-        return printAST();
+        return printAST(null);
     }
 
     private int typecheckCommand() {
@@ -137,6 +136,7 @@ public final class App {
             return result;
         }
         // Do the type checking
+        final SemanticData semantics;
         try {
             semantics = Golite.typeCheck(ast);
         } catch (SemanticException exception) {
@@ -144,14 +144,12 @@ public final class App {
             return 1;
         }
         // Enable the semantic printing according to the flags
-        semantics.printTypes(line.hasOption("pptype"));
-        semantics.printContexts(line.hasOption("dumpsymtab"));
-        semantics.printAllContexts(line.hasOption("dumpsymtaball"));
+        final SemanticData printSemantics = line.hasOption("pptype") ? semantics : null;
         // Finally do the printing
-        return printAST();
+        return printAST(printSemantics);
     }
 
-    private int printAST() {
+    private int printAST(SemanticData semantics) {
         // Create the output writer
         final Writer pretty;
         try {
