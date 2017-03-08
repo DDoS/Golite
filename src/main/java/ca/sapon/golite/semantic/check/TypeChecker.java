@@ -465,7 +465,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Type-check the if blocks
         node.getIfBlock().forEach(ifBlock -> ifBlock.apply(this));
         // Open a block to place the else block in a new context
-        context = new CodeBlockContext(context, nextContextID, Kind.IF);
+        context = new CodeBlockContext(context, nextContextID, Kind.ELSE);
         nextContextID++;
         contextNodes.put(context, node);
         // Type-check the else block
@@ -477,7 +477,7 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseASwitchStmt(ASwitchStmt node) {
         // Open a block to place the switch in a new context
-        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+        context = new CodeBlockContext(context, nextContextID, Kind.SWITCH);
         nextContextID++;
         contextNodes.put(context, node);
         // Type-check the init statement
@@ -496,7 +496,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Type-check the case blocks
         for (PCase case_ : node.getCase()) {
             // Open a block to place the case in a new context
-            context = new CodeBlockContext(context, nextContextID, Kind.SWITCH);
+            context = new CodeBlockContext(context, nextContextID, Kind.CASE);
             nextContextID++;
             contextNodes.put(context, node);
             // Get the stmts for the case, and do any extra type checking if necessary
