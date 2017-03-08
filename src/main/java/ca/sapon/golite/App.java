@@ -11,9 +11,11 @@ import java.io.Writer;
 import java.lang.reflect.Array;
 
 import ca.sapon.golite.semantic.SemanticData;
-import ca.sapon.golite.semantic.SemanticException;
+import ca.sapon.golite.semantic.check.TypeChecker;
+import ca.sapon.golite.semantic.check.TypeCheckerException;
 import ca.sapon.golite.syntax.SyntaxException;
 import ca.sapon.golite.syntax.print.PrinterException;
+import ca.sapon.golite.util.SourcePrinter;
 import golite.node.Start;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -136,17 +138,33 @@ public final class App {
             return result;
         }
         // Do the type checking
-        final SemanticData semantics;
+        final TypeChecker typeChecker = new TypeChecker();
         try {
-            semantics = Golite.typeCheck(ast);
-        } catch (SemanticException exception) {
+            ast.apply(typeChecker);
+            result = 0;
+        } catch (TypeCheckerException exception) {
             System.err.println(exception.getMessage());
-            return 1;
+            result = 1;
         }
-        // Enable the semantic printing according to the flags
-        final SemanticData printSemantics = line.hasOption("pptype") ? semantics : null;
-        // Finally do the printing
-        return printAST(printSemantics);
+        final SemanticData semantics = typeChecker.getGeneratedData();
+        // Print the contexts to a new file if context printing is enabled
+        final boolean printAllContexts = line.hasOption("dumpsymtaball");
+        if (printAllContexts || line.hasOption("dumpsymtab")) {
+            final int printResult = printContexts(semantics, printAllContexts);
+            if (printResult != 0) {
+                return printResult;
+            }
+        }
+        // If the type-checking failed, then abort pretty printing the types
+        if (result != 0) {
+            return result;
+        }
+        // Pretty print with types if enabled by the flags
+        if (line.hasOption("pptype")) {
+            return printAST(semantics);
+        }
+        // Otherwise return success
+        return 0;
     }
 
     private int printAST(SemanticData semantics) {
@@ -161,6 +179,34 @@ public final class App {
         // Then do the pretty printing
         try {
             Golite.prettyPrint(ast, semantics, pretty);
+        } catch (PrinterException exception) {
+            System.err.println("Error when printing: " + exception.getMessage());
+            return 1;
+        }
+        // Close the output file
+        try {
+            pretty.close();
+        } catch (IOException exception) {
+            System.err.println("Error when closing output file: " + exception.getMessage());
+            return 1;
+        }
+        return 0;
+    }
+
+    private int printContexts(SemanticData semantics, boolean all) {
+        // Always print to a different file than the usual output
+        final File contextOutputFile = setFileExtension(outputFile, SYMBOL_TABLE_EXTENSION);
+        // Create the output writer
+        final Writer pretty;
+        try {
+            pretty = new FileWriter(contextOutputFile);
+        } catch (IOException exception) {
+            System.err.println("Cannot create output file: " + exception.getMessage());
+            return 1;
+        }
+        // Then do the context printing
+        try {
+            semantics.printContexts(new SourcePrinter(pretty), all);
         } catch (PrinterException exception) {
             System.err.println("Error when printing: " + exception.getMessage());
             return 1;
@@ -207,16 +253,20 @@ public final class App {
             return 1;
         }
         // Otherwise derive it from the input file
-        final String inputName = inputFile.getName();
-        final int index = inputName.lastIndexOf('.');
+        outputFile = setFileExtension(inputFile, defaultExtension);
+        return 0;
+    }
+
+    private static File setFileExtension(File file, String extension) {
+        final String inputName = file.getName();
+        final int index = inputName.indexOf('.');
         final String outputName;
         if (index < 0) {
-            outputName = inputName + '.' + defaultExtension;
+            outputName = inputName + '.' + extension;
         } else {
-            outputName = inputName.substring(0, index + 1) + defaultExtension;
+            outputName = inputName.substring(0, index + 1) + extension;
         }
-        outputFile = new File(inputFile.getParent(), outputName);
-        return 0;
+        return new File(file.getParent(), outputName);
     }
 
     private static <T> T[] subArray(T[] array, int start) {

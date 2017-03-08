@@ -1,7 +1,7 @@
 package ca.sapon.golite.semantic.context;
 
 import java.io.StringWriter;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -16,7 +16,7 @@ import ca.sapon.golite.util.SourcePrinter;
 public abstract class Context {
     private final Context parent;
     private final int id;
-    protected final Map<String, Symbol> symbols = new HashMap<>();
+    protected final Map<String, Symbol> symbols = new LinkedHashMap<>();
 
     protected Context(Context parent, int id) {
         this.parent = parent;
@@ -78,8 +78,8 @@ public abstract class Context {
 
     public void printAll(SourcePrinter printer) {
         if (parent != null) {
-            parent.print(printer);
-            printer.print("-------------------").newLine();
+            parent.printAll(printer);
+            printer.print("--------------------").newLine();
         }
         print(printer);
     }

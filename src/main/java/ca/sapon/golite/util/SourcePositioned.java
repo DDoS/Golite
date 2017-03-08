@@ -12,15 +12,19 @@ public interface SourcePositioned {
 
     int getEndPos();
 
-    static String appendPosition(SourcePositioned position, String message) {
-        final StringBuilder detailed = new StringBuilder()
-                .append('[').append(posToString(position.getStartLine()))
-                .append(',').append(posToString(position.getStartPos())).append(']');
-        if (position.getStartLine() != position.getEndLine() || position.getStartPos() != position.getEndPos()) {
-            detailed.append(" to ").append('[').append(posToString(position.getEndLine()))
-                    .append(',').append(posToString(position.getEndPos())).append(']');
+    default String positionToString() {
+        final StringBuilder positionString = new StringBuilder()
+                .append('[').append(posToString(getStartLine()))
+                .append(',').append(posToString(getStartPos())).append(']');
+        if (getStartLine() != getEndLine() || getStartPos() != getEndPos()) {
+            positionString.append(" to ").append('[').append(posToString(getEndLine()))
+                    .append(',').append(posToString(getEndPos())).append(']');
         }
-        return detailed.append(": ").append(message).toString();
+        return positionString.toString();
+    }
+
+    static String appendPosition(SourcePositioned position, String message) {
+        return position.positionToString() + ": " + message;
     }
 
     static String posToString(int pos) {
