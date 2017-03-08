@@ -34,8 +34,17 @@ import golite.node.AAddExpr;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
 import golite.node.AAssignAddStmt;
+import golite.node.AAssignBitAndNotStmt;
+import golite.node.AAssignBitAndStmt;
+import golite.node.AAssignBitOrStmt;
+import golite.node.AAssignBitXorStmt;
+import golite.node.AAssignDivStmt;
+import golite.node.AAssignLshiftStmt;
 import golite.node.AAssignMulStmt;
+import golite.node.AAssignRemStmt;
+import golite.node.AAssignRshiftStmt;
 import golite.node.AAssignStmt;
+import golite.node.AAssignSubStmt;
 import golite.node.ABitAndExpr;
 import golite.node.ABitAndNotExpr;
 import golite.node.ABitNotExpr;
@@ -530,19 +539,74 @@ public class TypeChecker extends AnalysisAdapter {
     }
 
     // Op-assignment
-
-    // Assign Add '+='
-    @Override
-    public void caseAAssignAddStmt(AAssignAddStmt node) {
-        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.ADD);
-    }
     
     // Assign Multiply '*='
     @Override
     public void caseAAssignMulStmt(AAssignMulStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.MUL);
     }
+    
+    // Assign Division '/='
+    @Override
+    public void caseAAssignDivStmt(AAssignDivStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.DIV);
+    }
+    
+    // Assign Remainder '%='
+    @Override
+    public void caseAAssignRemStmt(AAssignRemStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.REM);
+    }
+    
+    // Assign Lshift '<<='
+    @Override
+    public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.LSHIFT);
+    }
 
+    // Assign Rshift '>>='
+    @Override
+    public void caseAAssignRshiftStmt(AAssignRshiftStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.RSHIFT);
+    }
+
+    // Assign Ampr Eql '%='
+    @Override
+    public void caseAAssignBitAndStmt(AAssignBitAndStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_AND);
+    }
+
+    // Assign mod_eql '%='
+    @Override
+    public void caseAAssignBitAndNotStmt(AAssignBitAndNotStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_AND_NOT);
+    }
+    
+    // Assign Add '+='
+    @Override
+    public void caseAAssignAddStmt(AAssignAddStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.ADD);
+    }
+
+    // Assign minus_eql '-='
+    @Override
+    public void caseAAssignSubStmt(AAssignSubStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.SUB);
+    }
+    
+    // Assign pipe_eql '|='
+    @Override
+    public void caseAAssignBitOrStmt(AAssignBitOrStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_OR);
+    }
+
+    // Assign crt_eql  '^='  
+    @Override
+    public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
+        typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_XOR);
+    }
+
+    //Expressions
     @Override
     public void caseAIntDecExpr(AIntDecExpr node) {
         exprNodeTypes.put(node, BasicType.INT);
