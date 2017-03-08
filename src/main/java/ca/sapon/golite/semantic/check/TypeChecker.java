@@ -33,6 +33,7 @@ import golite.analysis.AnalysisAdapter;
 import golite.node.AAddExpr;
 import golite.node.AAppendExpr;
 import golite.node.AArrayType;
+import golite.node.AAssignAddStmt;
 import golite.node.AAssignStmt;
 import golite.node.ABitAndExpr;
 import golite.node.ABitAndNotExpr;
@@ -538,6 +539,31 @@ public class TypeChecker extends AnalysisAdapter {
         throw new TypeCheckerException(node, "Cannot use symbol \"" + symbol + "\" as an expression");
     }
 
+    // Op-assignment
+    
+    // Assign Add '+='
+    @Override
+    public void caseAAssignAddStmt(AAssignAddStmt node) {
+        // Get type on LHS
+        node.getLeft().apply(this);
+        final Type lhs = exprNodeTypes.get(node.getLeft()).resolve();
+
+        // Get type on RHS
+        node.getRight().apply(this);
+        final Type rhs = exprNodeTypes.get(node.getRight()).resolve();
+
+        // Check if type(LHS) == type(RHS)
+        if (!(lhs.equals(rhs))) {
+            throw new TypeCheckerException(node, "Mismatched types in '+=' :" +lhs +" and " +rhs );
+        }
+
+        // Operation only allowed on following types
+        if (!(BasicType.ALL.contains(lhs) && lhs != BasicType.BOOL)) {
+            throw new TypeCheckerException(node, "Can only use '+=' with int while " +node.getLeft().toString() +" is " +lhs);
+        }
+    }
+
+    
     @Override
     public void caseAIntDecExpr(AIntDecExpr node) {
         exprNodeTypes.put(node, BasicType.INT);
