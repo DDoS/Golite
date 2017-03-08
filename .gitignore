@@ -89,6 +89,8 @@ config.yml
 # Compiler output#
 ##################
 *.pretty.go
+*.pptype.go
+*.symtab
 
 # Exceptions #
 ##############
