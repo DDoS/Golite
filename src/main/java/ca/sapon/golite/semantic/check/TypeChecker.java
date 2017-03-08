@@ -538,75 +538,61 @@ public class TypeChecker extends AnalysisAdapter {
         throw new TypeCheckerException(node, "Cannot use symbol \"" + symbol + "\" as an expression");
     }
 
-    // Op-assignment
-    
-    // Assign Multiply '*='
     @Override
     public void caseAAssignMulStmt(AAssignMulStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.MUL);
     }
-    
-    // Assign Division '/='
+
     @Override
     public void caseAAssignDivStmt(AAssignDivStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.DIV);
     }
-    
-    // Assign Remainder '%='
+
     @Override
     public void caseAAssignRemStmt(AAssignRemStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.REM);
     }
-    
-    // Assign Lshift '<<='
+
     @Override
     public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.LSHIFT);
     }
 
-    // Assign Rshift '>>='
     @Override
     public void caseAAssignRshiftStmt(AAssignRshiftStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.RSHIFT);
     }
 
-    // Assign Ampr Eql '%='
     @Override
     public void caseAAssignBitAndStmt(AAssignBitAndStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_AND);
     }
 
-    // Assign mod_eql '%='
     @Override
     public void caseAAssignBitAndNotStmt(AAssignBitAndNotStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_AND_NOT);
     }
-    
-    // Assign Add '+='
+
     @Override
     public void caseAAssignAddStmt(AAssignAddStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.ADD);
     }
 
-    // Assign minus_eql '-='
     @Override
     public void caseAAssignSubStmt(AAssignSubStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.SUB);
     }
-    
-    // Assign pipe_eql '|='
+
     @Override
     public void caseAAssignBitOrStmt(AAssignBitOrStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_OR);
     }
 
-    // Assign crt_eql  '^='  
     @Override
     public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_XOR);
     }
 
-    //Expressions
     @Override
     public void caseAIntDecExpr(AIntDecExpr node) {
         exprNodeTypes.put(node, BasicType.INT);
@@ -971,9 +957,9 @@ public class TypeChecker extends AnalysisAdapter {
         }
         if (!valid) {
             throw new TypeCheckerException(node, "Cannot use the operator " + operator + " on the type " + leftType);
-        } 
+        }
         if (node instanceof PExpr) {
-        exprNodeTypes.put((PExpr) node, resultType);
+            exprNodeTypes.put((PExpr) node, resultType);
         }
     }
 
