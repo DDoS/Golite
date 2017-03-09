@@ -57,6 +57,7 @@ import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
 import golite.node.ADeclStmt;
 import golite.node.ADeclVarShortStmt;
+import golite.node.ADecrStmt;
 import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
 import golite.node.AEmptyForCondition;
@@ -73,6 +74,7 @@ import golite.node.AGreatExpr;
 import golite.node.AIdentExpr;
 import golite.node.AIfBlock;
 import golite.node.AIfStmt;
+import golite.node.AIncrStmt;
 import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
@@ -547,6 +549,33 @@ public class TypeChecker extends AnalysisAdapter {
         // Otherwise the symbol can't be used an expression
         throw new TypeCheckerException(node, "Cannot use symbol \"" + symbol + "\" as an expression");
     }
+    
+    // Increment Stmt : plus_plus (++)
+    @Override
+    public void caseAIncrStmt(AIncrStmt node) { 
+        PExpr pExpr = node.getExpr();
+
+        pExpr.apply(this);
+        final Type nodeType = exprNodeTypes.get(pExpr);
+
+        if (!(nodeType.isNumeric())) {
+            throw new TypeCheckerException(node, "Non Numeric type on operator '++' : " + nodeType );
+        }
+    }
+    
+    // Decrement Stmt : dbl_minus (--)
+    @Override
+    public void caseADecrStmt(ADecrStmt node) {
+        PExpr pExpr = node.getExpr();
+
+        pExpr.apply(this);
+        final Type nodeType = exprNodeTypes.get(pExpr);
+
+        if (!(nodeType.isNumeric())) {
+            throw new TypeCheckerException(node, "Non Numeric type on operator '--' : " + nodeType );
+        } 
+    }
+    
 
     @Override
     public void caseAAssignMulStmt(AAssignMulStmt node) {
