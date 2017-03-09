@@ -773,7 +773,7 @@ public class TypeChecker extends AnalysisAdapter {
             throw new TypeCheckerException(node, "Expected only one argument for a cast");
         }
         // Check that we can cast the argument to the cast type
-        if (!basicCastType.canCastFrom(argTypes.get(0))) {
+        if (!basicCastType.canCastFrom(argTypes.get(0).resolve())) {
             throw new TypeCheckerException(node, "Cannot cast from " + argTypes.get(0) + " to type " + castType);
         }
         // The type is that of the cast, without the resolution
