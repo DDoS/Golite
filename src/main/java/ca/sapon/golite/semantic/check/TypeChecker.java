@@ -268,7 +268,7 @@ public class TypeChecker extends AnalysisAdapter {
         params.forEach(context::declareSymbol);
         // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
-        // Check that the function code paths are valid (all paths return if it returns, and no stmts are unreachable)
+        // Check that all code paths return if the function returns a value
         if (function.getType().getReturnType().isPresent()) {
             final TerminatingStmtChecker terminatingChecker = new TerminatingStmtChecker();
             node.apply(terminatingChecker);
@@ -553,32 +553,29 @@ public class TypeChecker extends AnalysisAdapter {
         throw new TypeCheckerException(node, "Cannot use symbol \"" + symbol + "\" as an expression");
     }
 
-    // Increment Stmt : plus_plus (++)
     @Override
     public void caseAIncrStmt(AIncrStmt node) {
-        PExpr pExpr = node.getExpr();
-
-        pExpr.apply(this);
-        final Type nodeType = exprNodeTypes.get(pExpr);
-
-        if (!(nodeType.isNumeric())) {
-            throw new TypeCheckerException(node, "Non Numeric type on operator '++' : " + nodeType );
+        // Get the expression type
+        final PExpr expr = node.getExpr();
+        expr.apply(this);
+        final Type nodeType = exprNodeTypes.get(expr);
+        // The type must resolve to numeric
+        if (!nodeType.resolve().isNumeric()) {
+            throw new TypeCheckerException(expr, "Non Numeric type on operator '++' : " + nodeType);
         }
     }
 
-    // Decrement Stmt : dbl_minus (--)
     @Override
     public void caseADecrStmt(ADecrStmt node) {
-        PExpr pExpr = node.getExpr();
-
-        pExpr.apply(this);
-        final Type nodeType = exprNodeTypes.get(pExpr);
-
-        if (!(nodeType.isNumeric())) {
-            throw new TypeCheckerException(node, "Non Numeric type on operator '--' : " + nodeType );
+        // Get the expression type
+        final PExpr expr = node.getExpr();
+        expr.apply(this);
+        final Type nodeType = exprNodeTypes.get(expr);
+        // The type must resolve to numeric
+        if (!nodeType.resolve().isNumeric()) {
+            throw new TypeCheckerException(expr, "Non Numeric type on operator '--' : " + nodeType);
         }
     }
-
 
     @Override
     public void caseAAssignMulStmt(AAssignMulStmt node) {
