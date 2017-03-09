@@ -90,6 +90,12 @@ func test6(i int) string {
     }
 }
 
+func infLoop() int {
+    for {
+        println("weeee");
+    }
+}
+
 type Data []int
 type Person struct {
     name string

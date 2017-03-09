@@ -269,7 +269,10 @@ public class TypeChecker extends AnalysisAdapter {
         // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
         // Check that the function code paths are valid (all paths return if it returns, and no stmts are unreachable)
-        node.apply(new CodePathChecker(function.getType().getReturnType().isPresent()));
+        if (function.getType().getReturnType().isPresent()) {
+            final TerminatingStmtChecker terminatingChecker = new TerminatingStmtChecker();
+            node.apply(terminatingChecker);
+        }
         // Exit the function body
         context = context.getParent();
     }
@@ -549,10 +552,10 @@ public class TypeChecker extends AnalysisAdapter {
         // Otherwise the symbol can't be used an expression
         throw new TypeCheckerException(node, "Cannot use symbol \"" + symbol + "\" as an expression");
     }
-    
+
     // Increment Stmt : plus_plus (++)
     @Override
-    public void caseAIncrStmt(AIncrStmt node) { 
+    public void caseAIncrStmt(AIncrStmt node) {
         PExpr pExpr = node.getExpr();
 
         pExpr.apply(this);
@@ -562,7 +565,7 @@ public class TypeChecker extends AnalysisAdapter {
             throw new TypeCheckerException(node, "Non Numeric type on operator '++' : " + nodeType );
         }
     }
-    
+
     // Decrement Stmt : dbl_minus (--)
     @Override
     public void caseADecrStmt(ADecrStmt node) {
@@ -573,9 +576,9 @@ public class TypeChecker extends AnalysisAdapter {
 
         if (!(nodeType.isNumeric())) {
             throw new TypeCheckerException(node, "Non Numeric type on operator '--' : " + nodeType );
-        } 
+        }
     }
-    
+
 
     @Override
     public void caseAAssignMulStmt(AAssignMulStmt node) {
