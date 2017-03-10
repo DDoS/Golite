@@ -125,20 +125,17 @@ are trivially well-typed.
 Declaration and short-declaration statements are type-checked using the method described in the 
 'Declarations' section.
 
-For loop statements result in the creation of a new `CodeBlockContext` for the loop condition. In the case
-of a for condition with a single expression, the expression is type-checked to ensure that its type resolves
-to 'bool.' In the case of a for loop clause, the condition is type-checked to ensure that its type 
-resolves to bool. A new `CodeBlockContext` is opened for the body of the loop, and all 
+For loop statements result in the creation of a new `CodeBlockContext` for the loop condition. If a
+for condition is given, the expression is type-checked to ensure that its type resolves
+to 'bool.' A new `CodeBlockContext` is opened for the body of the loop, and all 
 of its statements are type-checked. The post-condition (if given) is type-checked after the 
-statements in the loop body have been type-checked. In the case of an empty for condition, only 
-the statements in the loop body are type-checked.
+statements in the loop body have been type-checked.
 
 If statements first type-check the if-block by doing the following:  
 A new `CodeBlockContext` is craeted for the 'init'  statement (if given) and the expression used 
 as the if-condition. The statement and expression are both type-checked and a check
 is done to ensure that the expression type resolves to bool. Then a new `CodeBlockContext` is
-created for the if-body and all of the statements in the body are type-checked. Once all of these
-statements are type-checked, all of the remaining else statements are type-checked similarly.
+created for the if-body and all of the statements in the body are type-checked.
 
 
 
