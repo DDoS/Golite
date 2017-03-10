@@ -167,7 +167,7 @@ public class TypeChecker extends AnalysisAdapter {
             for (int i = 0; i < valueTypes.size(); i++) {
                 final Type valueType = valueTypes.get(i);
                 if (!valueType.equals(type)) {
-                    throw new TypeCheckerException(node.getExpr().get(i), "Cannot assign type " + valueType + " to " + type);
+                    throw new TypeCheckerException(node.getExpr().get(i), "Cannot assign type " + valueType + " to type " + type);
                 }
             }
             // Declare the variables
@@ -196,7 +196,7 @@ public class TypeChecker extends AnalysisAdapter {
             }
         }
         if (!undeclaredVar) {
-            throw new TypeCheckerException(node, "No new variables on the left of :=");
+            throw new TypeCheckerException(node, "No new variables on the left side");
         }
         // Check that all exprs on RHS are well-typed
         node.getRight().forEach(exp -> exp.apply(this));
@@ -215,7 +215,7 @@ public class TypeChecker extends AnalysisAdapter {
             if (optVar.isPresent() && optVar.get() instanceof Variable) {
                 final Type leftType = optVar.get().getType();
                 if (!leftType.equals(rightType)) {
-                    throw new TypeCheckerException(node, "Cannot use " + rightType + " as " + leftType + " in assignment");
+                    throw new TypeCheckerException(node, "Cannot assign type " + rightType + " to type " + leftType);
                 }
                 exprNodeTypes.put(leftNode, leftType);
             } else {
@@ -268,8 +268,11 @@ public class TypeChecker extends AnalysisAdapter {
         params.forEach(context::declareSymbol);
         // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
-        // Check that the function code paths are valid (all paths return if it returns, and no stmts are unreachable)
-        node.apply(new CodePathChecker(function.getType().getReturnType().isPresent()));
+        // Check that all code paths return if the function returns a value
+        if (function.getType().getReturnType().isPresent()) {
+            final TerminatingStmtChecker terminatingChecker = new TerminatingStmtChecker();
+            node.apply(terminatingChecker);
+        }
         // Exit the function body
         context = context.getParent();
     }
@@ -307,16 +310,16 @@ public class TypeChecker extends AnalysisAdapter {
         final Optional<Type> optReturnType = function.getType().getReturnType();
         if (!optReturnType.isPresent()) {
             if (node.getExpr() != null) {
-                throw new TypeCheckerException(node, "This function should not return anything");
+                throw new TypeCheckerException(node.getExpr(), "The function does not return");
             }
         } else if (node.getExpr() == null) {
-            throw new TypeCheckerException(node, "A return expression is required");
+            throw new TypeCheckerException(node, "Expected a return value");
         } else {
             final Type returnType = optReturnType.get();
             node.getExpr().apply(this);
             final Type exprType = exprNodeTypes.get(node.getExpr());
             if (!exprType.equals(returnType)) {
-                throw new TypeCheckerException(node, "This function should return " + returnType + " instead of " + exprType);
+                throw new TypeCheckerException(node.getExpr(), "Cannot return type " + exprType + " instead of " + returnType);
             }
         }
     }
@@ -342,7 +345,7 @@ public class TypeChecker extends AnalysisAdapter {
             final Type leftType = exprNodeTypes.get(left);
             final Type rightType = exprNodeTypes.get(node.getRight().get(i));
             if (!leftType.equals(rightType)) {
-                throw new TypeCheckerException(node, "Cannot use type " + rightType + " as type " + leftType + " in assignment");
+                throw new TypeCheckerException(node, "Cannot assign type " + rightType + " to type " + leftType);
             }
         }
     }
@@ -363,7 +366,7 @@ public class TypeChecker extends AnalysisAdapter {
             // Checks if all expressions resolve to a base type
             final Type argType = exprNodeTypes.get(arg).resolve();
             if (!(argType instanceof BasicType)) {
-                throw new TypeCheckerException(arg, "Not a printable type " + argType);
+                throw new TypeCheckerException(arg, "Cannot print type " + argType);
             }
         }
     }
@@ -414,21 +417,23 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseAExprForCondition(AExprForCondition node) {
-        node.getExpr().apply(this);
-        final Type conditionType = exprNodeTypes.get(node.getExpr()).resolve();
+        final PExpr condition = node.getExpr();
+        condition.apply(this);
+        final Type conditionType = exprNodeTypes.get(condition).resolve();
         if (!conditionType.equals(BasicType.BOOL)) {
-            throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
+            throw new TypeCheckerException(condition, "Not a bool: " + conditionType);
         }
     }
 
     @Override
     public void caseAClauseForCondition(AClauseForCondition node) {
         node.getInit().apply(this);
-        if (node.getCond() != null) {
-            node.getCond().apply(this);
-            final Type conditionType = exprNodeTypes.get(node.getCond()).resolve();
+        final PExpr condition = node.getCond();
+        if (condition != null) {
+            condition.apply(this);
+            final Type conditionType = exprNodeTypes.get(condition).resolve();
             if (!conditionType.equals(BasicType.BOOL)) {
-                throw new TypeCheckerException(node, "Non-bool cannot be used as 'for' condition");
+                throw new TypeCheckerException(condition, "Not a bool: " + conditionType);
             }
         }
         // The post condition is checked in the scope of the body, not of the condition!
@@ -445,10 +450,11 @@ public class TypeChecker extends AnalysisAdapter {
             node.getInit().apply(this);
         }
         // Type-check the condition: it should be a bool
-        node.getCond().apply(this);
-        final Type conditionType = exprNodeTypes.get(node.getCond()).resolve();
+        final PExpr condition = node.getCond();
+        condition.apply(this);
+        final Type conditionType = exprNodeTypes.get(condition).resolve();
         if (conditionType != BasicType.BOOL) {
-            throw new TypeCheckerException(node.getCond(), "Not a bool");
+            throw new TypeCheckerException(condition, "Not a bool: " + conditionType);
         }
         // Open a block to place the body in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.IF);
@@ -513,7 +519,7 @@ public class TypeChecker extends AnalysisAdapter {
                     // If the type in the case is the same as the one specified in switch condition
                     if (!switchType.equals(conditionType)) {
                         throw new TypeCheckerException(expr, "The condition type " + conditionType
-                                + " does not match the switching type " + switchType);
+                                + " does not match the switch type " + switchType);
                     }
                 }
                 stmts = exprCase.getStmt();
@@ -533,49 +539,28 @@ public class TypeChecker extends AnalysisAdapter {
     }
 
     @Override
-    public void caseAIdentExpr(AIdentExpr node) {
-        // Resolve the symbol for the name
-        final String name = node.getIdenf().getText();
-        final Optional<Symbol> optSymbol = context.lookupSymbol(name);
-        if (!optSymbol.isPresent()) {
-            throw new TypeCheckerException(node, "Undeclared symbol " + name);
-        }
-        final Symbol symbol = optSymbol.get();
-        // If the symbol is a variable or function, add the type
-        if (symbol instanceof Variable || symbol instanceof Function) {
-            exprNodeTypes.put(node, symbol.getType());
-            return;
-        }
-        // Otherwise the symbol can't be used an expression
-        throw new TypeCheckerException(node, "Cannot use symbol \"" + symbol + "\" as an expression");
-    }
-    
-    // Increment Stmt : plus_plus (++)
-    @Override
-    public void caseAIncrStmt(AIncrStmt node) { 
-        PExpr pExpr = node.getExpr();
-
-        pExpr.apply(this);
-        final Type nodeType = exprNodeTypes.get(pExpr);
-
-        if (!(nodeType.isNumeric())) {
-            throw new TypeCheckerException(node, "Non Numeric type on operator '++' : " + nodeType );
+    public void caseAIncrStmt(AIncrStmt node) {
+        // Get the expression type
+        final PExpr expr = node.getExpr();
+        expr.apply(this);
+        final Type type = exprNodeTypes.get(expr);
+        // The type must resolve to numeric
+        if (!type.resolve().isNumeric()) {
+            throw new TypeCheckerException(expr, "Cannot use the operator " + BinaryOperator.ADD + " on the type " + type);
         }
     }
-    
-    // Decrement Stmt : dbl_minus (--)
+
     @Override
     public void caseADecrStmt(ADecrStmt node) {
-        PExpr pExpr = node.getExpr();
-
-        pExpr.apply(this);
-        final Type nodeType = exprNodeTypes.get(pExpr);
-
-        if (!(nodeType.isNumeric())) {
-            throw new TypeCheckerException(node, "Non Numeric type on operator '--' : " + nodeType );
-        } 
+        // Get the expression type
+        final PExpr expr = node.getExpr();
+        expr.apply(this);
+        final Type type = exprNodeTypes.get(expr);
+        // The type must resolve to numeric
+        if (!type.resolve().isNumeric()) {
+            throw new TypeCheckerException(expr, "Cannot use the operator " + BinaryOperator.SUB + " on the type " + type);
+        }
     }
-    
 
     @Override
     public void caseAAssignMulStmt(AAssignMulStmt node) {
@@ -630,6 +615,24 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
         typeCheckBinary(node, node.getLeft(), node.getRight(), BinaryOperator.BIT_XOR);
+    }
+
+    @Override
+    public void caseAIdentExpr(AIdentExpr node) {
+        // Resolve the symbol for the name
+        final String name = node.getIdenf().getText();
+        final Optional<Symbol> optSymbol = context.lookupSymbol(name);
+        if (!optSymbol.isPresent()) {
+            throw new TypeCheckerException(node, "Undeclared symbol: " + name);
+        }
+        final Symbol symbol = optSymbol.get();
+        // If the symbol is a variable or function, add the type
+        if (symbol instanceof Variable || symbol instanceof Function) {
+            exprNodeTypes.put(node, symbol.getType());
+            return;
+        }
+        // Otherwise the symbol can't be used an expression
+        throw new TypeCheckerException(node, "Cannot use symbol " + symbol + " as an expression");
     }
 
     @Override
@@ -697,7 +700,7 @@ public class TypeChecker extends AnalysisAdapter {
         node.getIndex().apply(this);
         final Type indexType = exprNodeTypes.get(node.getIndex()).resolve();
         if (indexType != BasicType.INT) {
-            throw new TypeCheckerException(node.getIndex(), "Not an int " + valueType);
+            throw new TypeCheckerException(node.getIndex(), "Not an int: " + valueType);
         }
         // The type is that of the component
         exprNodeTypes.put(node, ((IndexableType) valueType).getComponent());
@@ -724,7 +727,7 @@ public class TypeChecker extends AnalysisAdapter {
         final Type valueType = exprNodeTypes.get(value);
         // The value should be a function type
         if (!(valueType instanceof FunctionType)) {
-            throw new TypeCheckerException(value, "Not a function type " + valueType);
+            throw new TypeCheckerException(value, "Not a function type: " + valueType);
         }
         final FunctionType functionType = (FunctionType) valueType;
         // Enforce the presence of a return type if needed
@@ -738,12 +741,12 @@ public class TypeChecker extends AnalysisAdapter {
         final List<Parameter> parameters = functionType.getParameters();
         if (parameters.size() != argTypes.size()) {
             throw new TypeCheckerException(node, "Mistmatch in the number of parameters in " + functionType
-                    + " and arguments for the call: " + parameters.size() + " != " + argTypes.size());
+                    + " and in arguments for the call: " + parameters.size() + " != " + argTypes.size());
         }
         for (int i = 0; i < parameters.size(); i++) {
             final Type paramType = parameters.get(i).getType();
             if (!paramType.equals(argTypes.get(i))) {
-                throw new TypeCheckerException(node.getArgs().get(i), "Cannot assign type " + argTypes.get(i) + " to " + paramType);
+                throw new TypeCheckerException(node.getArgs().get(i), "Cannot assign type " + argTypes.get(i) + " to type " + paramType);
             }
         }
         // The return type (if any) is the type of the expression
@@ -756,11 +759,11 @@ public class TypeChecker extends AnalysisAdapter {
         // Check that the resolved type can be used for a cast
         final Type resolvedCast = castType.resolve();
         if (!(resolvedCast instanceof BasicType)) {
-            throw new TypeCheckerException(node.getValue(), "Cannot cast to non-basic type " + resolvedCast);
+            throw new TypeCheckerException(node.getValue(), "Cannot cast to non-basic type " + castType);
         }
         final BasicType basicCastType = (BasicType) resolvedCast;
         if (!basicCastType.canCastTo()) {
-            throw new TypeCheckerException(node.getValue(), "Cannot cast to type " + basicCastType);
+            throw new TypeCheckerException(node.getValue(), "Cannot cast to type " + castType);
         }
         // Get the argument types
         node.getArgs().forEach(arg -> arg.apply(this));
@@ -770,8 +773,8 @@ public class TypeChecker extends AnalysisAdapter {
             throw new TypeCheckerException(node, "Expected only one argument for a cast");
         }
         // Check that we can cast the argument to the cast type
-        if (!basicCastType.canCastFrom(argTypes.get(0))) {
-            throw new TypeCheckerException(node, "Cannot cast from " + argTypes.get(0) + " to " + castType);
+        if (!basicCastType.canCastFrom(argTypes.get(0).resolve())) {
+            throw new TypeCheckerException(node, "Cannot cast from " + argTypes.get(0) + " to type " + castType);
         }
         // The type is that of the cast, without the resolution
         exprNodeTypes.put(node, castType);
@@ -782,16 +785,16 @@ public class TypeChecker extends AnalysisAdapter {
         // Check that the left argument is a slice type, after resolution
         node.getLeft().apply(this);
         final Type leftType = exprNodeTypes.get(node.getLeft());
-        final Type innerLeftType = leftType.resolve();
-        if (!(innerLeftType instanceof SliceType)) {
-            throw new TypeCheckerException(node.getLeft(), "Not a slice type: " + innerLeftType);
+        final Type resolvedLeftType = leftType.resolve();
+        if (!(resolvedLeftType instanceof SliceType)) {
+            throw new TypeCheckerException(node.getLeft(), "Not a slice type: " + leftType);
         }
-        final SliceType sliceType = (SliceType) innerLeftType;
+        final SliceType sliceType = (SliceType) resolvedLeftType;
         // Check that the right argument has the same type as the slice component
         node.getRight().apply(this);
         final Type rightType = exprNodeTypes.get(node.getRight());
         if (!rightType.equals(sliceType.getComponent())) {
-            throw new TypeCheckerException(node.getRight(), "Cannot append " + rightType + " to " + innerLeftType);
+            throw new TypeCheckerException(node.getRight(), "Cannot append type " + rightType + " to type " + leftType);
         }
         // The type is the unresolved left type
         exprNodeTypes.put(node, leftType);
@@ -800,10 +803,11 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseALogicNotExpr(ALogicNotExpr node) {
         // Check that the inner type resolves to a bool
-        node.getInner().apply(this);
-        final Type innerType = exprNodeTypes.get(node.getInner());
+        final PExpr inner = node.getInner();
+        inner.apply(this);
+        final Type innerType = exprNodeTypes.get(inner);
         if (innerType.resolve() != BasicType.BOOL) {
-            throw new TypeCheckerException(node.getInner(), "Not a bool");
+            throw new TypeCheckerException(inner, "Not a bool: " + innerType);
         }
         // The type is the same as the inner
         exprNodeTypes.put(node, innerType);
@@ -823,9 +827,8 @@ public class TypeChecker extends AnalysisAdapter {
         // Check that the inner type resolves to a numeric
         inner.apply(this);
         final Type innerType = exprNodeTypes.get(inner);
-        final Type resolvedType = innerType.resolve();
-        if (!resolvedType.isNumeric()) {
-            throw new TypeCheckerException(inner, "Not a numeric type");
+        if (!innerType.resolve().isNumeric()) {
+            throw new TypeCheckerException(inner, "Not a numeric type: " + innerType);
         }
         // The type is the same as the inner
         exprNodeTypes.put(node, innerType);
@@ -834,11 +837,11 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseABitNotExpr(ABitNotExpr node) {
         // Check that the inner type resolves to an integer
-        node.getInner().apply(this);
-        final Type innerType = exprNodeTypes.get(node.getInner());
-        final Type resolvedType = innerType.resolve();
-        if (!resolvedType.isInteger()) {
-            throw new TypeCheckerException(node.getInner(), "Not an integer type");
+        final PExpr inner = node.getInner();
+        inner.apply(this);
+        final Type innerType = exprNodeTypes.get(inner);
+        if (!innerType.resolve().isInteger()) {
+            throw new TypeCheckerException(inner, "Not an integer type: " + innerType);
         }
         // The type is the same as the inner
         exprNodeTypes.put(node, innerType);
@@ -1008,12 +1011,12 @@ public class TypeChecker extends AnalysisAdapter {
         final String name = node.getIdenf().getText();
         final Optional<Symbol> optSymbol = context.lookupSymbol(name);
         if (!optSymbol.isPresent()) {
-            throw new TypeCheckerException(node.getIdenf(), "Undeclared symbol " + name);
+            throw new TypeCheckerException(node.getIdenf(), "Undeclared symbol: " + name);
         }
         // Check that the symbol is a type
         final Symbol symbol = optSymbol.get();
         if (!(symbol instanceof DeclaredType)) {
-            throw new TypeCheckerException(node.getIdenf(), "Not a type " + symbol);
+            throw new TypeCheckerException(node.getIdenf(), "Not a type: " + symbol);
         }
         // The type is that of the found type symbol
         typeNodeTypes.put(node, symbol.getType());
