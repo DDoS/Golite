@@ -97,9 +97,42 @@ Function declarations open a new `FunctionContext`, then declares the parameters
 in this context. After type-checking the body, it is checked for a terminating statement at the end.
 This is done with a separate `AnalysisAdapter` that implements the specification.
 
-Short variable declarations...
+Short variable declarations will result in at least one new identifier being declared in the current
+context. The type-checker ensures that at least one identifier on the left-hand side has not been
+declared by looking up the identifier in the current context. If this condition is met and all of the 
+expressions on the right-hand side are well-typed, then all previously undeclared identifiers are declared
+in the current context.
 
 #### Statements
+
+Empty statement, `continue` and  `break` are trivially well-typed, and are handled by overriding
+the standard visitor methods in `AnalysisAdapter` with blank method stubs.
+
+Return statements with an expression result in the expression being evaluated and its type being
+compared with that of the enclosing function in the context. If the types are the same then the
+return statement is well-typed. If no expression is given, a check is done to ensure that no return
+type is given for the enclosing function.
+
+Assign statements are first dealt with by ensuring that all the identifiers on the left-hand side
+have been declared (or are the blank identifier) and type-checking the right-hand side to ensure that
+all given expressions are valid. The identifier and expressions lists are then traversed to ensure that
+the types of each identifier-expression pair are the same.
+
+Print and println statements result in a type-check of all given expressions to ensure that any 
+`AliasTypes` resolve to a `BasicType`. If no expressions are given, the print and println statements 
+are trivially well-typed.
+
+Declaration and short-declaration statements are type-checked using the method described in the 
+'Declarations' section.
+
+For loop statements result in the creation of a new `CodeBlockContext` for the loop condition. In the case
+of a for condition with a single expression, the expression is type-checked to ensure that its type resolves
+to 'bool.' In the case of a for loop clause, the condition is type-checked to ensure that its type resolves to bool.
+A new `CodeBlockContext` is opened for the body of the loop, and all of its statements are type-checked. The
+post-condition (if given) is type-checked after the statements in the loop body have been type-checked.
+
+
+
 
 #### Expressions
 
