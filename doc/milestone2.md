@@ -150,4 +150,6 @@ Rohit Verma implemented the type-checking for statements (including op-statement
 changes to the other code parts as and where appropriate. He also thoroughly tested the code for any 
 incorrect or missing cases in the typecheker. Furthermore, he wrote seven invalid type test cases. 
 
-Ayesha Krishnamurthy...
+Ayesha Krishnamurthy also worked on type-checking for statements, including short declarations, 
+assignments, for loops, if statements, expressions and print statements. Aside from her work with statements,
+she contributed to testing and bug fixes and wrote nine invalid type test-cases.
