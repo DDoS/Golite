@@ -187,9 +187,9 @@ for declarations (except for short variable declarations), expressions and types
 the terminating statement checker, and added the printing capabilities to the application. He wrote
 seven invalid type test cases. Finally he also took care of overall code quality and consistency.
 
-Rohit Verma implemented the type-checking for statements (including op-statements) and made appropriate 
-changes to the other code parts as and where appropriate. He also thoroughly tested the code for any 
-incorrect or missing cases in the typecheker. Furthermore, he wrote seven invalid type test cases. 
+Rohit Verma implemented the type-checking for statements including the if-else statement, the switch statement,
+the print statements and all the op-statements and made appropriate changes to the other parts of code as and where appropriate. He also thoroughly tested the code for any incorrect or missing cases in the typecheker. Furthermore,
+he wrote seven invalid type test cases. 
 
 Ayesha Krishnamurthy also worked on type-checking for statements, including short declarations, 
 assignments, for loops, if statements, expressions and print statements. Aside from her work with statements,
