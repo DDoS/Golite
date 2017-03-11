@@ -137,6 +137,9 @@ as the if-condition. The statement and expression are both type-checked and a ch
 is done to ensure that the expression type resolves to bool. Then a new `CodeBlockContext` is
 created for the if-body and all of the statements in the body are type-checked.
 
+To keep track of the scope of all non terminals inside the switch block, a new CodeBlockContext is used for the body of the switch statement. Thereafter, the init condition is typechecked. Then, the type for follow up expression is evaluated and stored in a variable to make sure it matches with the type of individual case conditionals. If the expression is not specified, the type of the expression is assumed to be a 'bool'. Thereafter, each case conditional type is evaluated and compared with the expression's type. Thereafter, all statements inside each case block are typechecked. For default case, no extra typechecking is needed. A new CodeBlockContext is used to keep track the scope of all non terminals inside each case block. 
+
+For op-assignments, as the left and right hand sides of each statement evaluates to an expression, we re-use the same method that we use to typecheck expressions. The comments above about resolving expressions apply here as well. In a nutshell, the method ensures that all the expressions on the left and right hand sides of each statement resolve to valid type for for the operation, are well typed and that the type of left hand side is equal to the type of right hand side.
 
 
 #### Expressions
