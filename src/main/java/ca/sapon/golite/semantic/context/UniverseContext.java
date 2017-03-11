@@ -6,7 +6,7 @@ import ca.sapon.golite.semantic.symbol.Variable;
 import ca.sapon.golite.semantic.type.BasicType;
 
 /**
- *
+ * The top-most context, enclosing all Golite code by default.
  */
 public final class UniverseContext extends Context {
     private static final Variable TRUE_VARIABLE = new Variable("true", BasicType.BOOL, true);

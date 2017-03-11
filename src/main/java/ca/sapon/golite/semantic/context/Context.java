@@ -11,7 +11,7 @@ import ca.sapon.golite.semantic.symbol.Symbol;
 import ca.sapon.golite.util.SourcePrinter;
 
 /**
- *
+ * A context in which symbols can be declared.
  */
 public abstract class Context {
     private final Context parent;

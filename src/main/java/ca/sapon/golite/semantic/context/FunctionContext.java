@@ -6,7 +6,7 @@ import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.Symbol;
 
 /**
- *
+ * The context of the body of a function declaration.
  */
 public class FunctionContext extends Context {
     private final Function function;

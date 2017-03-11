@@ -1,7 +1,7 @@
 package ca.sapon.golite.semantic.context;
 
 /**
- *
+ * The context of all top level declarations
  */
 public class TopLevelContext extends Context {
     public TopLevelContext() {

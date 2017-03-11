@@ -1,7 +1,7 @@
 package ca.sapon.golite.semantic.type;
 
 /**
- *
+ * A Golite type.
  */
 public abstract class Type {
     public boolean isNumeric() {

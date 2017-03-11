@@ -1,7 +1,7 @@
 package ca.sapon.golite.semantic.type;
 
 /**
- *
+ * A named type that refers to another type. It could also be an alias type.
  */
 public class AliasType extends Type {
     private final int contextID;

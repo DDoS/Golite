@@ -25,7 +25,7 @@ import golite.node.PIfBlock;
 import golite.node.PStmt;
 
 /**
- *
+ * Checks that a function will return a value on all path.
  */
 public class TerminatingStmtChecker extends AnalysisAdapter {
     private final Set<Node> terminating = new HashSet<>();

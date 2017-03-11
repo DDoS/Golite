@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- *
+* An struct type, such as {@code struct {x int; y int; z int; _ int;}}.
  */
 public class StructType extends Type {
     private final List<Field> fields;

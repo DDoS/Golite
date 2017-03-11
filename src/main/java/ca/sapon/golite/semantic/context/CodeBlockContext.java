@@ -4,7 +4,7 @@ import ca.sapon.golite.semantic.symbol.Function;
 import ca.sapon.golite.semantic.symbol.Symbol;
 
 /**
- *
+ * A context for code blocks, such a "if", "for" and "switch" statements.
  */
 public class CodeBlockContext extends Context {
     private final Kind kind;

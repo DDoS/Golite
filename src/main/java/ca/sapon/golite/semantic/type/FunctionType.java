@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- *
+* A function type, such as {@code func(a int) int}. Only used for {@link ca.sapon.golite.semantic.symbol.Function}.
  */
 public class FunctionType extends Type {
     private final List<Parameter> parameters;

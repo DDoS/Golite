@@ -1,7 +1,7 @@
 package ca.sapon.golite.semantic.type;
 
 /**
- *
+ * An array type, such as {@code [16]int}.
  */
 public class ArrayType extends IndexableType {
     private final int length;

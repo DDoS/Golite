@@ -1,7 +1,7 @@
 package ca.sapon.golite.util;
 
 /**
- *
+ * A object that has source position information attached to it.
  */
 public interface SourcePositioned {
     int getStartLine();

@@ -1,7 +1,7 @@
 package ca.sapon.golite.semantic.type;
 
 /**
- *
+ * A type that can be used with the indexing operation, such as an array or slice.
  */
 public abstract class IndexableType extends Type {
     protected final Type component;

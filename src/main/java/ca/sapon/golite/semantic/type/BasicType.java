@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- *
+ * A basic type, such as {@code int}.
  */
 public final class BasicType extends Type {
     public static final BasicType INT = new BasicType("int");
