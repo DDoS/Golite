@@ -401,10 +401,6 @@ public class TypeChecker extends AnalysisAdapter {
         contextNodes.put(context, node);
         // Type check the for statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
-        // If the condition is a clause, then we need to type check the post with the rest of the body
-        if (condition instanceof AClauseForCondition) {
-            ((AClauseForCondition) condition).getPost().apply(this);
-        }
         // Close the "for" body
         context = context.getParent();
         // Close the outer block
@@ -436,7 +432,7 @@ public class TypeChecker extends AnalysisAdapter {
                 throw new TypeCheckerException(condition, "Not a bool: " + conditionType);
             }
         }
-        // The post condition is checked in the scope of the body, not of the condition!
+        node.getPost().apply(this);
     }
 
     @Override
