@@ -99,14 +99,14 @@ This is done with a separate `AnalysisAdapter` that implements the specification
 
 Short variable declarations will result in at least one new identifier being declared in the current
 context. The type-checker ensures that at least one identifier on the left-hand side has not been
-declared by looking up the identifier in the current context. If this condition is met and all of the 
+declared by looking up the identifier in the current context. If this condition is met and all of the
 expressions on the right-hand side are well-typed, then all previously undeclared identifiers are declared
 in the current context.
 
 #### Statements
 
 Empty statement, `continue` and  `break` are trivially well-typed, and are handled by overriding
-the standard visitor methods in `AnalysisAdapter` with blank method stubs.
+the standard visitor methods in `AnalysisAdapter` an empty method.
 
 Return statements with an expression result in the expression being evaluated and its type being
 compared with that of the enclosing function in the context. If the types are the same then the
@@ -118,36 +118,36 @@ have been declared (or are the blank identifier) and type-checking the right-han
 all given expressions are valid. The identifier and expressions lists are then traversed to ensure that
 the types of each identifier-expression pair are the same.
 
-Print and println statements result in a type-check of all given expressions to ensure that any 
-`AliasTypes` resolve to a `BasicType`. If no expressions are given, the print and println statements 
+The `print` and `println` statements result in a type-check of all given expressions to ensure that any
+`AliasTypes` resolve to a `BasicType`. If no expressions are given, the `print` and `println` statements
 are trivially well-typed.
 
-Declaration and short-declaration statements are type-checked using the method described in the 
+Declaration and short-declaration statements are type-checked using the method described in the
 'Declarations' section.
 
-For loop statements result in the creation of a new `CodeBlockContext` for the loop condition. If a
+For-loop statements result in the creation of a new `CodeBlockContext` for the loop condition. If a
 for condition is given, the expression is type-checked to ensure that its type resolves
-to 'bool.' A new `CodeBlockContext` is opened for the body of the loop, and all 
-of its statements are type-checked. The post-condition (if given) is type-checked after the 
+to 'bool.' A new `CodeBlockContext` is opened for the body of the loop, and all
+of its statements are type-checked. The post-condition (if given) is type-checked after the
 statements in the loop body have been type-checked.
 
-If statements first type-check the if-block by doing the following:  
-A new `CodeBlockContext` is craeted for the 'init'  statement (if given) and the expression used 
+If-statements first type-check the if-block by doing the following:  
+A new `CodeBlockContext` is created for the `init`  statement (if given) and the expression used
 as the if-condition. The statement and expression are both type-checked and a check
 is done to ensure that the expression type resolves to bool. Then a new `CodeBlockContext` is
 created for the if-body and all of the statements in the body are type-checked.
 
-To keep track of the scope of all non terminals inside the switch block, a new CodeBlockContext is used
-for the body of the switch statement. Thereafter, the init condition is typechecked. Then, the type for 
+To keep track of the scope of all statements inside the switch block, a new `CodeBlockContext` is used
+for the body of the switch statement. Thereafter, the `init` condition is type-checked. Then, the type for
 follow up expression is evaluated and stored in a variable to make sure it matches with the type of
-individual case conditionals. If the expression is not specified, the type of the expression is assumed 
-to be a 'bool'. Thereafter, each case conditional type is evaluated and compared with the expression's 
-type. Thereafter, all statements inside each case block are typechecked. For default case, no extra
-typechecking is needed. A new CodeBlockContext is used to keep track the scope of all non terminals
-inside each case block. 
+individual case conditionals. If the expression is not specified, the type of the expression is assumed
+to be `bool`. Thereafter, each case conditional type is evaluated and compared with the expression's
+type. Thereafter, all statements inside each case block are type-checked. For default case, no extra
+type-checking is needed. A new `CodeBlockContext` is used to keep track the scope of all statements
+inside each case block.
 
-For op-assignments, as the left and right hand sides of each statement evaluates to an expression, we 
-re-use the same method that we use to typecheck expressions. The comments above about resolving expressions
+For op-assignments, as the left and right hand sides of each statement evaluates to an expression, we
+re-use the same method that we use to type-check expressions. The comments above about resolving expressions
 apply here as well. In a nutshell, the method ensures that all the expressions on the left and right hand
 sides of each statement resolve to valid type for for the operation, are well typed and that the type of
 left hand side is equal to the type of right hand side.
@@ -165,7 +165,7 @@ Select expressions check if the value is a struct type and has a field of the se
 then the field type is returned. Otherwise an exception is thrown.
 
 Index expressions check that the value is an array or slice (`IndexableType`) and that the index
-is an int.
+is an `int`.
 
 Calls have a special case for casts. If the value being called is an identifier expression and
 the identifier references a type symbol, then we type-check it as a cast instead. Otherwise we check
@@ -200,9 +200,9 @@ seven invalid type test cases. Finally he also took care of overall code quality
 
 Rohit Verma implemented the type-checking for statements including the if-else statement, the switch
 statement, the print statements and all the op-statements and made appropriate changes to the other
-parts of code as and where appropriate. He also thoroughly tested the code for any incorrect or missing 
-cases in the typecheker. Furthermore,he wrote seven invalid type test cases. 
+parts of code as and where appropriate. He also thoroughly tested the code for any incorrect or missing
+cases in the type-cheker. Furthermore, he wrote seven invalid type test cases.
 
-Ayesha Krishnamurthy also worked on type-checking for statements, including short declarations, 
+Ayesha Krishnamurthy also worked on type-checking for statements, including short declarations,
 assignments, for loops, if statements, expressions and print statements. Aside from her work with statements,
 she contributed to testing and bug fixes and wrote nine invalid type test-cases.
