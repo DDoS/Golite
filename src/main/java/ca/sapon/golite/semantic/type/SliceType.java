@@ -15,7 +15,7 @@ public class SliceType extends IndexableType {
 
     @Override
     public boolean equals(Object other) {
-        return this == other || other instanceof ArrayType && component.equals(((ArrayType) other).component);
+        return this == other || other instanceof SliceType && component.equals(((SliceType) other).component);
     }
 
     @Override
