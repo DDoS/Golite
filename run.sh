@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-./gradlew run --quiet -I run_log.gradle -PappArgs="typecheck $*"
+./gradlew run --quiet -I run_log.gradle -PappArgs="irgen $*"

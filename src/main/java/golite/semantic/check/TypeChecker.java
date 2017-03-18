@@ -2,33 +2,13 @@ package golite.semantic.check;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import golite.semantic.SemanticData;
-import golite.semantic.context.CodeBlockContext;
-import golite.semantic.context.CodeBlockContext.Kind;
-import golite.semantic.context.Context;
-import golite.semantic.context.FunctionContext;
-import golite.semantic.context.TopLevelContext;
-import golite.semantic.context.UniverseContext;
-import golite.semantic.symbol.DeclaredType;
-import golite.semantic.symbol.Function;
-import golite.semantic.symbol.Symbol;
-import golite.semantic.symbol.Variable;
-import golite.semantic.type.AliasType;
-import golite.semantic.type.ArrayType;
-import golite.semantic.type.BasicType;
-import golite.semantic.type.FunctionType;
-import golite.semantic.type.FunctionType.Parameter;
-import golite.semantic.type.IndexableType;
-import golite.semantic.type.SliceType;
-import golite.semantic.type.StructType;
-import golite.semantic.type.StructType.Field;
-import golite.semantic.type.Type;
-import golite.util.NodePosition;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAddExpr;
 import golite.node.AAppendExpr;
@@ -118,6 +98,29 @@ import golite.node.PStructField;
 import golite.node.PType;
 import golite.node.Start;
 import golite.node.TIdenf;
+import golite.semantic.LiteralUtil;
+import golite.semantic.SemanticData;
+import golite.semantic.context.CodeBlockContext;
+import golite.semantic.context.CodeBlockContext.Kind;
+import golite.semantic.context.Context;
+import golite.semantic.context.FunctionContext;
+import golite.semantic.context.TopLevelContext;
+import golite.semantic.context.UniverseContext;
+import golite.semantic.symbol.DeclaredType;
+import golite.semantic.symbol.Function;
+import golite.semantic.symbol.Symbol;
+import golite.semantic.symbol.Variable;
+import golite.semantic.type.AliasType;
+import golite.semantic.type.ArrayType;
+import golite.semantic.type.BasicType;
+import golite.semantic.type.FunctionType;
+import golite.semantic.type.FunctionType.Parameter;
+import golite.semantic.type.IndexableType;
+import golite.semantic.type.SliceType;
+import golite.semantic.type.StructType;
+import golite.semantic.type.StructType.Field;
+import golite.semantic.type.Type;
+import golite.util.NodePosition;
 
 /**
  * Resolves symbols and type-checks the program.
@@ -125,12 +128,14 @@ import golite.node.TIdenf;
 public class TypeChecker extends AnalysisAdapter {
     private final Map<PExpr, Type> exprNodeTypes = new HashMap<>();
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
+    private final Map<AFuncDecl, Function> funcSymbols = new HashMap<>();
+    private final Map<Node, Set<Variable>> varSymbols = new HashMap<>();
     private final Map<Context, Node> contextNodes = new HashMap<>();
     private Context context;
     private int nextContextID = 0;
 
     public SemanticData getGeneratedData() {
-        return new SemanticData(exprNodeTypes, contextNodes);
+        return new SemanticData(exprNodeTypes, contextNodes, funcSymbols, varSymbols);
     }
 
     @Override
@@ -159,6 +164,7 @@ public class TypeChecker extends AnalysisAdapter {
             valueTypes.add(exprNodeTypes.get(exprNode));
         }
         // Declare the variables
+        final Set<Variable> variables = new LinkedHashSet<>();
         if (node.getType() != null) {
             // If we have the type, then declare a variable for each identifier, all with the same type
             node.getType().apply(this);
@@ -171,16 +177,21 @@ public class TypeChecker extends AnalysisAdapter {
                 }
             }
             // Declare the variables
-            node.getIdenf().stream()
-                    .map(idenf -> new Variable(position, idenf.getText(), type, false))
-                    .forEach(context::declareSymbol);
+            for (TIdenf idenf : node.getIdenf()) {
+                final Variable variable = new Variable(position, idenf.getText(), type, false);
+                context.declareSymbol(variable);
+                variables.add(variable);
+            }
         } else {
             // Otherwise declare the variable for each identifier using the value types
             final List<TIdenf> idenfs = node.getIdenf();
             for (int i = 0; i < idenfs.size(); i++) {
-                context.declareSymbol(new Variable(position, idenfs.get(i).getText(), valueTypes.get(i), false));
+                final Variable variable = new Variable(position, idenfs.get(i).getText(), valueTypes.get(i), false);
+                context.declareSymbol(variable);
+                variables.add(variable);
             }
         }
+        varSymbols.put(node, variables);
     }
 
     @Override
@@ -201,6 +212,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Check that all exprs on RHS are well-typed
         node.getRight().forEach(exp -> exp.apply(this));
         // Check that vars already declared are assigned to expressions of the same type
+        final Set<Variable> variables = new LinkedHashSet<>();
         for (int i = 0; i < node.getLeft().size(); i++) {
             node.getRight().get(i).apply(this);
             final Type rightType = exprNodeTypes.get(node.getRight().get(i));
@@ -220,9 +232,12 @@ public class TypeChecker extends AnalysisAdapter {
                 exprNodeTypes.put(leftNode, leftType);
             } else {
                 // Var hasn't been declared - declare as new var with the same type as RHS expr
-                context.declareSymbol(new Variable(new NodePosition(leftNode), idenf, rightType, false));
+                final Variable variable = new Variable(new NodePosition(leftNode), idenf, rightType, false);
+                context.declareSymbol(variable);
+                variables.add(variable);
             }
         }
+        varSymbols.put(node, variables);
     }
 
     @Override
@@ -260,12 +275,14 @@ public class TypeChecker extends AnalysisAdapter {
         // Now declare the function
         final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), type);
         context.declareSymbol(function);
+        funcSymbols.put(node, function);
         // Enter the function body
         context = new FunctionContext((TopLevelContext) context, nextContextID, function);
         nextContextID++;
         contextNodes.put(context, node);
         // Declare the parameters as variables
         params.forEach(context::declareSymbol);
+        varSymbols.put(node, new LinkedHashSet<>(params));
         // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
         // Check that all code paths return if the function returns a value
@@ -1027,7 +1044,13 @@ public class TypeChecker extends AnalysisAdapter {
 
     @Override
     public void caseAArrayType(AArrayType node) {
-        final int length = parseInt(node.getExpr());
+        // The literal should be valid integer thanks to the grammar, but could be too big
+        final int length;
+        try {
+            length = LiteralUtil.parseInt(node.getExpr());
+        } catch (NumberFormatException exception) {
+            throw new TypeCheckerException(node.getExpr(), "Signed integer overflow");
+        }
         node.getType().apply(this);
         final Type component = typeNodeTypes.get(node.getType());
         typeNodeTypes.put(node, new ArrayType(component, length));
@@ -1043,25 +1066,6 @@ public class TypeChecker extends AnalysisAdapter {
             fieldNode.getNames().forEach(idenf -> fields.add(new Field(idenf.getText(), fieldType)));
         }
         typeNodeTypes.put(node, new StructType(fields));
-    }
-
-    private static int parseInt(PExpr intLit) {
-        final String text;
-        if (intLit instanceof AIntDecExpr) {
-            text = ((AIntDecExpr) intLit).getIntLit().getText();
-        } else if (intLit instanceof AIntOctExpr) {
-            text = ((AIntOctExpr) intLit).getOctLit().getText();
-        } else if (intLit instanceof AIntHexExpr) {
-            text = ((AIntHexExpr) intLit).getHexLit().getText();
-        } else {
-            throw new IllegalArgumentException(intLit.getClass() + " is not an int literal node");
-        }
-        // The literal should be valid integer thanks to the grammar, but could be too big
-        try {
-            return Integer.decode(text);
-        } catch (NumberFormatException exception) {
-            throw new TypeCheckerException(intLit, "Signed integer overflow");
-        }
     }
 
     private enum BinaryOperator {
