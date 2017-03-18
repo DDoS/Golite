@@ -1,4 +1,4 @@
-package golite.ir;
+package golite.ir.node;
 
 import golite.semantic.type.BasicType;
 import golite.util.SourcePrinter;

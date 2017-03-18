@@ -1,11 +1,19 @@
 package golite.ir;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import golite.analysis.AnalysisAdapter;
+import golite.ir.node.Expr;
+import golite.ir.node.FunctionDecl;
+import golite.ir.node.IntLit;
+import golite.ir.node.PrintInt;
+import golite.ir.node.Program;
+import golite.ir.node.Stmt;
+import golite.ir.node.VoidReturn;
 import golite.node.AFuncDecl;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
@@ -14,6 +22,7 @@ import golite.node.APkg;
 import golite.node.APrintStmt;
 import golite.node.APrintlnStmt;
 import golite.node.AProg;
+import golite.node.AReturnStmt;
 import golite.node.Node;
 import golite.node.PExpr;
 import golite.node.PStmt;
@@ -72,6 +81,11 @@ public class IrConverter extends AnalysisAdapter {
                 stmts.addAll(convertedStmts.get(stmt));
             }
         });
+        // If the function has no return value and does not have a final return statement, then add one
+        if (!symbol.getType().getReturnType().isPresent()
+                && (stmts.isEmpty() || !(stmts.get(stmts.size() - 1) instanceof VoidReturn))) {
+            stmts.add(new VoidReturn());
+        }
         convertedFunctions.put(node, new FunctionDecl(symbol, stmts));
     }
 
@@ -94,6 +108,15 @@ public class IrConverter extends AnalysisAdapter {
             }
         }
         convertedStmts.put(node, stmts);
+    }
+
+    @Override
+    public void caseAReturnStmt(AReturnStmt node) {
+        if (node.getExpr() == null) {
+            convertedStmts.put(node, Collections.singletonList(new VoidReturn()));
+        } else {
+            // TODO: return with value
+        }
     }
 
     @Override

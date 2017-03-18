@@ -1,4 +1,4 @@
-package golite.ir;
+package golite.ir.node;
 
 import java.util.List;
 

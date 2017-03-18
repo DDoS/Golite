@@ -10,8 +10,9 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 
+import golite.codegen.CodeGenerator;
 import golite.ir.IrConverter;
-import golite.ir.Program;
+import golite.ir.node.Program;
 import golite.node.Start;
 import golite.semantic.SemanticData;
 import golite.semantic.check.TypeChecker;
@@ -62,6 +63,8 @@ public final class App {
                 return typecheckCommand();
             case "irgen":
                 return irgenCommand();
+            case "codegen":
+                return codegenCommand();
             default:
                 System.err.println("Not a command: " + command);
                 return 1;
@@ -175,21 +178,11 @@ public final class App {
     }
 
     private int irgenCommand() {
-        // Start with the type-checking
-        int result = typecheckCommand();
+        // Create the IR
+        final int result = generateIr();
         if (result != 0) {
             return result;
         }
-        // Then generate the IR
-        final IrConverter irConverter = new IrConverter(semantics);
-        try {
-            ast.apply(irConverter);
-        } catch (Exception exception) {
-            //System.err.println("Error when generating IR: " + exception.getMessage());
-            exception.printStackTrace();
-            return 1;
-        }
-        program = irConverter.getProgram();
         // Create the output writer
         final Writer pretty;
         try {
@@ -212,6 +205,43 @@ public final class App {
             System.err.println("Error when closing output file: " + exception.getMessage());
             return 1;
         }
+        return 0;
+    }
+
+    private int codegenCommand() {
+        // Create the IR
+        final int result = generateIr();
+        if (result != 0) {
+            return result;
+        }
+        // Then do the code generation
+        final CodeGenerator codeGenerator = new CodeGenerator();
+        try {
+            program.visit(codeGenerator);
+        } catch (Exception exception) {
+            //System.err.println("Error when generating code: " + exception.getMessage());
+            exception.printStackTrace();
+            return 1;
+        }
+        return 0;
+    }
+
+    private int generateIr() {
+        // Start with the type-checking
+        final int result = typecheckCommand();
+        if (result != 0) {
+            return result;
+        }
+        // Then generate the IR
+        final IrConverter irConverter = new IrConverter(semantics);
+        try {
+            ast.apply(irConverter);
+        } catch (Exception exception) {
+            //System.err.println("Error when generating IR: " + exception.getMessage());
+            exception.printStackTrace();
+            return 1;
+        }
+        program = irConverter.getProgram();
         return 0;
     }
 
