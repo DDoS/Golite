@@ -109,7 +109,8 @@ public class IrConverter extends AnalysisAdapter {
 
     private List<Stmt> convertPrintStmt(LinkedList<PExpr> exprs) {
         final List<Stmt> stmts = new ArrayList<>();
-        for (PExpr expr : exprs) {
+        for (int i = 0, exprsSize = exprs.size(); i < exprsSize; i++) {
+            final PExpr expr = exprs.get(i);
             expr.apply(this);
             final Expr converted = convertedExprs.get(expr);
             // TODO: remove this check when all are implemented
@@ -124,6 +125,10 @@ public class IrConverter extends AnalysisAdapter {
                 stmts.add(new PrintString(converted));
             } else {
                 throw new IllegalStateException("Unexpected type: " + type);
+            }
+            // Add spaces between expressions
+            if (i < exprsSize - 1) {
+                stmts.add(new PrintString(new StringLit(" ")));
             }
         }
         return stmts;
