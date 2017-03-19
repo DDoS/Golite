@@ -25,6 +25,16 @@ public class StringLit extends Expr {
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.print(value);
+        final StringBuilder escaped = new StringBuilder();
+        for (char c : value.toCharArray()) {
+            if (Character.isISOControl(c) || Character.isWhitespace(c)) {
+                escaped.append("\\").append(Integer.toHexString(c));
+            } else if (c == '\"') {
+                escaped.append("\\\"");
+            } else {
+                escaped.append(c);
+            }
+        }
+        printer.print("\"").print(escaped.toString()).print("\"");
     }
 }
