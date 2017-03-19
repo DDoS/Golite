@@ -4,6 +4,7 @@ defaultTasks 'clean', 'build'
 // Apply plugins
 apply plugin: 'application'
 apply plugin: 'java'
+apply plugin: 'c'
 apply plugin: 'sablecc-gradle-plugin'
 
 // Basic project information
@@ -89,4 +90,19 @@ test {
     }
     // this will ensure that tests are rerun if the program files change
     inputs.dir 'programs'
+}
+
+model {
+    components {
+        golite_runtime(NativeLibrarySpec) {
+            sources {
+                c {
+                    source {
+                        srcDir "src/main/c"
+                        include "**/*.c"
+                    }
+                }
+            }
+        }
+    }
 }
