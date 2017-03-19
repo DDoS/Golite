@@ -7,14 +7,20 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
+import golite.ir.node.Assignment;
+import golite.ir.node.BoolLit;
 import golite.ir.node.Expr;
+import golite.ir.node.FloatLit;
 import golite.ir.node.FunctionDecl;
+import golite.ir.node.Identifier;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrVisitor;
+import golite.ir.node.PrintBool;
 import golite.ir.node.PrintInt;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.StringLit;
+import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
 import golite.semantic.symbol.Function;
 import org.bytedeco.javacpp.BytePointer;
@@ -94,8 +100,18 @@ public class CodeGenerator implements IrVisitor {
     }
 
     @Override
+    public void visitVariableDecl(VariableDecl function) {
+
+    }
+
+    @Override
     public void visitVoidReturn(VoidReturn voidReturn) {
         LLVMBuildRetVoid(builders.peek());
+    }
+
+    @Override
+    public void visitPrintBool(PrintBool printBool) {
+
     }
 
     @Override
@@ -112,11 +128,26 @@ public class CodeGenerator implements IrVisitor {
     }
 
     @Override
+    public void visitFloatLit(FloatLit floatLit) {
+
+    }
+
+    @Override
     public void visitPrintString(PrintString printString) {
         printString.getValue().visit(this);
         final LLVMValueRef[] args = {exprValues.get(printString.getValue())};
         final LLVMValueRef printStringFunction = LLVMGetNamedFunction(module, RUNTIME_PRINT_STRING);
         LLVMBuildCall(builders.peek(), printStringFunction, new PointerPointer<>(args), 1, "");
+
+    }
+
+    @Override
+    public void visitAssignment(Assignment assignment) {
+
+    }
+
+    @Override
+    public void visitBoolLit(BoolLit boolLit) {
 
     }
 
@@ -127,6 +158,11 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt32Type(), 0, 0)};
         final LLVMValueRef stringPtr = LLVMBuildInBoundsGEP(builders.peek(), value, new PointerPointer<>(indices), 2, "");
         exprValues.put(stringLit, stringPtr);
+    }
+
+    @Override
+    public void visitIdentifier(Identifier identifier) {
+
     }
 
     private void declareExternalFunctions() {

@@ -50,14 +50,24 @@ public abstract class Context {
     }
 
     public void declareSymbol(Symbol symbol) {
-        if (symbol.getName().equals("_")) {
+        final String name = symbol.getName();
+        if (name.equals("_")) {
             // Don't declare blank symbols
             return;
         }
-        if (symbols.containsKey(symbol.getName())) {
-            throw new TypeCheckerException(symbol, "Cannot redeclare symbol " + symbol.getName());
+        if (symbols.containsKey(name)) {
+            throw new TypeCheckerException(symbol, "Cannot redeclare symbol " + name);
         }
-        symbols.put(symbol.getName(), symbol);
+        // Generate a unique name for the symbol
+        String uniqueName = name;
+        int id = 1;
+        // If the name is already used in the parent, add a number suffix
+        while (parent.lookupSymbol(uniqueName).isPresent()) {
+            uniqueName = name + id;
+            id++;
+        }
+        symbol.setUniqueName(uniqueName);
+        symbols.put(name, symbol);
     }
 
     public Optional<Function> getEnclosingFunction() {

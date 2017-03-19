@@ -10,6 +10,7 @@ public abstract class Symbol implements SourcePositioned {
     private final int startLine, endLine;
     private final int startPos, endPos;
     protected final String name;
+    private String uniqueName;
 
     protected Symbol(String name) {
         this(0, 0, 0, 0, name);
@@ -21,6 +22,7 @@ public abstract class Symbol implements SourcePositioned {
         this.startPos = startPos;
         this.endPos = endPos;
         this.name = name;
+        uniqueName = name;
     }
 
     @Override
@@ -45,6 +47,14 @@ public abstract class Symbol implements SourcePositioned {
 
     public String getName() {
         return name;
+    }
+
+    public String getUniqueName() {
+        return uniqueName;
+    }
+
+    public void setUniqueName(String uniqueName) {
+        this.uniqueName = uniqueName;
     }
 
     public abstract Type getType();

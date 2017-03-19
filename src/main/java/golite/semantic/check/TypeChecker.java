@@ -130,12 +130,13 @@ public class TypeChecker extends AnalysisAdapter {
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
     private final Map<AFuncDecl, Function> funcSymbols = new HashMap<>();
     private final Map<Node, Set<Variable>> varSymbols = new HashMap<>();
+    private final Map<AIdentExpr, Symbol> identSymbols = new HashMap<>();
     private final Map<Context, Node> contextNodes = new HashMap<>();
     private Context context;
     private int nextContextID = 0;
 
     public SemanticData getGeneratedData() {
-        return new SemanticData(exprNodeTypes, contextNodes, funcSymbols, varSymbols);
+        return new SemanticData(exprNodeTypes, contextNodes, funcSymbols, varSymbols, identSymbols);
     }
 
     @Override
@@ -642,6 +643,7 @@ public class TypeChecker extends AnalysisAdapter {
         // If the symbol is a variable or function, add the type
         if (symbol instanceof Variable || symbol instanceof Function) {
             exprNodeTypes.put(node, symbol.getType());
+            identSymbols.put(node, symbol);
             return;
         }
         // Otherwise the symbol can't be used an expression
@@ -728,9 +730,11 @@ public class TypeChecker extends AnalysisAdapter {
         // The call might be a cast. In this case the identifier will be a single symbol pointing to a type
         final PExpr value = node.getValue();
         if (value instanceof AIdentExpr) {
-            final Optional<Symbol> symbol = context.lookupSymbol(((AIdentExpr) value).getIdenf().getText());
+            final AIdentExpr identExpr = (AIdentExpr) value;
+            final Optional<Symbol> symbol = context.lookupSymbol((identExpr).getIdenf().getText());
             if (symbol.isPresent() && symbol.get() instanceof DeclaredType) {
                 // It's a cast
+                identSymbols.put(identExpr, symbol.get());
                 typeCheckCast(node, symbol.get().getType());
                 return;
             }

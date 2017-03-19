@@ -9,10 +9,12 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import golite.node.AFuncDecl;
+import golite.node.AIdentExpr;
 import golite.node.Node;
 import golite.node.PExpr;
 import golite.semantic.context.Context;
 import golite.semantic.symbol.Function;
+import golite.semantic.symbol.Symbol;
 import golite.semantic.symbol.Variable;
 import golite.semantic.type.Type;
 import golite.util.NodePosition;
@@ -23,18 +25,20 @@ import golite.util.SourcePrinter;
  */
 public class SemanticData {
     public static SemanticData EMPTY = new SemanticData(Collections.emptyMap(), Collections.emptyMap(),
-            Collections.emptyMap(), Collections.emptyMap());
+            Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
     private final Map<PExpr, Type> exprNodeTypes;
     private final Map<Context, Node> contextNodes;
     private final Map<AFuncDecl, Function> funcSymbols;
     private final Map<Node, Set<Variable>> varSymbols;
+    private final Map<AIdentExpr, Symbol> identSymbols;
 
     public SemanticData(Map<PExpr, Type> exprNodeTypes, Map<Context, Node> contextNodes, Map<AFuncDecl,
-            Function> funcSymbols, Map<Node, Set<Variable>> varSymbols) {
+            Function> funcSymbols, Map<Node, Set<Variable>> varSymbols, Map<AIdentExpr, Symbol> identSymbols) {
         this.exprNodeTypes = exprNodeTypes;
         this.contextNodes = contextNodes;
         this.funcSymbols = funcSymbols;
         this.varSymbols = varSymbols;
+        this.identSymbols = identSymbols;
     }
 
     public Optional<Type> getExprType(PExpr expr) {
@@ -43,6 +47,14 @@ public class SemanticData {
 
     public Optional<Function> getFunctionSymbol(AFuncDecl node) {
         return Optional.ofNullable(funcSymbols.get(node));
+    }
+
+    public Optional<Set<Variable>> getVariableSymbols(Node node) {
+        return Optional.ofNullable(varSymbols.get(node));
+    }
+
+    public Optional<Symbol> getIdentifierSymbol(AIdentExpr node) {
+        return Optional.ofNullable(identSymbols.get(node));
     }
 
     public void printContexts(SourcePrinter printer, boolean all) {
