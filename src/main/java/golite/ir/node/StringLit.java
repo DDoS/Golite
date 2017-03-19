@@ -14,6 +14,10 @@ public class StringLit extends Expr {
         this.value = value;
     }
 
+    public String getValue() {
+        return value;
+    }
+
     @Override
     public void visit(IrVisitor visitor) {
         visitor.visitStringLit(this);
