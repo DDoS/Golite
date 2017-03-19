@@ -93,6 +93,7 @@ config.yml
 *.symtab
 *.ir
 *.bc
+*.ll
 
 # Exceptions #
 ##############

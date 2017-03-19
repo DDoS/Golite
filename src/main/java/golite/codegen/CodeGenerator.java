@@ -3,7 +3,10 @@ package golite.codegen;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
 
+import golite.ir.node.Expr;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrVisitor;
@@ -21,8 +24,11 @@ import static org.bytedeco.javacpp.LLVM.*;
  *
  */
 public class CodeGenerator implements IrVisitor {
+    public static final String RUNTIME_PRINT_INT = "__golite_runtime_printInt";
+    public static final String MAIN_FUNCTION = "main";
     private LLVMModuleRef module;
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
+    private final Map<Expr, LLVMValueRef> exprValues = new HashMap<>();
     private ByteBuffer bitCode;
 
     public ByteBuffer getBitCode() {
@@ -35,7 +41,9 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitProgram(Program program) {
         // Create the module
-        module = LLVMModuleCreateWithName("golite." + program.getPackageName());
+        module = LLVMModuleCreateWithName("golite_" + program.getPackageName());
+        // Declare the external function from the C stdlib and the Golite runtime
+        declareExternalFunctions();
         // Codegen it
         program.getFunctions().forEach(function -> function.visit(this));
         // Validate it
@@ -60,21 +68,21 @@ public class CodeGenerator implements IrVisitor {
     }
 
     @Override
-    public void visitFunctionDecl(FunctionDecl function) {
+    public void visitFunctionDecl(FunctionDecl functionDecl) {
         // Create the function symbol
-        final Function symbol = function.getSymbol();
+        final Function symbol = functionDecl.getSymbol();
+        // The only external function is the main
+        final boolean external = symbol.getName().equals(MAIN_FUNCTION);
         final LLVMTypeRef[] params = {};
-        final LLVMTypeRef functionType = LLVMFunctionType(LLVMVoidType(), new PointerPointer<>(params), params.length, 0);
-        final LLVMValueRef llvmFunction = LLVMAddFunction(module, symbol.getName(), functionType);
-        LLVMSetFunctionCallConv(llvmFunction, LLVMCCallConv);
+        final LLVMValueRef function = declareFunction(external, symbol.getName(), LLVMVoidType(), params);
         // Create the builder for the function
         final LLVMBuilderRef builder = LLVMCreateBuilder();
         builders.push(builder);
         // Start the function body
-        final LLVMBasicBlockRef entry = LLVMAppendBasicBlock(llvmFunction, "entry");
+        final LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
         LLVMPositionBuilderAtEnd(builder, entry);
         // Codegen the body
-        function.getStatements().forEach(stmt -> stmt.visit(this));
+        functionDecl.getStatements().forEach(stmt -> stmt.visit(this));
         // Termination is handled implicitly by the last return statement
         // Dispose of the builder
         LLVMDisposeBuilder(builders.pop());
@@ -87,11 +95,27 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitPrintInt(PrintInt printInt) {
-
+        printInt.getValue().visit(this);
+        final LLVMValueRef[] args = {exprValues.get(printInt.getValue())};
+        final LLVMValueRef printIntFunction = LLVMGetNamedFunction(module, RUNTIME_PRINT_INT);
+        LLVMBuildCall(builders.peek(), printIntFunction, new PointerPointer<>(args), 1, "");
     }
 
     @Override
     public void visitIntLit(IntLit intLit) {
+        exprValues.put(intLit, LLVMConstInt(LLVMInt32Type(), intLit.getValue(), 0));
+    }
 
+    private void declareExternalFunctions() {
+        // Runtime print functions
+        declareFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
+    }
+
+    private LLVMValueRef declareFunction(boolean external, String name, LLVMTypeRef returnType, LLVMTypeRef... parameters) {
+        final LLVMTypeRef functionType = LLVMFunctionType(returnType, new PointerPointer<>(parameters), parameters.length, 0);
+        final LLVMValueRef function = LLVMAddFunction(module, name, functionType);
+        LLVMSetFunctionCallConv(function, LLVMCCallConv);
+        LLVMSetLinkage(function, external ? LLVMExternalLinkage : LLVMPrivateLinkage);
+        return function;
     }
 }
