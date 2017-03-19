@@ -3,6 +3,7 @@ package golite.ir;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -11,8 +12,10 @@ import golite.ir.node.Expr;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.IntLit;
 import golite.ir.node.PrintInt;
+import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Stmt;
+import golite.ir.node.StringLit;
 import golite.ir.node.VoidReturn;
 import golite.node.AFuncDecl;
 import golite.node.AIntDecExpr;
@@ -23,6 +26,8 @@ import golite.node.APrintStmt;
 import golite.node.APrintlnStmt;
 import golite.node.AProg;
 import golite.node.AReturnStmt;
+import golite.node.AStringIntrExpr;
+import golite.node.AStringRawExpr;
 import golite.node.Node;
 import golite.node.PExpr;
 import golite.node.PStmt;
@@ -91,8 +96,20 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAPrintStmt(APrintStmt node) {
+        final List<Stmt> stmts = convertPrintStmt(node.getExpr());
+        convertedStmts.put(node, stmts);
+    }
+
+    @Override
+    public void caseAPrintlnStmt(APrintlnStmt node) {
+        final List<Stmt> stmts = convertPrintStmt(node.getExpr());
+        stmts.add(new PrintString(new StringLit("\n")));
+        convertedStmts.put(node, stmts);
+    }
+
+    private List<Stmt> convertPrintStmt(LinkedList<PExpr> exprs) {
         final List<Stmt> stmts = new ArrayList<>();
-        for (PExpr expr : node.getExpr()) {
+        for (PExpr expr : exprs) {
             expr.apply(this);
             final Expr converted = convertedExprs.get(expr);
             // TODO: remove this check when all are implemented
@@ -103,11 +120,13 @@ public class IrConverter extends AnalysisAdapter {
             // TODO: other basic types
             if (type == BasicType.INT) {
                 stmts.add(new PrintInt(converted));
+            } else if (type == BasicType.STRING) {
+                stmts.add(new PrintString(converted));
             } else {
                 throw new IllegalStateException("Unexpected type: " + type);
             }
         }
-        convertedStmts.put(node, stmts);
+        return stmts;
     }
 
     @Override
@@ -117,11 +136,6 @@ public class IrConverter extends AnalysisAdapter {
         } else {
             // TODO: return with value
         }
-    }
-
-    @Override
-    public void caseAPrintlnStmt(APrintlnStmt node) {
-        super.caseAPrintlnStmt(node);
     }
 
     @Override
@@ -143,6 +157,67 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
+    public void caseAStringIntrExpr(AStringIntrExpr node) {
+        final String text = node.getInterpretedStringLit().getText();
+        // Remove surrounding quotes
+        final String stringData = text.substring(1, text.length() - 1);
+        convertedExprs.put(node, new StringLit(decodeStringContent(stringData)));
+    }
+
+    @Override
+    public void caseAStringRawExpr(AStringRawExpr node) {
+        final String text = node.getRawStringLit().getText();
+        // Remove surrounding quotes
+        final String stringData = text.substring(1, text.length() - 1);
+        // Must remove \r characters according to the spec
+        convertedExprs.put(node, new StringLit(stringData.replace("\r", "")));
+    }
+
+    @Override
     public void defaultCase(Node node) {
+    }
+
+    private static String decodeStringContent(String data) {
+        final StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < data.length(); ) {
+            char c = data.charAt(i);
+            i += 1;
+            if (c == '\\') {
+                c = data.charAt(i);
+                i += 1;
+                c = decodeCharEscape(c, true);
+            }
+            builder.append(c);
+        }
+        return builder.toString();
+    }
+
+    private static char decodeCharEscape(char c, boolean inString) {
+        if (inString && c == '"') {
+            return '"';
+        } else if (!inString && c == '\'') {
+            return '\'';
+        }
+        final Character decode = CHAR_TO_ESCAPE.get(c);
+        if (decode == null) {
+            throw new IllegalStateException("Not an escape character " + Character.getName(c));
+        }
+        return decode;
+    }
+
+    private static final Map<Character, Character> CHAR_TO_ESCAPE;
+
+    static {
+        CHAR_TO_ESCAPE = new HashMap<>();
+        CHAR_TO_ESCAPE.put('\\', (char) 0x5c);
+        CHAR_TO_ESCAPE.put('a', (char) 0x7);
+        CHAR_TO_ESCAPE.put('b', '\b');
+        CHAR_TO_ESCAPE.put('f', '\f');
+        CHAR_TO_ESCAPE.put('n', '\n');
+        CHAR_TO_ESCAPE.put('r', '\r');
+        CHAR_TO_ESCAPE.put('t', '\t');
+        CHAR_TO_ESCAPE.put('v', (char) 0xb);
+        // You might be wondering why not use the \\uXXXX notation instead of casting int to chars?
+        // Well go ahead and remove that second    ^ backslash. Java is a special boy.
     }
 }

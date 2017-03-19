@@ -1,5 +1,5 @@
 package main
 
 func main() {
-    print(1, 0x10)
+    println(1, "lol\\", 0x10, `No\r escape`)
 }

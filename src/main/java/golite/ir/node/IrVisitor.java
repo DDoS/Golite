@@ -12,5 +12,9 @@ public interface IrVisitor {
 
     void visitPrintInt(PrintInt printInt);
 
+    void visitPrintString(PrintString printString);
+
     void visitIntLit(IntLit intLit);
+
+    void visitStringLit(StringLit stringLit);
 }
