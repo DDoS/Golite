@@ -76,6 +76,8 @@ public class CodeGenerator implements IrVisitor {
         // Codegen the body
         function.getStatements().forEach(stmt -> stmt.visit(this));
         // Termination is handled implicitly by the last return statement
+        // Dispose of the builder
+        LLVMDisposeBuilder(builders.pop());
     }
 
     @Override
