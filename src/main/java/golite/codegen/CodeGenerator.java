@@ -1,5 +1,6 @@
 package golite.codegen;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
@@ -22,6 +23,14 @@ import static org.bytedeco.javacpp.LLVM.*;
 public class CodeGenerator implements IrVisitor {
     private LLVMModuleRef module;
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
+    private ByteBuffer bitCode;
+
+    public ByteBuffer getBitCode() {
+        if (bitCode == null) {
+            throw new IllegalStateException("The generator hasn't been applied yet");
+        }
+        return bitCode;
+    }
 
     @Override
     public void visitProgram(Program program) {
@@ -41,9 +50,13 @@ public class CodeGenerator implements IrVisitor {
         if (errorMessage != null) {
             throw new RuntimeException("Failed to verify module: " + errorMessage);
         }
+        // Generate the bit code
+        final LLVMMemoryBufferRef bufferRef = LLVMWriteBitcodeToMemoryBuffer(module);
+        final BytePointer bufferStart = LLVMGetBufferStart(bufferRef);
+        final long bufferSize = LLVMGetBufferSize(bufferRef);
+        bitCode = bufferStart.limit(bufferSize).asByteBuffer();
         // TODO: remove this debug printing
-        final BytePointer moduleStringPtr = LLVMPrintModuleToString(module);
-        System.out.println(moduleStringPtr.getString());
+        System.out.println(LLVMPrintModuleToString(module).getString());
     }
 
     @Override

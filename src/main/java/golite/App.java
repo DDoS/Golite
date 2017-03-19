@@ -3,12 +3,15 @@ package golite;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 import golite.codegen.CodeGenerator;
 import golite.ir.IrConverter;
@@ -31,6 +34,7 @@ public final class App {
     private static final String SYMBOL_TABLE_EXTENSION = "symtab";
     private static final String TYPE_ANNOTATION_EXTENSION = "pptype.go";
     private static final String IR_EXTENSION = "ir";
+    private static final String CODE_EXTENSION = "bc";
     private String[] args;
     private File inputFile = null;
     private File outputFile = null;
@@ -221,6 +225,20 @@ public final class App {
         } catch (Exception exception) {
             //System.err.println("Error when generating code: " + exception.getMessage());
             exception.printStackTrace();
+            return 1;
+        }
+        final ByteBuffer bitCode = codeGenerator.getBitCode();
+        // Write the code to a file
+        final File codeOutputFile = deriveOutputFile(CODE_EXTENSION);
+        try {
+            final FileChannel channel = new FileOutputStream(codeOutputFile, false).getChannel();
+            channel.write(bitCode);
+            channel.close();
+        } catch (FileNotFoundException exception) {
+            System.err.println("Error when creating bit code output file: " + exception.getMessage());
+            return 1;
+        } catch (IOException exception) {
+            System.err.println("Error when writing bit code: " + exception.getMessage());
             return 1;
         }
         return 0;
