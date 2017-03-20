@@ -1,5 +1,7 @@
 package main
 
+type boolean bool
+
 var k = 0
 
 func main() {
@@ -7,7 +9,7 @@ func main() {
     var k = "test"
     //println(k)
     {
-        var k bool
+        var k boolean
         //println(1.3, k)
     }
     {

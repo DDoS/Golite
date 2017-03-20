@@ -99,7 +99,7 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAFuncDecl(AFuncDecl node) {
-        final Function symbol = semantics.getFunctionSymbol(node).get();
+        final Function symbol = semantics.getFunctionSymbol(node).get().dealias();
         final List<Stmt> stmts = new ArrayList<>();
         node.getStmt().forEach(stmt -> {
             stmt.apply(this);
@@ -123,7 +123,7 @@ public class IrConverter extends AnalysisAdapter {
             final String variableName = idenfs.get(i).getText();
             final Variable variable = variables.stream()
                     .filter(var -> var.getName().equals(variableName))
-                    .findFirst().get();
+                    .findFirst().get().dealias();
             // Find unique names for variables to prevent conflicts from removing scopes
             final String uniqueName = findUniqueName(variable);
             stmts.add(new VariableDecl(variable, uniqueName));
@@ -258,7 +258,7 @@ public class IrConverter extends AnalysisAdapter {
         if (!(symbol instanceof Variable)) {
             throw new IllegalStateException("Non-variable identifiers should have been handled earlier");
         }
-        final Variable variable = (Variable) symbol;
+        final Variable variable = ((Variable) symbol).dealias();
         final Expr expr;
         // Special case for the pre-declared booleans identifiers: convert them to bool literals
         if (variable == UniverseContext.TRUE_VARIABLE) {
