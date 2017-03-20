@@ -9,16 +9,16 @@ import golite.util.SourcePrinter;
  *
  */
 public class FunctionDecl extends IrNode {
-    private final Function symbol;
+    private final Function function;
     private final List<Stmt> statements;
 
-    public FunctionDecl(Function symbol, List<Stmt> statements) {
-        this.symbol = symbol;
+    public FunctionDecl(Function function, List<Stmt> statements) {
+        this.function = function;
         this.statements = statements;
     }
 
-    public Function getSymbol() {
-        return symbol;
+    public Function getFunction() {
+        return function;
     }
 
     public List<Stmt> getStatements() {
@@ -32,7 +32,7 @@ public class FunctionDecl extends IrNode {
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.print(symbol.toString()).print(" {").newLine().indent();
+        printer.print(function.toString()).print(" {").newLine().indent();
         statements.forEach(stmt -> {
             stmt.print(printer);
             printer.newLine();

@@ -103,10 +103,7 @@ public class IrConverter extends AnalysisAdapter {
         final List<Stmt> stmts = new ArrayList<>();
         node.getStmt().forEach(stmt -> {
             stmt.apply(this);
-            // TODO: remove this check when all are implemented
-            if (convertedStmts.containsKey(stmt)) {
-                stmts.addAll(convertedStmts.get(stmt));
-            }
+            stmts.addAll(convertedStmts.get(stmt));
         });
         // If the function has no return value and does not have a final return statement, then add one
         if (!symbol.getType().getReturnType().isPresent()
@@ -311,10 +308,7 @@ public class IrConverter extends AnalysisAdapter {
         if (type == BasicType.BOOL) {
             return new Assignment(variableExpr, new BoolLit(false));
         }
-        if (type == BasicType.STRING) {
-            return new Assignment(variableExpr, new StringLit(""));
-        }
-        if (type instanceof IndexableType || type instanceof StructType) {
+        if (type == BasicType.STRING || type instanceof IndexableType || type instanceof StructType) {
             // TODO: memset 0 stmt
         }
         throw new UnsupportedOperationException("Unsupported type: " + type);
