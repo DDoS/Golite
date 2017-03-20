@@ -110,6 +110,7 @@ import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.PCase;
+import golite.node.PDecl;
 import golite.node.PExpr;
 import golite.node.PForCondition;
 import golite.node.PParam;
@@ -146,7 +147,29 @@ public class TypeChecker extends AnalysisAdapter {
         context = new TopLevelContext();
         nextContextID++;
         contextNodes.put(context, node);
-        node.getDecl().forEach(decl -> decl.apply(this));
+
+        boolean mainDefined = false;
+        for (PDecl d : node.getDecl()) {
+            if (d instanceof AFuncDecl) {
+                AFuncDecl f = (AFuncDecl) d;
+                String funcName = f.getIdenf().toString();
+                
+                if (funcName.equals("main ")) {
+                    if (!f.getParam().isEmpty()) {
+                        throw new TypeCheckerException(d, "The main function should not have any parameters");
+                    }
+                    if (!(f.getType() == null)) {
+                        throw new TypeCheckerException(d, "The main function should not have a return type");
+                    }
+                    mainDefined = true;
+                }
+            }
+            d.apply(this);
+        }
+        
+        if (!mainDefined) {
+            throw new TypeCheckerException(node, "The main function must be defined");
+        }
     }
 
     @Override
