@@ -8,31 +8,24 @@ import golite.util.SourcePositioned;
  */
 public class Variable extends Symbol {
     private final Type type;
-    private boolean constant;
 
-    public Variable(String name, Type type, boolean constant) {
+    public Variable(String name, Type type) {
         super(name);
         this.type = type;
-        this.constant = constant;
     }
 
-    public Variable(SourcePositioned source, String name, Type type, boolean constant) {
-        this(source.getStartLine(), source.getEndLine(), source.getStartPos(), source.getEndPos(), name, type, constant);
+    public Variable(SourcePositioned source, String name, Type type) {
+        this(source.getStartLine(), source.getEndLine(), source.getStartPos(), source.getEndPos(), name, type);
     }
 
-    public Variable(int startLine, int endLine, int startPos, int endPos, String name, Type type, boolean constant) {
+    public Variable(int startLine, int endLine, int startPos, int endPos, String name, Type type) {
         super(startLine, endLine, startPos, endPos, name);
         this.type = type;
-        this.constant = constant;
     }
 
     @Override
     public Type getType() {
         return type;
-    }
-
-    public boolean isConstant() {
-        return constant;
     }
 
     @Override

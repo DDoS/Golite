@@ -179,7 +179,7 @@ public class TypeChecker extends AnalysisAdapter {
             }
             // Declare the variables
             for (TIdenf idenf : node.getIdenf()) {
-                final Variable variable = new Variable(position, idenf.getText(), type, false);
+                final Variable variable = new Variable(position, idenf.getText(), type);
                 context.declareSymbol(variable);
                 variables.add(variable);
             }
@@ -187,7 +187,7 @@ public class TypeChecker extends AnalysisAdapter {
             // Otherwise declare the variable for each identifier using the value types
             final List<TIdenf> idenfs = node.getIdenf();
             for (int i = 0; i < idenfs.size(); i++) {
-                final Variable variable = new Variable(position, idenfs.get(i).getText(), valueTypes.get(i), false);
+                final Variable variable = new Variable(position, idenfs.get(i).getText(), valueTypes.get(i));
                 context.declareSymbol(variable);
                 variables.add(variable);
             }
@@ -233,7 +233,7 @@ public class TypeChecker extends AnalysisAdapter {
                 exprNodeTypes.put(leftNode, leftType);
             } else {
                 // Var hasn't been declared - declare as new var with the same type as RHS expr
-                final Variable variable = new Variable(new NodePosition(leftNode), idenf, rightType, false);
+                final Variable variable = new Variable(new NodePosition(leftNode), idenf, rightType);
                 context.declareSymbol(variable);
                 variables.add(variable);
             }
@@ -258,7 +258,7 @@ public class TypeChecker extends AnalysisAdapter {
             final AParam param = (AParam) pParam;
             param.getType().apply(this);
             final Type paramType = typeNodeTypes.get(param.getType());
-            param.getIdenf().forEach(idenf -> params.add(new Variable(paramPos, idenf.getText(), paramType, false)));
+            param.getIdenf().forEach(idenf -> params.add(new Variable(paramPos, idenf.getText(), paramType)));
         }
         // Now check the return type (if it exists)
         final Type returnType;
