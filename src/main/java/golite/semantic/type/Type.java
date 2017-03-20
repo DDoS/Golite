@@ -23,4 +23,6 @@ public abstract class Type {
     public Type resolve() {
         return this;
     }
+
+    public abstract Type deepResolve();
 }

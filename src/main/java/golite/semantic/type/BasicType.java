@@ -56,6 +56,11 @@ public final class BasicType extends Type {
         return INTEGERS.contains(this);
     }
 
+    @Override
+    public BasicType deepResolve() {
+        return this;
+    }
+
     public boolean canCastTo() {
         return CAST_TYPES.contains(this);
     }

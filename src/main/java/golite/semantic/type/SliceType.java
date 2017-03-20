@@ -1,11 +1,16 @@
 package golite.semantic.type;
 
 /**
-* A slice type, such as {@code []int}.
+ * A slice type, such as {@code []int}.
  */
 public class SliceType extends IndexableType {
     public SliceType(Type component) {
         super(component);
+    }
+
+    @Override
+    public SliceType deepResolve() {
+        return new SliceType(component.deepResolve());
     }
 
     @Override

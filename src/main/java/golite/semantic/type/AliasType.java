@@ -32,6 +32,11 @@ public class AliasType extends Type {
     }
 
     @Override
+    public Type deepResolve() {
+        return resolve().deepResolve();
+    }
+
+    @Override
     public String toString() {
         return name;
     }

@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
-* An struct type, such as {@code struct {x int; y int; z int; _ int;}}.
+ * An struct type, such as {@code struct {x int; y int; z int; _ int;}}.
  */
 public class StructType extends Type {
     private final List<Field> fields;
@@ -24,6 +24,11 @@ public class StructType extends Type {
             throw new IllegalArgumentException("Cannot access fields with the blank identifier");
         }
         return fields.stream().filter(field -> field.name.equals(name)).findAny();
+    }
+
+    @Override
+    public StructType deepResolve() {
+        return new StructType(fields.stream().map(Field::deepResolve).collect(Collectors.toList()));
     }
 
     @Override
@@ -57,6 +62,10 @@ public class StructType extends Type {
 
         public Type getType() {
             return type;
+        }
+
+        public Field deepResolve() {
+            return new Field(name, type.deepResolve());
         }
 
         @Override
