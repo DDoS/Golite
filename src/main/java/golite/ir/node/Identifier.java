@@ -1,21 +1,23 @@
 package golite.ir.node;
 
-import golite.semantic.symbol.Symbol;
+import golite.semantic.symbol.Variable;
 import golite.util.SourcePrinter;
 
 /**
  *
  */
 public class Identifier extends Expr {
-    private final Symbol symbol;
+    private final Variable variable;
+    private final String uniqueName;
 
-    public Identifier(Symbol symbol) {
-        super(symbol.getType());
-        this.symbol = symbol;
+    public Identifier(Variable variable, String uniqueName) {
+        super(variable.getType());
+        this.variable = variable;
+        this.uniqueName = uniqueName;
     }
 
-    public Symbol getSymbol() {
-        return symbol;
+    public Variable getVariable() {
+        return variable;
     }
 
     @Override
@@ -25,6 +27,6 @@ public class Identifier extends Expr {
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.print(symbol.getUniqueName());
+        printer.print(uniqueName);
     }
 }

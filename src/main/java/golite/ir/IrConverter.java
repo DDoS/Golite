@@ -66,6 +66,7 @@ public class IrConverter extends AnalysisAdapter {
     private final Map<AFuncDecl, FunctionDecl> convertedFunctions = new HashMap<>();
     private final Map<Node, List<Stmt>> convertedStmts = new HashMap<>();
     private final Map<PExpr, Expr> convertedExprs = new HashMap<>();
+    private final Map<Variable, String> uniqueVarNames = new HashMap<>();
 
     public IrConverter(SemanticData semantics) {
         this.semantics = semantics;
@@ -123,9 +124,11 @@ public class IrConverter extends AnalysisAdapter {
             final Variable variable = variables.stream()
                     .filter(var -> var.getName().equals(variableName))
                     .findFirst().get();
-            stmts.add(new VariableDecl(variable));
+            // Find unique names for variables to prevent conflicts from removing scopes
+            final String uniqueName = findUniqueName(variable);
+            stmts.add(new VariableDecl(variable, uniqueName));
             // Then initialize the variables with assignments
-            final Identifier variableExpr = new Identifier(variable);
+            final Identifier variableExpr = new Identifier(variable, uniqueName);
             final Stmt initializer;
             if (node.getExpr().isEmpty()) {
                 // No explicit initializer, use a default
@@ -257,6 +260,28 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void defaultCase(Node node) {
+    }
+
+    private String findUniqueName(Variable variable) {
+        if (uniqueVarNames.containsKey(variable)) {
+            throw new IllegalStateException("This method should not have been called twice for the same variable");
+        }
+        final String name = variable.getName();
+        String uniqueName = name;
+        int id = 0;
+        boolean isUnique;
+        do {
+            isUnique = true;
+            for (String existingName : uniqueVarNames.values()) {
+                if (uniqueName.equals(existingName)) {
+                    isUnique = false;
+                    uniqueName = name + id;
+                    id++;
+                }
+            }
+        } while (!isUnique);
+        uniqueVarNames.put(variable, uniqueName);
+        return uniqueName;
     }
 
     private static Stmt defaultInitializer(Identifier variableExpr, Type type) {

@@ -58,15 +58,6 @@ public abstract class Context {
         if (symbols.containsKey(name)) {
             throw new TypeCheckerException(symbol, "Cannot redeclare symbol " + name);
         }
-        // Generate a unique name for the symbol
-        String uniqueName = name;
-        int id = 1;
-        // If the name is already used in the parent, add a number suffix
-        while (parent.lookupSymbol(uniqueName).isPresent()) {
-            uniqueName = name + id;
-            id++;
-        }
-        symbol.setUniqueName(uniqueName);
         symbols.put(name, symbol);
     }
 

@@ -8,13 +8,19 @@ import golite.util.SourcePrinter;
  */
 public class VariableDecl extends Stmt {
     private final Variable symbol;
+    private final String uniqueName;
 
-    public VariableDecl(Variable symbol) {
+    public VariableDecl(Variable symbol, String uniqueName) {
         this.symbol = symbol;
+        this.uniqueName = uniqueName;
     }
 
     public Variable getSymbol() {
         return symbol;
+    }
+
+    public String getUniqueName() {
+        return uniqueName;
     }
 
     @Override
@@ -24,6 +30,6 @@ public class VariableDecl extends Stmt {
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.print("var ").print(symbol.getUniqueName()).print(" ").print(symbol.getType().resolve().toString());
+        printer.print("var ").print(uniqueName).print(" ").print(symbol.getType().toString());
     }
 }
