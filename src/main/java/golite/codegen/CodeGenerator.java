@@ -10,12 +10,13 @@ import java.util.Map;
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Expr;
-import golite.ir.node.FloatLit;
+import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrVisitor;
 import golite.ir.node.PrintBool;
+import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
@@ -23,6 +24,7 @@ import golite.ir.node.StringLit;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
 import golite.semantic.symbol.Function;
+import golite.semantic.type.BasicType;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -33,11 +35,14 @@ import static org.bytedeco.javacpp.LLVM.*;
  *
  */
 public class CodeGenerator implements IrVisitor {
+    public static final String RUNTIME_PRINT_BOOL = "__golite_runtime_printBool";
     public static final String RUNTIME_PRINT_INT = "__golite_runtime_printInt";
+    public static final String RUNTIME_PRINT_FLOAT64 = "__golite_runtime_printFloat64";
     public static final String RUNTIME_PRINT_STRING = "__golite_runtime_printString";
     public static final String MAIN_FUNCTION = "main";
     private LLVMModuleRef module;
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
+    private final Map<String, LLVMValueRef> functions = new HashMap<>();
     private final Map<Expr, LLVMValueRef> exprValues = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
     private ByteBuffer bitCode;
@@ -52,7 +57,7 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitProgram(Program program) {
         // Create the module
-        module = LLVMModuleCreateWithName("golite_" + program.getPackageName());
+        module = LLVMModuleCreateWithName("golite." + program.getPackageName());
         // Declare the external function from the C stdlib and the Golite runtime
         declareExternalFunctions();
         // Codegen it
@@ -81,7 +86,7 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitFunctionDecl(FunctionDecl functionDecl) {
         // Create the function symbol
-        final Function symbol = functionDecl.getSymbol();
+        final Function symbol = functionDecl.getFunction();
         // The only external function is the main
         final boolean external = symbol.getName().equals(MAIN_FUNCTION);
         final LLVMTypeRef[] params = {};
@@ -111,15 +116,38 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitPrintBool(PrintBool printBool) {
-
+        generatePrintStmt(printBool.getValue(), RUNTIME_PRINT_BOOL);
     }
 
     @Override
     public void visitPrintInt(PrintInt printInt) {
-        printInt.getValue().visit(this);
-        final LLVMValueRef[] args = {exprValues.get(printInt.getValue())};
-        final LLVMValueRef printIntFunction = LLVMGetNamedFunction(module, RUNTIME_PRINT_INT);
-        LLVMBuildCall(builders.peek(), printIntFunction, new PointerPointer<>(args), 1, "");
+        generatePrintStmt(printInt.getValue(), RUNTIME_PRINT_INT);
+    }
+
+    @Override
+    public void visitPrintFloat64(PrintFloat64 printFloat64) {
+        generatePrintStmt(printFloat64.getValue(), RUNTIME_PRINT_FLOAT64);
+    }
+
+    @Override
+    public void visitPrintString(PrintString printString) {
+        generatePrintStmt(printString.getValue(), RUNTIME_PRINT_STRING);
+    }
+
+    private void generatePrintStmt(Expr value, String printFunction) {
+        value.visit(this);
+        LLVMValueRef arg = exprValues.get(value);
+        if (value.getType() == BasicType.BOOL) {
+            // Must zero-extent bools (i1) to char (i8)
+            arg = LLVMBuildZExt(builders.peek(), arg, LLVMInt8Type(), "bool_to_char");
+        }
+        final LLVMValueRef[] args = {arg};
+        final LLVMValueRef function = functions.get(printFunction);
+        LLVMBuildCall(builders.peek(), function, new PointerPointer<>(args), 1, "");
+    }
+
+    @Override
+    public void visitAssignment(Assignment assignment) {
     }
 
     @Override
@@ -128,27 +156,13 @@ public class CodeGenerator implements IrVisitor {
     }
 
     @Override
-    public void visitFloatLit(FloatLit floatLit) {
-
-    }
-
-    @Override
-    public void visitPrintString(PrintString printString) {
-        printString.getValue().visit(this);
-        final LLVMValueRef[] args = {exprValues.get(printString.getValue())};
-        final LLVMValueRef printStringFunction = LLVMGetNamedFunction(module, RUNTIME_PRINT_STRING);
-        LLVMBuildCall(builders.peek(), printStringFunction, new PointerPointer<>(args), 1, "");
-
-    }
-
-    @Override
-    public void visitAssignment(Assignment assignment) {
-
+    public void visitFloatLit(Float64Lit float64Lit) {
+        exprValues.put(float64Lit, LLVMConstReal(LLVMDoubleType(), float64Lit.getValue()));
     }
 
     @Override
     public void visitBoolLit(BoolLit boolLit) {
-
+        exprValues.put(boolLit, LLVMConstInt(LLVMInt1Type(), boolLit.getValue() ? 1 : 0, 0));
     }
 
     @Override
@@ -167,7 +181,9 @@ public class CodeGenerator implements IrVisitor {
 
     private void declareExternalFunctions() {
         // Runtime print functions
+        declareFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
         declareFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
+        declareFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
         declareFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), LLVMPointerType(LLVMInt8Type(), 0));
     }
 
@@ -176,6 +192,7 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef function = LLVMAddFunction(module, name, functionType);
         LLVMSetFunctionCallConv(function, LLVMCCallConv);
         LLVMSetLinkage(function, external ? LLVMExternalLinkage : LLVMPrivateLinkage);
+        functions.put(name, function);
         return function;
     }
 
