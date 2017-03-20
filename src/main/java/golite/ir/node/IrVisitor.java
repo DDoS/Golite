@@ -16,6 +16,8 @@ public interface IrVisitor {
 
     void visitPrintInt(PrintInt printInt);
 
+    void visitPrintFloat64(PrintFloat64 printFloat64);
+
     void visitPrintString(PrintString printString);
 
     void visitAssignment(Assignment assignment);
@@ -24,7 +26,7 @@ public interface IrVisitor {
 
     void visitIntLit(IntLit intLit);
 
-    void visitFloatLit(FloatLit floatLit);
+    void visitFloatLit(Float64Lit float64Lit);
 
     void visitStringLit(StringLit stringLit);
 

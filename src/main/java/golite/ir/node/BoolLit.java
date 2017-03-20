@@ -14,6 +14,10 @@ public class BoolLit extends Expr {
         this.value = value;
     }
 
+    public boolean getValue() {
+        return value;
+    }
+
     @Override
     public void visit(IrVisitor visitor) {
         visitor.visitBoolLit(this);

@@ -12,11 +12,12 @@ import golite.analysis.AnalysisAdapter;
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Expr;
-import golite.ir.node.FloatLit;
+import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.IntLit;
 import golite.ir.node.PrintBool;
+import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
@@ -26,6 +27,7 @@ import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
 import golite.node.ABlockStmt;
 import golite.node.ADeclStmt;
+import golite.node.AFloatExpr;
 import golite.node.AFuncDecl;
 import golite.node.AIdentExpr;
 import golite.node.AIntDecExpr;
@@ -165,29 +167,24 @@ public class IrConverter extends AnalysisAdapter {
 
     private List<Stmt> convertPrintStmt(LinkedList<PExpr> exprs) {
         final List<Stmt> stmts = new ArrayList<>();
-        for (int i = 0, exprsSize = exprs.size(); i < exprsSize; i++) {
-            final PExpr expr = exprs.get(i);
+        for (PExpr expr : exprs) {
             expr.apply(this);
             final Expr converted = convertedExprs.get(expr);
-            // TODO: remove this check when all are implemented
-            if (converted == null) {
-                continue;
-            }
             final Type type = semantics.getExprType(expr).get().resolve();
             // TODO: other basic types
+            final Stmt printStmt;
             if (type == BasicType.BOOL) {
-                stmts.add(new PrintBool(converted));
+                printStmt = new PrintBool(converted);
             } else if (type == BasicType.INT) {
-                stmts.add(new PrintInt(converted));
+                printStmt = new PrintInt(converted);
+            } else if (type == BasicType.FLOAT64) {
+                printStmt = new PrintFloat64(converted);
             } else if (type == BasicType.STRING) {
-                stmts.add(new PrintString(converted));
+                printStmt = new PrintString(converted);
             } else {
                 throw new IllegalStateException("Unexpected type: " + type);
             }
-            // Add spaces between expressions
-            if (i < exprsSize - 1) {
-                stmts.add(new PrintString(new StringLit(" ")));
-            }
+            stmts.add(printStmt);
         }
         return stmts;
     }
@@ -234,6 +231,11 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAIntHexExpr(AIntHexExpr node) {
         convertedExprs.put(node, new IntLit(LiteralUtil.parseInt(node)));
+    }
+
+    @Override
+    public void caseAFloatExpr(AFloatExpr node) {
+        convertedExprs.put(node, new Float64Lit(Double.parseDouble(node.getFloatLit().getText())));
     }
 
     @Override
@@ -304,7 +306,7 @@ public class IrConverter extends AnalysisAdapter {
             return new Assignment(variableExpr, new IntLit(0));
         }
         if (type == BasicType.FLOAT64) {
-            return new Assignment(variableExpr, new FloatLit(0));
+            return new Assignment(variableExpr, new Float64Lit(0));
         }
         if (type == BasicType.BOOL) {
             return new Assignment(variableExpr, new BoolLit(false));
