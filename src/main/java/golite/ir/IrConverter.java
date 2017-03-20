@@ -48,6 +48,7 @@ import golite.node.Start;
 import golite.node.TIdenf;
 import golite.semantic.LiteralUtil;
 import golite.semantic.SemanticData;
+import golite.semantic.context.UniverseContext;
 import golite.semantic.symbol.Function;
 import golite.semantic.symbol.Symbol;
 import golite.semantic.symbol.Variable;
@@ -255,7 +256,20 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAIdentExpr(AIdentExpr node) {
         final Symbol symbol = semantics.getIdentifierSymbol(node).get();
-        convertedExprs.put(node, new Identifier(symbol));
+        if (!(symbol instanceof Variable)) {
+            throw new IllegalStateException("Non-variable identifiers should have been handled earlier");
+        }
+        final Variable variable = (Variable) symbol;
+        final Expr expr;
+        // Special case for the pre-declared booleans identifiers: convert them to bool literals
+        if (variable == UniverseContext.TRUE_VARIABLE) {
+            expr = new BoolLit(true);
+        } else if (variable == UniverseContext.FALSE_VARIABLE) {
+            expr = new BoolLit(false);
+        } else {
+            expr = new Identifier(variable, uniqueVarNames.get(variable));
+        }
+        convertedExprs.put(node, expr);
     }
 
     @Override
