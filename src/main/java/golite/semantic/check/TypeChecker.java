@@ -91,6 +91,7 @@ import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.PCase;
+import golite.node.PDecl;
 import golite.node.PExpr;
 import golite.node.PForCondition;
 import golite.node.PParam;
