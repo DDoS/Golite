@@ -7,10 +7,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import golite.analysis.AnalysisAdapter;
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
+import golite.ir.node.Call;
+import golite.ir.node.Cast;
 import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
@@ -26,7 +29,10 @@ import golite.ir.node.StringLit;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
 import golite.node.ABlockStmt;
+import golite.node.ACallExpr;
 import golite.node.ADeclStmt;
+import golite.node.AEmptyStmt;
+import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AFuncDecl;
 import golite.node.AIdentExpr;
@@ -51,6 +57,7 @@ import golite.node.TIdenf;
 import golite.semantic.LiteralUtil;
 import golite.semantic.SemanticData;
 import golite.semantic.context.UniverseContext;
+import golite.semantic.symbol.DeclaredType;
 import golite.semantic.symbol.Function;
 import golite.semantic.symbol.Symbol;
 import golite.semantic.symbol.Variable;
@@ -103,7 +110,9 @@ public class IrConverter extends AnalysisAdapter {
         final List<Stmt> stmts = new ArrayList<>();
         node.getStmt().forEach(stmt -> {
             stmt.apply(this);
-            stmts.addAll(convertedStmts.get(stmt));
+            if (convertedStmts.containsKey(stmt)) {
+                stmts.addAll(convertedStmts.get(stmt));
+            }
         });
         // If the function has no return value and does not have a final return statement, then add one
         if (!symbol.getType().getReturnType().isPresent()
@@ -147,6 +156,19 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseATypeDecl(ATypeDecl node) {
         // Type declarations don't matter after type-checking
+    }
+
+    @Override
+    public void caseAEmptyStmt(AEmptyStmt node) {
+        convertedStmts.put(node, Collections.emptyList());
+    }
+
+    @Override
+    public void caseAExprStmt(AExprStmt node) {
+        node.getExpr().apply(this);
+        // The IR for expressions that are statements implement the Stmt interface
+        final Stmt stmt = (Stmt) convertedExprs.get(node.getExpr());
+        convertedStmts.put(node, Collections.singletonList(stmt));
     }
 
     @Override
@@ -269,6 +291,34 @@ public class IrConverter extends AnalysisAdapter {
             expr = new Identifier(variable, uniqueVarNames.get(variable));
         }
         convertedExprs.put(node, expr);
+    }
+
+    @Override
+    public void caseACallExpr(ACallExpr node) {
+        // Convert the arguments
+        final List<PExpr> args = node.getArgs();
+        args.forEach(arg -> arg.apply(this));
+        // The called values will always be an identifier
+        final AIdentExpr callIdent = (AIdentExpr) node.getValue();
+        // Get the symbol being called (function or type)
+        final Symbol symbol = semantics.getIdentifierSymbol(callIdent).get();
+        if (symbol instanceof DeclaredType) {
+            // Cast
+            if (args.size() != 1) {
+                throw new IllegalStateException("Expected only one argument in the cast");
+            }
+            final Expr convertedArg = convertedExprs.get(args.get(0));
+            final BasicType castType = (BasicType) symbol.getType().resolve();
+            convertedExprs.put(node, new Cast(castType, convertedArg));
+            return;
+        }
+        if (symbol instanceof Function) {
+            // Call
+            final List<Expr> convertedArgs = args.stream().map(convertedExprs::get).collect(Collectors.toList());
+            convertedExprs.put(node, new Call((Function) symbol, convertedArgs));
+            return;
+        }
+        throw new IllegalStateException("Unexpected call to symbol type: " + symbol.getClass());
     }
 
     @Override

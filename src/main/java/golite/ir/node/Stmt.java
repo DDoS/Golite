@@ -3,5 +3,5 @@ package golite.ir.node;
 /**
  *
  */
-public abstract class Stmt extends IrNode {
+public interface Stmt extends IrNode {
 }

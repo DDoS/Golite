@@ -5,7 +5,7 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class Assignment extends Stmt {
+public class Assignment implements Stmt {
     private final Expr right;
     private final Expr left;
 

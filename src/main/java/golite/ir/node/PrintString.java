@@ -6,7 +6,7 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class PrintString extends Stmt {
+public class PrintString implements Stmt {
     private final Expr value;
 
     public PrintString(Expr value) {

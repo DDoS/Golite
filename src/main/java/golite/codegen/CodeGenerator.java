@@ -9,6 +9,8 @@ import java.util.Map;
 
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
+import golite.ir.node.Call;
+import golite.ir.node.Cast;
 import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
@@ -176,6 +178,16 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitIdentifier(Identifier identifier) {
+
+    }
+
+    @Override
+    public void visitCall(Call call) {
+        
+    }
+
+    @Override
+    public void visitCast(Cast cast) {
 
     }
 

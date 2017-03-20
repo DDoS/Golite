@@ -7,7 +7,7 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class Program extends IrNode {
+public class Program implements IrNode {
     private final String packageName;
     private final List<FunctionDecl> functions;
 

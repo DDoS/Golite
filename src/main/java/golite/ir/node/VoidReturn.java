@@ -5,7 +5,7 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class VoidReturn extends Stmt {
+public class VoidReturn implements Stmt {
     @Override
     public void visit(IrVisitor visitor) {
         visitor.visitVoidReturn(this);

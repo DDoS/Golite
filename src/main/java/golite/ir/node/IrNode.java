@@ -5,8 +5,8 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public abstract class IrNode {
-    public abstract void visit(IrVisitor visitor);
+public interface IrNode {
+    void visit(IrVisitor visitor);
 
-    public abstract void print(SourcePrinter printer);
+    void print(SourcePrinter printer);
 }

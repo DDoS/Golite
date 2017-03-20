@@ -31,4 +31,8 @@ public interface IrVisitor {
     void visitStringLit(StringLit stringLit);
 
     void visitIdentifier(Identifier identifier);
+
+    void visitCall(Call call);
+
+    void visitCast(Cast cast);
 }

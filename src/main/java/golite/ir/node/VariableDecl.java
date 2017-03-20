@@ -6,7 +6,7 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class VariableDecl extends Stmt {
+public class VariableDecl implements Stmt {
     private final Variable symbol;
     private final String uniqueName;
 

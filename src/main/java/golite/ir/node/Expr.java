@@ -5,7 +5,7 @@ import golite.semantic.type.Type;
 /**
  *
  */
-public abstract class Expr extends IrNode {
+public abstract class Expr implements IrNode {
     protected final Type type;
 
     protected Expr(Type type) {
