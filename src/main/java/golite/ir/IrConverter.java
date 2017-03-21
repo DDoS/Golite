@@ -211,7 +211,7 @@ public class IrConverter extends AnalysisAdapter {
         for (PExpr expr : exprs) {
             expr.apply(this);
             final Expr converted = convertedExprs.get(expr);
-            final Type type = semantics.getExprType(expr).get().resolve();
+            final Type type = semantics.getExprType(expr).get().deepResolve();
             final Stmt printStmt;
             if (type == BasicType.BOOL) {
                 printStmt = new PrintBool(converted);
@@ -320,9 +320,9 @@ public class IrConverter extends AnalysisAdapter {
         final Variable variable = ((Variable) symbol).dealias();
         final Expr expr;
         // Special case for the pre-declared booleans identifiers: convert them to bool literals
-        if (variable == UniverseContext.TRUE_VARIABLE) {
+        if (variable.equals(UniverseContext.TRUE_VARIABLE)) {
             expr = new BoolLit(true);
-        } else if (variable == UniverseContext.FALSE_VARIABLE) {
+        } else if (variable.equals(UniverseContext.FALSE_VARIABLE)) {
             expr = new BoolLit(false);
         } else {
             expr = new Identifier(variable, uniqueVarNames.get(variable));
@@ -345,14 +345,14 @@ public class IrConverter extends AnalysisAdapter {
                 throw new IllegalStateException("Expected only one argument in the cast");
             }
             final Expr convertedArg = convertedExprs.get(args.get(0));
-            final BasicType castType = (BasicType) symbol.getType().resolve();
+            final BasicType castType = (BasicType) symbol.getType().deepResolve();
             convertedExprs.put(node, new Cast(castType, convertedArg));
             return;
         }
         if (symbol instanceof Function) {
             // Call
             final List<Expr> convertedArgs = args.stream().map(convertedExprs::get).collect(Collectors.toList());
-            convertedExprs.put(node, new Call((Function) symbol, convertedArgs));
+            convertedExprs.put(node, new Call(((Function) symbol).dealias(), convertedArgs));
             return;
         }
         throw new IllegalStateException("Unexpected call to symbol type: " + symbol.getClass());
@@ -385,7 +385,7 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     private static Stmt defaultInitializer(Identifier variableExpr, Type type) {
-        type = type.resolve();
+        type = type.deepResolve();
         if (type.isInteger()) {
             return new Assignment(variableExpr, new IntLit(0));
         }
