@@ -1,7 +1,6 @@
 package golite.semantic.check;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -155,16 +154,16 @@ public class TypeChecker extends AnalysisAdapter {
         nextContextID++;
         contextNodes.put(context, node);
         node.getDecl().forEach(decl -> decl.apply(this));
-        
+        // Check that the main has the proper signature (no parameters or return type)
         boolean mainDefined = false;
-        Set<Entry<AFuncDecl, Function>> funcs = funcSymbols.entrySet();
-        for (Entry<AFuncDecl, Function> f : funcs) {
-            if (f.getValue().getName().equals("main")) {
-                if (f.getValue().getType() != null) {
-                    throw new TypeCheckerException(f.getKey(), "The main function should not have a return type");
+        for (Entry<AFuncDecl, Function> entry : funcSymbols.entrySet()) {
+            final Function function = entry.getValue();
+            if (function.getName().equals("main")) {
+                if (function.getType().getReturnType().isPresent()) {
+                    throw new TypeCheckerException(entry.getKey(), "The main function should not have a return type");
                 }
-                if (!f.getValue().getType().getParameters().isEmpty()) {
-                    throw new TypeCheckerException(f.getKey(), "The main function shouldn't have any parameters");
+                if (!function.getType().getParameters().isEmpty()) {
+                    throw new TypeCheckerException(entry.getKey(), "The main function shouldn't have any parameters");
                 }
                 mainDefined = true;
                 break;
@@ -173,7 +172,6 @@ public class TypeChecker extends AnalysisAdapter {
         if (!mainDefined) {
             throw new TypeCheckerException(node, "The main function must be defined");
         }
-        
     }
 
     @Override
