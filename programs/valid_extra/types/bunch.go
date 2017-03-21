@@ -137,3 +137,6 @@ var a16 = 1 > 2
 var a17 = 1 >= 2
 var a18 = false && true
 var a19 = false || true
+
+func main() {
+}
