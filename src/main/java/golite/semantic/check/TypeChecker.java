@@ -1,10 +1,12 @@
 package golite.semantic.check;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -155,17 +157,17 @@ public class TypeChecker extends AnalysisAdapter {
         node.getDecl().forEach(decl -> decl.apply(this));
         
         boolean mainDefined = false;
-        Set<AFuncDecl> funcKeys = funcSymbols.keySet();
-        for (AFuncDecl fdecl : funcKeys) {
-            Function f = funcSymbols.get(fdecl);
-            if (f.getName().equals("main")) {
-                if (f.getType() != null) {
-                    throw new TypeCheckerException(fdecl, "The main function should not have a return type");
+        Set<Entry<AFuncDecl, Function>> funcs = funcSymbols.entrySet();
+        for (Entry<AFuncDecl, Function> f : funcs) {
+            if (f.getValue().getName().equals("main")) {
+                if (f.getValue().getType() != null) {
+                    throw new TypeCheckerException(f.getKey(), "The main function should not have a return type");
                 }
-                if (!fdecl.getParam().isEmpty()) {
-                    throw new TypeCheckerException(fdecl, "The main function shouldn't have any parameters");
+                if (!f.getValue().getType().getParameters().isEmpty()) {
+                    throw new TypeCheckerException(f.getKey(), "The main function shouldn't have any parameters");
                 }
                 mainDefined = true;
+                break;
             }
         }
         if (!mainDefined) {
