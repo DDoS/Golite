@@ -24,6 +24,7 @@ import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
+import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Stmt;
@@ -47,6 +48,7 @@ import golite.node.APrintStmt;
 import golite.node.APrintlnStmt;
 import golite.node.AProg;
 import golite.node.AReturnStmt;
+import golite.node.ARuneExpr;
 import golite.node.AStringIntrExpr;
 import golite.node.AStringRawExpr;
 import golite.node.ATypeDecl;
@@ -210,12 +212,13 @@ public class IrConverter extends AnalysisAdapter {
             expr.apply(this);
             final Expr converted = convertedExprs.get(expr);
             final Type type = semantics.getExprType(expr).get().resolve();
-            // TODO: other basic types
             final Stmt printStmt;
             if (type == BasicType.BOOL) {
                 printStmt = new PrintBool(converted);
             } else if (type == BasicType.INT) {
                 printStmt = new PrintInt(converted);
+            } else if (type == BasicType.RUNE) {
+                printStmt = new PrintRune(converted);
             } else if (type == BasicType.FLOAT64) {
                 printStmt = new PrintFloat64(converted);
             } else if (type == BasicType.STRING) {
@@ -274,6 +277,16 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAIntHexExpr(AIntHexExpr node) {
         convertedExprs.put(node, new IntLit(LiteralUtil.parseInt(node)));
+    }
+
+    @Override
+    public void caseARuneExpr(ARuneExpr node) {
+        final String text = node.getRuneLit().getText();
+        char c = text.charAt(1);
+        if (c == '\\') {
+            c = decodeCharEscape(text.charAt(2), false);
+        }
+        convertedExprs.put(node, new IntLit(c));
     }
 
     @Override

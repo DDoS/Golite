@@ -21,14 +21,14 @@ type Person struct {
 
 var person Person
 
-func agePerson(person Person) Person {
+func agePerson(person Person) {
     person.age += 40
     person.name = "Uncle " + person.name
-    return person
+    return
 }
 
 func main() {
-    println(1, "lol\\", 0x10, `No\r escape`, false)
+    print(1, "lol\\", 0x10, `No\r escape`, false, '\n')
     var k = "test"
     //println(k)
     {

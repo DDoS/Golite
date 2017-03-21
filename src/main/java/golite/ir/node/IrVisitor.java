@@ -18,6 +18,8 @@ public interface IrVisitor {
 
     void visitPrintInt(PrintInt printInt);
 
+    void visitPrintRune(PrintRune printRune);
+
     void visitPrintFloat64(PrintFloat64 printFloat64);
 
     void visitPrintString(PrintString printString);
