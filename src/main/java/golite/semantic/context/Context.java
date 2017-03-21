@@ -50,14 +50,15 @@ public abstract class Context {
     }
 
     public void declareSymbol(Symbol symbol) {
-        if (symbol.getName().equals("_")) {
+        final String name = symbol.getName();
+        if (name.equals("_")) {
             // Don't declare blank symbols
             return;
         }
-        if (symbols.containsKey(symbol.getName())) {
-            throw new TypeCheckerException(symbol, "Cannot redeclare symbol " + symbol.getName());
+        if (symbols.containsKey(name)) {
+            throw new TypeCheckerException(symbol, "Cannot redeclare symbol " + name);
         }
-        symbols.put(symbol.getName(), symbol);
+        symbols.put(name, symbol);
     }
 
     public Optional<Function> getEnclosingFunction() {

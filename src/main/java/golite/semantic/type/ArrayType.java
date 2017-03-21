@@ -17,6 +17,11 @@ public class ArrayType extends IndexableType {
     }
 
     @Override
+    public ArrayType deepResolve() {
+        return new ArrayType(component.deepResolve(), length);
+    }
+
+    @Override
     public String toString() {
         return String.format("[%d]%s", length, component);
     }

@@ -86,11 +86,15 @@ config.yml
 /.nb-gradle/profiles/private/
 /.nb-gradle/private/
 
-# Compiler output#
+# Compiler output #
 ##################
 *.pretty.go
 *.pptype.go
 *.symtab
+*.ir
+*.bc
+*.ll
+*.out
 
 # Exceptions #
 ##############

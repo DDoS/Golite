@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import golite.semantic.symbol.Function;
 
 /**
-* A function type, such as {@code func(a int) int}. Only used for {@link Function}.
+ * A function type, such as {@code func(a int) int}. Only used for {@link Function}.
  */
 public class FunctionType extends Type {
     private final List<Parameter> parameters;
@@ -24,6 +24,12 @@ public class FunctionType extends Type {
 
     public Optional<Type> getReturnType() {
         return Optional.ofNullable(returnType);
+    }
+
+    @Override
+    public FunctionType deepResolve() {
+        final List<Parameter> deepParams = parameters.stream().map(Parameter::deepResolve).collect(Collectors.toList());
+        return new FunctionType(deepParams, returnType != null ? returnType.deepResolve() : null);
     }
 
     public String signature() {
@@ -70,6 +76,10 @@ public class FunctionType extends Type {
 
         public Type getType() {
             return type;
+        }
+
+        public Parameter deepResolve() {
+            return new Parameter(name, type.deepResolve());
         }
 
         @Override

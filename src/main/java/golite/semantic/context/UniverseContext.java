@@ -9,8 +9,8 @@ import golite.semantic.type.BasicType;
  * The top-most context, enclosing all Golite code by default.
  */
 public final class UniverseContext extends Context {
-    private static final Variable TRUE_VARIABLE = new Variable("true", BasicType.BOOL, true);
-    private static final Variable FALSE_VARIABLE = new Variable("false", BasicType.BOOL, true);
+    public static final Variable TRUE_VARIABLE = new Variable("true", BasicType.BOOL);
+    public static final Variable FALSE_VARIABLE = new Variable("false", BasicType.BOOL);
     public static final UniverseContext INSTANCE = new UniverseContext();
 
     private UniverseContext() {
