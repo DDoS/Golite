@@ -20,6 +20,7 @@ import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.IntLit;
+import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
@@ -27,6 +28,7 @@ import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Stmt;
 import golite.ir.node.StringLit;
+import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
 import golite.node.ABlockStmt;
@@ -100,7 +102,7 @@ public class IrConverter extends AnalysisAdapter {
         node.getDecl().forEach(decl -> decl.apply(this));
         final List<FunctionDecl> functions = new ArrayList<>();
         for (PDecl decl : node.getDecl()) {
-            if (decl instanceof  AFuncDecl) {
+            if (decl instanceof AFuncDecl) {
                 convertedFunctions.get(decl).ifPresent(functions::add);
             }
         }
@@ -115,10 +117,15 @@ public class IrConverter extends AnalysisAdapter {
             return;
         }
         final Function symbol = semantics.getFunctionSymbol(node).get().dealias();
+        // Find unique names for the parameters
+        final List<String> uniqueParamNames = symbol.getParameters().stream()
+                .map(this::findUniqueName).collect(Collectors.toList());
+        // Type check the statements
         final List<Stmt> stmts = new ArrayList<>();
         node.getStmt().forEach(stmt -> {
             stmt.apply(this);
             if (convertedStmts.containsKey(stmt)) {
+                // TODO: remove this check when done
                 stmts.addAll(convertedStmts.get(stmt));
             }
         });
@@ -127,7 +134,7 @@ public class IrConverter extends AnalysisAdapter {
                 && (stmts.isEmpty() || !(stmts.get(stmts.size() - 1) instanceof VoidReturn))) {
             stmts.add(new VoidReturn());
         }
-        convertedFunctions.put(node, Optional.of(new FunctionDecl(symbol, stmts)));
+        convertedFunctions.put(node, Optional.of(new FunctionDecl(symbol, uniqueParamNames, stmts)));
     }
 
     @Override
@@ -223,11 +230,15 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAReturnStmt(AReturnStmt node) {
-        if (node.getExpr() == null) {
-            convertedStmts.put(node, Collections.singletonList(new VoidReturn()));
+        final Stmt return_;
+        final PExpr value = node.getExpr();
+        if (value == null) {
+            return_ = new VoidReturn();
         } else {
-            // TODO: return with value
+            value.apply(this);
+            return_ = new ValueReturn(convertedExprs.get(value));
         }
+        convertedStmts.put(node, Collections.singletonList(return_));
     }
 
     @Override
@@ -372,7 +383,7 @@ public class IrConverter extends AnalysisAdapter {
             return new Assignment(variableExpr, new BoolLit(false));
         }
         if (type == BasicType.STRING || type instanceof IndexableType || type instanceof StructType) {
-            // TODO: memset 0 stmt
+            return new MemsetZero(variableExpr);
         }
         throw new UnsupportedOperationException("Unsupported type: " + type);
     }

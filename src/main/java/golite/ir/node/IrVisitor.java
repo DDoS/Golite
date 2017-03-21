@@ -12,6 +12,8 @@ public interface IrVisitor {
 
     void visitVoidReturn(VoidReturn voidReturn);
 
+    void visitValueReturn(ValueReturn valueReturn);
+
     void visitPrintBool(PrintBool printBool);
 
     void visitPrintInt(PrintInt printInt);
@@ -19,6 +21,8 @@ public interface IrVisitor {
     void visitPrintFloat64(PrintFloat64 printFloat64);
 
     void visitPrintString(PrintString printString);
+
+    void visitMemsetZero(MemsetZero memsetZero);
 
     void visitAssignment(Assignment assignment);
 

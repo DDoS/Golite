@@ -7,12 +7,25 @@ var k = 0
 func _() {
 }
 
-/*func abs(i int) int {
+func abs(i int) int {
     if i < 0 {
         return -i
     }
-    return i
-}*/
+    return 0
+}
+
+type Person struct {
+    name string
+    age int
+}
+
+var person Person
+
+func agePerson(person Person) Person {
+    person.age += 40
+    person.name = "Uncle " + person.name
+    return person
+}
 
 func main() {
     println(1, "lol\\", 0x10, `No\r escape`, false)

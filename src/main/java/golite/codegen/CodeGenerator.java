@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import golite.ir.node.Assignment;
@@ -16,16 +17,24 @@ import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrVisitor;
+import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.StringLit;
+import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
 import golite.semantic.symbol.Function;
+import golite.semantic.type.ArrayType;
 import golite.semantic.type.BasicType;
+import golite.semantic.type.FunctionType;
+import golite.semantic.type.FunctionType.Parameter;
+import golite.semantic.type.SliceType;
+import golite.semantic.type.StructType;
+import golite.semantic.type.Type;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -82,6 +91,8 @@ public class CodeGenerator implements IrVisitor {
         bitCode = bufferStart.limit(bufferSize).asByteBuffer();
         // TODO: remove this debug printing
         System.out.println(LLVMPrintModuleToString(module).getString());
+        // Delete the module now that we have the code
+        LLVMDisposeModule(module);
     }
 
     @Override
@@ -91,8 +102,16 @@ public class CodeGenerator implements IrVisitor {
         // The only external function is the main
         final String functionName = symbol.getName();
         final boolean external = functionName.equals("main");
-        final LLVMTypeRef[] params = {};
-        final LLVMValueRef function = declareFunction(external, functionName, LLVMVoidType(), params);
+        // Build the LLVM function type
+        final FunctionType functionType = symbol.getType();
+        final List<Parameter> params = functionType.getParameters();
+        final LLVMTypeRef[] llvmParams = new LLVMTypeRef[params.size()];
+        for (int i = 0; i < llvmParams.length; i++) {
+            llvmParams[i] = createType(params.get(i).getType());
+        }
+        final LLVMTypeRef llvmReturn = functionType.getReturnType().map(this::createType).orElse(LLVMVoidType());
+        // Create the LLVM function
+        final LLVMValueRef function = createFunction(external, functionName, llvmReturn, llvmParams);
         functions.put(functionName, function);
         // Create the builder for the function
         final LLVMBuilderRef builder = LLVMCreateBuilder();
@@ -115,6 +134,12 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitVoidReturn(VoidReturn voidReturn) {
         LLVMBuildRetVoid(builders.peek());
+    }
+
+    @Override
+    public void visitValueReturn(ValueReturn valueReturn) {
+        valueReturn.getValue().visit(this);
+        LLVMBuildRet(builders.peek(), exprValues.get(valueReturn.getValue()));
     }
 
     @Override
@@ -146,6 +171,11 @@ public class CodeGenerator implements IrVisitor {
         }
         final LLVMValueRef[] args = {arg};
         LLVMBuildCall(builders.peek(), printFunction, new PointerPointer<>(args), 1, "");
+    }
+
+    @Override
+    public void visitMemsetZero(MemsetZero memsetZero) {
+
     }
 
     @Override
@@ -200,18 +230,47 @@ public class CodeGenerator implements IrVisitor {
         final LLVMTypeRef[] stringStructElements = {LLVMInt32Type(), LLVMPointerType(LLVMInt8Type(), 0)};
         LLVMStructSetBody(stringType, new PointerPointer<>(stringStructElements), stringStructElements.length, 0);
         // Runtime print functions
-        printBoolFunction = declareFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
-        printIntFunction = declareFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
-        printFloat64Function = declareFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
-        printStringFunction = declareFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), stringType);
+        printBoolFunction = createFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
+        printIntFunction = createFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
+        printFloat64Function = createFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
+        printStringFunction = createFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), stringType);
     }
 
-    private LLVMValueRef declareFunction(boolean external, String name, LLVMTypeRef returnType, LLVMTypeRef... parameters) {
+    private LLVMValueRef createFunction(boolean external, String name, LLVMTypeRef returnType, LLVMTypeRef... parameters) {
         final LLVMTypeRef functionType = LLVMFunctionType(returnType, new PointerPointer<>(parameters), parameters.length, 0);
         final LLVMValueRef function = LLVMAddFunction(module, name, functionType);
         LLVMSetFunctionCallConv(function, LLVMCCallConv);
         LLVMSetLinkage(function, external ? LLVMExternalLinkage : LLVMPrivateLinkage);
         return function;
+    }
+
+    private LLVMTypeRef createType(Type type) {
+        // TODO: cache these maybe?
+        if (type == BasicType.BOOL) {
+            return LLVMInt1Type();
+        }
+        if (type == BasicType.INT || type == BasicType.RUNE) {
+            return LLVMInt32Type();
+        }
+        if (type == BasicType.FLOAT64) {
+            return LLVMDoubleType();
+        }
+        if (type == BasicType.STRING) {
+            return stringType;
+        }
+        if (type instanceof ArrayType) {
+            throw new UnsupportedOperationException("TODO");
+        }
+        if (type instanceof SliceType) {
+            throw new UnsupportedOperationException("TODO");
+        }
+        if (type instanceof StructType) {
+            final LLVMTypeRef[] fieldTypes = ((StructType) type).getFields().stream()
+                    .map(field -> createType(field.getType()))
+                    .toArray(LLVMTypeRef[]::new);
+            return LLVMStructType(new PointerPointer<>(fieldTypes), fieldTypes.length, 0);
+        }
+        throw new IllegalArgumentException("Unknown type class: " + type);
     }
 
     private LLVMValueRef declareStringConstant(StringLit stringLit) {

@@ -293,7 +293,7 @@ public class TypeChecker extends AnalysisAdapter {
                 .collect(Collectors.toList());
         final FunctionType type = new FunctionType(parameterTypes, returnType);
         // Now declare the function
-        final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), type);
+        final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), type, params);
         context.declareSymbol(function);
         funcSymbols.put(node, function);
         // Enter the function body
