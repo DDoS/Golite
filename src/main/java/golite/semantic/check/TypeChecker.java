@@ -153,6 +153,25 @@ public class TypeChecker extends AnalysisAdapter {
         nextContextID++;
         contextNodes.put(context, node);
         node.getDecl().forEach(decl -> decl.apply(this));
+        
+        boolean mainDefined = false;
+        Set<AFuncDecl> funcKeys = funcSymbols.keySet();
+        for (AFuncDecl fdecl : funcKeys) {
+            Function f = funcSymbols.get(fdecl);
+            if (f.getName().equals("main")) {
+                if (f.getType() != null) {
+                    throw new TypeCheckerException(fdecl, "The main function should not have a return type");
+                }
+                if (!fdecl.getParam().isEmpty()) {
+                    throw new TypeCheckerException(fdecl, "The main function shouldn't have any parameters");
+                }
+                mainDefined = true;
+            }
+        }
+        if (!mainDefined) {
+            throw new TypeCheckerException(node, "The main function must be defined");
+        }
+        
     }
 
     @Override
