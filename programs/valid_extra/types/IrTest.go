@@ -36,8 +36,8 @@ func main() {
         println(1.3, k)
     }
     {
-        //var k int = abs(3)
-        //println(2, k)
+        var k int = abs(3)
+        println(2, k)
     }
     (abs)(4)
     (boolean)(true)

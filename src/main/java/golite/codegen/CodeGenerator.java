@@ -56,7 +56,7 @@ public class CodeGenerator implements IrVisitor {
     private LLVMValueRef printFloat64Function;
     private LLVMValueRef printStringFunction;
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
-    private final Map<String, LLVMValueRef> functions = new HashMap<>();
+    private final Map<Function, LLVMValueRef> functions = new HashMap<>();
     private final Map<Expr, LLVMValueRef> exprValues = new HashMap<>();
     private final Map<Expr, LLVMValueRef> exprPtrs = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
@@ -106,8 +106,7 @@ public class CodeGenerator implements IrVisitor {
         // Create the function symbol
         final Function symbol = functionDecl.getFunction();
         // The only external function is the main
-        final String functionName = symbol.getName();
-        final boolean external = functionName.equals("main");
+        final boolean external = symbol.getName().equals("main");
         // Build the LLVM function type
         final FunctionType functionType = symbol.getType();
         final List<Parameter> params = functionType.getParameters();
@@ -117,8 +116,8 @@ public class CodeGenerator implements IrVisitor {
         }
         final LLVMTypeRef llvmReturn = functionType.getReturnType().map(this::createType).orElse(LLVMVoidType());
         // Create the LLVM function
-        final LLVMValueRef function = createFunction(external, functionName, llvmReturn, llvmParams);
-        functions.put(functionName, function);
+        final LLVMValueRef function = createFunction(external, symbol.getName(), llvmReturn, llvmParams);
+        functions.put(symbol, function);
         // Create the builder for the function
         final LLVMBuilderRef builder = LLVMCreateBuilder();
         builders.push(builder);
@@ -248,7 +247,16 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitCall(Call call) {
-
+        final Function function = call.getFunction();
+        final LLVMValueRef llvmFunction = functions.get(function);
+        // Codegen the arguments
+        final List<Expr> args = call.getArguments();
+        args.forEach(arg -> arg.visit(this));
+        final LLVMValueRef[] argValues = args.stream().map(this::getExprValue).toArray(LLVMValueRef[]::new);
+        // Build the call
+        final LLVMValueRef value = LLVMBuildCall(builders.peek(), llvmFunction, new PointerPointer<>(argValues), argValues.length,
+                function.getName());
+        exprValues.put(call, value);
     }
 
     @Override
