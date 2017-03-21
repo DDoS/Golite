@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -73,7 +74,7 @@ import golite.semantic.type.Type;
 public class IrConverter extends AnalysisAdapter {
     private final SemanticData semantics;
     private Program convertedProgram;
-    private final Map<AFuncDecl, FunctionDecl> convertedFunctions = new HashMap<>();
+    private final Map<AFuncDecl, Optional<FunctionDecl>> convertedFunctions = new HashMap<>();
     private final Map<Node, List<Stmt>> convertedStmts = new HashMap<>();
     private final Map<PExpr, Expr> convertedExprs = new HashMap<>();
     private final Map<Variable, String> uniqueVarNames = new HashMap<>();
@@ -98,14 +99,21 @@ public class IrConverter extends AnalysisAdapter {
     public void caseAProg(AProg node) {
         node.getDecl().forEach(decl -> decl.apply(this));
         final List<FunctionDecl> functions = new ArrayList<>();
-        node.getDecl().stream()
-                .filter(decl -> decl instanceof AFuncDecl)
-                .forEach(decl -> functions.add(convertedFunctions.get((AFuncDecl) decl)));
+        for (PDecl decl : node.getDecl()) {
+            if (decl instanceof  AFuncDecl) {
+                convertedFunctions.get(decl).ifPresent(functions::add);
+            }
+        }
         convertedProgram = new Program(((APkg) node.getPkg()).getIdenf().getText(), functions);
     }
 
     @Override
     public void caseAFuncDecl(AFuncDecl node) {
+        // Ignore blank functions
+        if (node.getIdenf().getText().equals("_")) {
+            convertedFunctions.put(node, Optional.empty());
+            return;
+        }
         final Function symbol = semantics.getFunctionSymbol(node).get().dealias();
         final List<Stmt> stmts = new ArrayList<>();
         node.getStmt().forEach(stmt -> {
@@ -119,7 +127,7 @@ public class IrConverter extends AnalysisAdapter {
                 && (stmts.isEmpty() || !(stmts.get(stmts.size() - 1) instanceof VoidReturn))) {
             stmts.add(new VoidReturn());
         }
-        convertedFunctions.put(node, new FunctionDecl(symbol, stmts));
+        convertedFunctions.put(node, Optional.of(new FunctionDecl(symbol, stmts)));
     }
 
     @Override
@@ -130,6 +138,11 @@ public class IrConverter extends AnalysisAdapter {
         final List<TIdenf> idenfs = node.getIdenf();
         for (int i = 0; i < idenfs.size(); i++) {
             final String variableName = idenfs.get(i).getText();
+            // Ignore blank variables
+            if (variableName.equals("_")) {
+                continue;
+            }
+            // Find the symbol for the variable that was declared
             final Variable variable = variables.stream()
                     .filter(var -> var.getName().equals(variableName))
                     .findFirst().get().dealias();
