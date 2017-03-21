@@ -20,6 +20,10 @@ public class Identifier extends Expr {
         return variable;
     }
 
+    public String getUniqueName() {
+        return uniqueName;
+    }
+
     @Override
     public void visit(IrVisitor visitor) {
         visitor.visitIdentifier(this);
@@ -28,5 +32,10 @@ public class Identifier extends Expr {
     @Override
     public void print(SourcePrinter printer) {
         printer.print(uniqueName);
+    }
+
+    @Override
+    public String toString() {
+        return uniqueName;
     }
 }

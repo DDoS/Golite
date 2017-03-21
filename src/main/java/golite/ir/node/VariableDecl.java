@@ -15,7 +15,7 @@ public class VariableDecl implements Stmt {
         this.uniqueName = uniqueName;
     }
 
-    public Variable getSymbol() {
+    public Variable getVariable() {
         return symbol;
     }
 

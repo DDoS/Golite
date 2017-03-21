@@ -6,12 +6,20 @@ import golite.util.SourcePrinter;
  *
  */
 public class Assignment implements Stmt {
-    private final Expr right;
     private final Expr left;
+    private final Expr right;
 
-    public Assignment(Expr right, Expr left) {
-        this.right = right;
+    public Assignment(Expr left, Expr right) {
         this.left = left;
+        this.right = right;
+    }
+
+    public Expr getLeft() {
+        return left;
+    }
+
+    public Expr getRight() {
+        return right;
     }
 
     @Override
@@ -21,8 +29,10 @@ public class Assignment implements Stmt {
 
     @Override
     public void print(SourcePrinter printer) {
-        right.print(printer);
-        printer.print(" = ");
+        printer.print("assign(");
         left.print(printer);
+        printer.print(", ");
+        right.print(printer);
+        printer.print(")");
     }
 }

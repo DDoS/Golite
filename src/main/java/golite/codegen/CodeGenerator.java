@@ -16,6 +16,7 @@ import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.IntLit;
+import golite.ir.node.IrNode;
 import golite.ir.node.IrVisitor;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
@@ -29,6 +30,7 @@ import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
 import golite.semantic.symbol.Function;
+import golite.semantic.symbol.Variable;
 import golite.semantic.type.ArrayType;
 import golite.semantic.type.BasicType;
 import golite.semantic.type.FunctionType;
@@ -56,7 +58,9 @@ public class CodeGenerator implements IrVisitor {
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
     private final Map<String, LLVMValueRef> functions = new HashMap<>();
     private final Map<Expr, LLVMValueRef> exprValues = new HashMap<>();
+    private final Map<Expr, LLVMValueRef> exprPtrs = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
+    private final Map<Variable, LLVMValueRef> functionVariables = new HashMap<>();
     private ByteBuffer bitCode;
 
     public ByteBuffer getBitCode() {
@@ -74,6 +78,8 @@ public class CodeGenerator implements IrVisitor {
         declareExternalSymbols();
         // Codegen it
         program.getFunctions().forEach(function -> function.visit(this));
+        // TODO: remove this debug printing
+        System.out.println(LLVMPrintModuleToString(module).getString());
         // Validate it
         final BytePointer errorMessagePtr = new BytePointer((Pointer) null);
         final String errorMessage;
@@ -91,8 +97,6 @@ public class CodeGenerator implements IrVisitor {
         final BytePointer bufferStart = LLVMGetBufferStart(bufferRef);
         final long bufferSize = LLVMGetBufferSize(bufferRef);
         bitCode = bufferStart.limit(bufferSize).asByteBuffer();
-        // TODO: remove this debug printing
-        System.out.println(LLVMPrintModuleToString(module).getString());
         // Delete the module now that we have the code
         LLVMDisposeModule(module);
     }
@@ -121,16 +125,30 @@ public class CodeGenerator implements IrVisitor {
         // Start the function body
         final LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
         LLVMPositionBuilderAtEnd(builder, entry);
+        // Place the variables values for the parameters on the stack
+        final List<Variable> paramVariables = symbol.getParameters();
+        final List<String> paramUniqueNames = functionDecl.getParamUniqueNames();
+        for (int i = 0; i < paramVariables.size(); i++) {
+            final Variable variable = paramVariables.get(i);
+            final LLVMValueRef varPtr = placeVariableOnStack(variable, paramUniqueNames.get(i));
+            functionVariables.put(variable, varPtr);
+            // Store the parameter in the stack variable
+            LLVMBuildStore(builder, LLVMGetParam(function, i), varPtr);
+        }
         // Codegen the body
         functionDecl.getStatements().forEach(stmt -> stmt.visit(this));
         // Termination is handled implicitly by the last return statement
         // Dispose of the builder
         LLVMDisposeBuilder(builders.pop());
+        // Clear the function's variables as we exit it
+        functionVariables.clear();
     }
 
     @Override
-    public void visitVariableDecl(VariableDecl function) {
-
+    public void visitVariableDecl(VariableDecl variableDecl) {
+        final Variable variable = variableDecl.getVariable();
+        final LLVMValueRef varPtr = placeVariableOnStack(variable, variableDecl.getUniqueName());
+        functionVariables.put(variable, varPtr);
     }
 
     @Override
@@ -141,7 +159,7 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitValueReturn(ValueReturn valueReturn) {
         valueReturn.getValue().visit(this);
-        LLVMBuildRet(builders.peek(), exprValues.get(valueReturn.getValue()));
+        LLVMBuildRet(builders.peek(), getExprValue(valueReturn.getValue()));
     }
 
     @Override
@@ -171,7 +189,7 @@ public class CodeGenerator implements IrVisitor {
 
     private void generatePrintStmt(Expr value, LLVMValueRef printFunction) {
         value.visit(this);
-        LLVMValueRef arg = exprValues.get(value);
+        LLVMValueRef arg = getExprValue(value);
         if (value.getType() == BasicType.BOOL) {
             // Must zero-extent bools (i1) to char (i8)
             arg = LLVMBuildZExt(builders.peek(), arg, LLVMInt8Type(), "bool_to_char");
@@ -187,6 +205,11 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitAssignment(Assignment assignment) {
+        assignment.getLeft().visit(this);
+        assignment.getRight().visit(this);
+        final LLVMValueRef ptr = exprPtrs.get(assignment.getLeft());
+        final LLVMValueRef value = getExprValue(assignment.getRight());
+        LLVMBuildStore(builders.peek(), value, ptr);
     }
 
     @Override
@@ -218,7 +241,9 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitIdentifier(Identifier identifier) {
-
+        // Only put a pointer to the variable, it will be loaded when necessary
+        final LLVMValueRef varPtr = functionVariables.get(identifier.getVariable());
+        exprPtrs.put(identifier, varPtr);
     }
 
     @Override
@@ -231,17 +256,20 @@ public class CodeGenerator implements IrVisitor {
 
     }
 
-    private void declareExternalSymbols() {
-        // Structure types
-        stringType = LLVMStructCreateNamed(LLVMGetGlobalContext(), RUNTIME_STRING);
-        final LLVMTypeRef[] stringStructElements = {LLVMInt32Type(), LLVMPointerType(LLVMInt8Type(), 0)};
-        LLVMStructSetBody(stringType, new PointerPointer<>(stringStructElements), stringStructElements.length, 0);
-        // Runtime print functions
-        printBoolFunction = createFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
-        printIntFunction = createFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
-        printRuneFunction = createFunction(true, RUNTIME_PRINT_RUNE, LLVMVoidType(), LLVMInt32Type());
-        printFloat64Function = createFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
-        printStringFunction = createFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), stringType);
+    private LLVMValueRef placeVariableOnStack(Variable variable, String uniqueName) {
+        final LLVMTypeRef type = createType(variable.getType());
+        return LLVMBuildAlloca(builders.peek(), type, uniqueName);
+    }
+
+    private LLVMValueRef getExprValue(Expr expr) {
+        // This might be directly a value
+        final LLVMValueRef value = exprValues.get(expr);
+        if (value != null) {
+            return value;
+        }
+        // Otherwise we need to load the pointer
+        final LLVMValueRef ptr = exprPtrs.get(expr);
+        return LLVMBuildLoad(builders.peek(), ptr, IrNode.toString(expr));
     }
 
     private LLVMValueRef createFunction(boolean external, String name, LLVMTypeRef returnType, LLVMTypeRef... parameters) {
@@ -296,6 +324,19 @@ public class CodeGenerator implements IrVisitor {
         LLVMSetInitializer(constant, LLVMConstString(data, stringLength, 1));
         stringConstants.put(stringLit.getValue(), constant);
         return constant;
+    }
+
+    private void declareExternalSymbols() {
+        // Structure types
+        stringType = LLVMStructCreateNamed(LLVMGetGlobalContext(), RUNTIME_STRING);
+        final LLVMTypeRef[] stringStructElements = {LLVMInt32Type(), LLVMPointerType(LLVMInt8Type(), 0)};
+        LLVMStructSetBody(stringType, new PointerPointer<>(stringStructElements), stringStructElements.length, 0);
+        // Runtime print functions
+        printBoolFunction = createFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
+        printIntFunction = createFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
+        printRuneFunction = createFunction(true, RUNTIME_PRINT_RUNE, LLVMVoidType(), LLVMInt32Type());
+        printFloat64Function = createFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
+        printStringFunction = createFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), stringType);
     }
 
     private static final String RUNTIME_STRING = "goliteRtString";

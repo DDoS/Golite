@@ -8,7 +8,7 @@ public interface IrVisitor {
 
     void visitFunctionDecl(FunctionDecl function);
 
-    void visitVariableDecl(VariableDecl function);
+    void visitVariableDecl(VariableDecl variableDecl);
 
     void visitVoidReturn(VoidReturn voidReturn);
 
