@@ -1,17 +1,30 @@
 #include <stdio.h>
+#include <stdint.h>
 
-void __golite_runtime_printBool(char c) {
+typedef struct {
+    int32_t length;
+    int8_t* data;
+} goliteRtString;
+
+void goliteRtPrintBool(int8_t c) {
     printf("%s", c ? "true" : "false");
 }
 
-void __golite_runtime_printInt(int i) {
+void goliteRtPrintInt(int32_t i) {
     printf("%i", i);
 }
 
-void __golite_runtime_printFloat64(double d) {
+void goliteRtPrintRune(int32_t rune) {
+    int32_t str[2] = {rune, 0};
+    printf("%ls", str);
+}
+
+void goliteRtPrintFloat64(double d) {
     printf("%f", d);
 }
 
-void __golite_runtime_printString(char* str) {
-    printf("%s", str);
+void goliteRtPrintString(goliteRtString str) {
+    for (int32_t i = 0; i < str.length; i++) {
+        putchar(str.data[i]);
+    }
 }

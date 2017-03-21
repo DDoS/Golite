@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -154,25 +155,23 @@ public class TypeChecker extends AnalysisAdapter {
         nextContextID++;
         contextNodes.put(context, node);
 
+        node.getDecl().forEach(decl -> decl.apply(this));
+        // Check that the main has the proper signature (no parameters or return type)
         boolean mainDefined = false;
-        for (PDecl d : node.getDecl()) {
-            if (d instanceof AFuncDecl) {
-                AFuncDecl f = (AFuncDecl) d;
-                String funcName = f.getIdenf().toString();
-                
-                if (funcName.equals("main ")) {
-                    if (!f.getParam().isEmpty()) {
-                        throw new TypeCheckerException(d, "The main function should not have any parameters");
-                    }
-                    if (!(f.getType() == null)) {
-                        throw new TypeCheckerException(d, "The main function should not have a return type");
-                    }
-                    mainDefined = true;
+        for (Entry<AFuncDecl, Function> entry : funcSymbols.entrySet()) {
+            final Function function = entry.getValue();
+            if (function.getName().equals("main")) {
+                if (function.getType().getReturnType().isPresent()) {
+                    throw new TypeCheckerException(entry.getKey(), "The main function should not have a return type");
                 }
+                if (!function.getType().getParameters().isEmpty()) {
+                    throw new TypeCheckerException(entry.getKey(), "The main function shouldn't have any parameters");
+                }
+                mainDefined = true;
+                break;
             }
-            d.apply(this);
         }
-        
+
         if (!mainDefined) {
             throw new TypeCheckerException(node, "The main function must be defined");
         }
@@ -297,7 +296,7 @@ public class TypeChecker extends AnalysisAdapter {
                 .collect(Collectors.toList());
         final FunctionType type = new FunctionType(parameterTypes, returnType);
         // Now declare the function
-        final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), type);
+        final Function function = new Function(new NodePosition(node), node.getIdenf().getText(), type, params);
         context.declareSymbol(function);
         funcSymbols.put(node, function);
         // Enter the function body

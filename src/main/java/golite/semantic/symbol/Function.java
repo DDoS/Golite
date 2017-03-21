@@ -1,5 +1,8 @@
 package golite.semantic.symbol;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import golite.semantic.type.FunctionType;
 import golite.util.SourcePositioned;
 
@@ -8,25 +11,32 @@ import golite.util.SourcePositioned;
  */
 public class Function extends Symbol {
     private final FunctionType type;
+    private final List<Variable> parameters;
     private Function dealiased = null;
 
-    public Function(String name, FunctionType type) {
+    public Function(String name, FunctionType type, List<Variable> parameters) {
         super(name);
         this.type = type;
+        this.parameters = parameters;
     }
 
-    public Function(SourcePositioned source, String name, FunctionType type) {
-        this(source.getStartLine(), source.getEndLine(), source.getStartPos(), source.getEndPos(), name, type);
+    public Function(SourcePositioned source, String name, FunctionType type, List<Variable> parameters) {
+        this(source.getStartLine(), source.getEndLine(), source.getStartPos(), source.getEndPos(), name, type, parameters);
     }
 
-    public Function(int startLine, int endLine, int startPos, int endPos, String name, FunctionType type) {
+    public Function(int startLine, int endLine, int startPos, int endPos, String name, FunctionType type, List<Variable> parameters) {
         super(startLine, endLine, startPos, endPos, name);
         this.type = type;
+        this.parameters = parameters;
     }
 
     @Override
     public FunctionType getType() {
         return type;
+    }
+
+    public List<Variable> getParameters() {
+        return parameters;
     }
 
     public Function dealias() {
@@ -35,7 +45,8 @@ public class Function extends Symbol {
         }
         final FunctionType resolvedType = type.deepResolve();
         if (type != resolvedType) {
-            dealiased = new Function(getStartLine(), getEndLine(), getStartPos(), getEndPos(), name, resolvedType);
+            final List<Variable> dealiasedParams = parameters.stream().map(Variable::dealias).collect(Collectors.toList());
+            dealiased = new Function(getStartLine(), getEndLine(), getStartPos(), getEndPos(), name, resolvedType, dealiasedParams);
         } else {
             dealiased = this;
         }

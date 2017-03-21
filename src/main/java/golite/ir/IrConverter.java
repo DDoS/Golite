@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,13 +20,16 @@ import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.IntLit;
+import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
+import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Stmt;
 import golite.ir.node.StringLit;
+import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
 import golite.node.ABlockStmt;
@@ -44,6 +48,7 @@ import golite.node.APrintStmt;
 import golite.node.APrintlnStmt;
 import golite.node.AProg;
 import golite.node.AReturnStmt;
+import golite.node.ARuneExpr;
 import golite.node.AStringIntrExpr;
 import golite.node.AStringRawExpr;
 import golite.node.ATypeDecl;
@@ -73,7 +78,7 @@ import golite.semantic.type.Type;
 public class IrConverter extends AnalysisAdapter {
     private final SemanticData semantics;
     private Program convertedProgram;
-    private final Map<AFuncDecl, FunctionDecl> convertedFunctions = new HashMap<>();
+    private final Map<AFuncDecl, Optional<FunctionDecl>> convertedFunctions = new HashMap<>();
     private final Map<Node, List<Stmt>> convertedStmts = new HashMap<>();
     private final Map<PExpr, Expr> convertedExprs = new HashMap<>();
     private final Map<Variable, String> uniqueVarNames = new HashMap<>();
@@ -98,19 +103,31 @@ public class IrConverter extends AnalysisAdapter {
     public void caseAProg(AProg node) {
         node.getDecl().forEach(decl -> decl.apply(this));
         final List<FunctionDecl> functions = new ArrayList<>();
-        node.getDecl().stream()
-                .filter(decl -> decl instanceof AFuncDecl)
-                .forEach(decl -> functions.add(convertedFunctions.get((AFuncDecl) decl)));
+        for (PDecl decl : node.getDecl()) {
+            if (decl instanceof AFuncDecl) {
+                convertedFunctions.get(decl).ifPresent(functions::add);
+            }
+        }
         convertedProgram = new Program(((APkg) node.getPkg()).getIdenf().getText(), functions);
     }
 
     @Override
     public void caseAFuncDecl(AFuncDecl node) {
+        // Ignore blank functions
+        if (node.getIdenf().getText().equals("_")) {
+            convertedFunctions.put(node, Optional.empty());
+            return;
+        }
         final Function symbol = semantics.getFunctionSymbol(node).get().dealias();
+        // Find unique names for the parameters
+        final List<String> uniqueParamNames = symbol.getParameters().stream()
+                .map(this::findUniqueName).collect(Collectors.toList());
+        // Type check the statements
         final List<Stmt> stmts = new ArrayList<>();
         node.getStmt().forEach(stmt -> {
             stmt.apply(this);
             if (convertedStmts.containsKey(stmt)) {
+                // TODO: remove this check when done
                 stmts.addAll(convertedStmts.get(stmt));
             }
         });
@@ -119,7 +136,7 @@ public class IrConverter extends AnalysisAdapter {
                 && (stmts.isEmpty() || !(stmts.get(stmts.size() - 1) instanceof VoidReturn))) {
             stmts.add(new VoidReturn());
         }
-        convertedFunctions.put(node, new FunctionDecl(symbol, stmts));
+        convertedFunctions.put(node, Optional.of(new FunctionDecl(symbol, uniqueParamNames, stmts)));
     }
 
     @Override
@@ -130,6 +147,11 @@ public class IrConverter extends AnalysisAdapter {
         final List<TIdenf> idenfs = node.getIdenf();
         for (int i = 0; i < idenfs.size(); i++) {
             final String variableName = idenfs.get(i).getText();
+            // Ignore blank variables
+            if (variableName.equals("_")) {
+                continue;
+            }
+            // Find the symbol for the variable that was declared
             final Variable variable = variables.stream()
                     .filter(var -> var.getName().equals(variableName))
                     .findFirst().get().dealias();
@@ -190,12 +212,13 @@ public class IrConverter extends AnalysisAdapter {
             expr.apply(this);
             final Expr converted = convertedExprs.get(expr);
             final Type type = semantics.getExprType(expr).get().resolve();
-            // TODO: other basic types
             final Stmt printStmt;
             if (type == BasicType.BOOL) {
                 printStmt = new PrintBool(converted);
             } else if (type == BasicType.INT) {
                 printStmt = new PrintInt(converted);
+            } else if (type == BasicType.RUNE) {
+                printStmt = new PrintRune(converted);
             } else if (type == BasicType.FLOAT64) {
                 printStmt = new PrintFloat64(converted);
             } else if (type == BasicType.STRING) {
@@ -210,11 +233,15 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAReturnStmt(AReturnStmt node) {
-        if (node.getExpr() == null) {
-            convertedStmts.put(node, Collections.singletonList(new VoidReturn()));
+        final Stmt return_;
+        final PExpr value = node.getExpr();
+        if (value == null) {
+            return_ = new VoidReturn();
         } else {
-            // TODO: return with value
+            value.apply(this);
+            return_ = new ValueReturn(convertedExprs.get(value));
         }
+        convertedStmts.put(node, Collections.singletonList(return_));
     }
 
     @Override
@@ -250,6 +277,16 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAIntHexExpr(AIntHexExpr node) {
         convertedExprs.put(node, new IntLit(LiteralUtil.parseInt(node)));
+    }
+
+    @Override
+    public void caseARuneExpr(ARuneExpr node) {
+        final String text = node.getRuneLit().getText();
+        char c = text.charAt(1);
+        if (c == '\\') {
+            c = decodeCharEscape(text.charAt(2), false);
+        }
+        convertedExprs.put(node, new IntLit(c));
     }
 
     @Override
@@ -359,7 +396,7 @@ public class IrConverter extends AnalysisAdapter {
             return new Assignment(variableExpr, new BoolLit(false));
         }
         if (type == BasicType.STRING || type instanceof IndexableType || type instanceof StructType) {
-            // TODO: memset 0 stmt
+            return new MemsetZero(variableExpr);
         }
         throw new UnsupportedOperationException("Unsupported type: " + type);
     }

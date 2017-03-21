@@ -11,3 +11,6 @@ func test2() int {
         return 1
     }
 }
+
+func main() {
+}

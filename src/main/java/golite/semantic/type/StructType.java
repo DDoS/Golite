@@ -26,6 +26,10 @@ public class StructType extends Type {
         return fields.stream().filter(field -> field.name.equals(name)).findAny();
     }
 
+    public List<Field> getFields() {
+        return fields;
+    }
+
     @Override
     public StructType deepResolve() {
         return new StructType(fields.stream().map(Field::deepResolve).collect(Collectors.toList()));
