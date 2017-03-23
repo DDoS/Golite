@@ -91,7 +91,6 @@ import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.PCase;
-import golite.node.PDecl;
 import golite.node.PExpr;
 import golite.node.PForCondition;
 import golite.node.PParam;
@@ -420,7 +419,10 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseAExprStmt(AExprStmt node) {
         // This is already weeded, but we still have a special case for calls (no return is allowed)
         if (node.getExpr() instanceof ACallExpr) {
-            typeCheckCall((ACallExpr) node.getExpr(), false);
+            final boolean isCast = typeCheckCall((ACallExpr) node.getExpr(), false);
+            if (isCast) {
+                throw new TypeCheckerException(node, "Cannot use a cast expression as a statement");
+            }
         } else {
             node.getExpr().apply(this);
         }
@@ -748,7 +750,8 @@ public class TypeChecker extends AnalysisAdapter {
         typeCheckCall(node, true);
     }
 
-    private void typeCheckCall(ACallExpr node, boolean mustReturn) {
+    // Returns true if it is a cast instead of call
+    private boolean typeCheckCall(ACallExpr node, boolean mustReturn) {
         // The call might be a cast. In this case the identifier will be a single symbol pointing to a type
         final PExpr value = node.getValue();
         if (value instanceof AIdentExpr) {
@@ -758,7 +761,7 @@ public class TypeChecker extends AnalysisAdapter {
                 // It's a cast
                 identSymbols.put(identExpr, symbol.get());
                 typeCheckCast(node, symbol.get().getType());
-                return;
+                return true;
             }
         }
         // It's a call
@@ -792,6 +795,7 @@ public class TypeChecker extends AnalysisAdapter {
         if (functionType.getReturnType().isPresent()) {
             exprNodeTypes.put(node, functionType.getReturnType().get());
         }
+        return false;
     }
 
     private void typeCheckCast(ACallExpr node, Type castType) {
