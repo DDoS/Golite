@@ -40,6 +40,6 @@ func main() {
         println(2, k)
     }
     (abs)(4)
-    (boolean)(true)
+    j := (boolean)(true)
     var _ = 1
 }
