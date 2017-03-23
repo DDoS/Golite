@@ -63,6 +63,7 @@ public class CodeGenerator implements IrVisitor {
     private final Map<Expr, LLVMValueRef> exprValues = new HashMap<>();
     private final Map<Expr, LLVMValueRef> exprPtrs = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
+    private final Map<Variable, LLVMValueRef> globalVariables = new HashMap<>();
     private final Map<Variable, LLVMValueRef> functionVariables = new HashMap<>();
     private ByteBuffer bitCode;
 
@@ -80,6 +81,7 @@ public class CodeGenerator implements IrVisitor {
         // Declare the external function from the C stdlib and the Golite runtime
         declareExternalSymbols();
         // Codegen it
+        program.getGlobals().forEach(this::codeGenGlobal);
         program.getFunctions().forEach(function -> function.visit(this));
         // TODO: remove this debug printing
         System.out.println(LLVMPrintModuleToString(module).getString());
@@ -104,12 +106,21 @@ public class CodeGenerator implements IrVisitor {
         LLVMDisposeModule(module);
     }
 
+    private void codeGenGlobal(VariableDecl variableDecl) {
+        final Variable variable = variableDecl.getVariable();
+        final LLVMTypeRef type = createType(variable.getType());
+        final LLVMValueRef global = LLVMAddGlobal(module, type, variableDecl.getUniqueName());
+        LLVMSetLinkage(global, LLVMInternalLinkage);
+        LLVMSetInitializer(global, LLVMConstNull(type));
+        globalVariables.put(variable, global);
+    }
+
     @Override
     public void visitFunctionDecl(FunctionDecl functionDecl) {
         // Create the function symbol
         final Function symbol = functionDecl.getFunction();
-        // The only external function is the main
-        final boolean external = symbol.getName().equals("main");
+        // The only external functions are the main and static initializer
+        final boolean external = functionDecl.isMain() || functionDecl.isStaticInit();
         // Build the LLVM function type
         final FunctionType functionType = symbol.getType();
         final List<Parameter> params = functionType.getParameters();
@@ -260,7 +271,17 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitIdentifier(Identifier identifier) {
         // Only put a pointer to the variable, it will be loaded when necessary
-        final LLVMValueRef varPtr = functionVariables.get(identifier.getVariable());
+        // Start by checking the function variables
+        LLVMValueRef varPtr = functionVariables.get(identifier.getVariable());
+        if (varPtr != null) {
+            exprPtrs.put(identifier, varPtr);
+            return;
+        }
+        // Otherwise go for the globals
+        varPtr = globalVariables.get(identifier.getVariable());
+        if (varPtr == null) {
+            throw new IllegalStateException("Should have found the variable " + identifier.toString());
+        }
         exprPtrs.put(identifier, varPtr);
     }
 
@@ -273,8 +294,8 @@ public class CodeGenerator implements IrVisitor {
         args.forEach(arg -> arg.visit(this));
         final LLVMValueRef[] argValues = args.stream().map(this::getExprValue).toArray(LLVMValueRef[]::new);
         // Build the call
-        final LLVMValueRef value = LLVMBuildCall(builders.peek(), llvmFunction, new PointerPointer<>(argValues), argValues.length,
-                function.getName());
+        final String name = function.getType().getReturnType().isPresent() ? function.getName() : "";
+        final LLVMValueRef value = LLVMBuildCall(builders.peek(), llvmFunction, new PointerPointer<>(argValues), argValues.length, name);
         exprValues.put(call, value);
     }
 

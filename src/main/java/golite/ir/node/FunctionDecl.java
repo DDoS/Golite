@@ -13,11 +13,17 @@ public class FunctionDecl implements IrNode {
     private final Function function;
     private final List<String> paramUniqueNames;
     private final List<Stmt> statements;
+    private final boolean staticInit;
 
     public FunctionDecl(Function function, List<String> paramUniqueNames, List<Stmt> statements) {
+        this(function, paramUniqueNames, statements, false);
+    }
+
+    public FunctionDecl(Function function, List<String> paramUniqueNames, List<Stmt> statements, boolean staticInit) {
         this.function = function;
         this.paramUniqueNames = paramUniqueNames;
         this.statements = statements;
+        this.staticInit = staticInit;
     }
 
     public Function getFunction() {
@@ -30,6 +36,14 @@ public class FunctionDecl implements IrNode {
 
     public List<Stmt> getStatements() {
         return statements;
+    }
+
+    public boolean isMain() {
+        return function.getName().equals("main");
+    }
+
+    public boolean isStaticInit() {
+        return staticInit;
     }
 
     @Override

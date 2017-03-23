@@ -27,8 +27,14 @@ func agePerson(person Person) Person {
     return person
 }
 
+func staticInit() {
+    agePerson(person)
+}
+
+var str = "lol\\"
+
 func main() {
-    print(1, "lol\\", 0x10, `No\r escape`, false, '\n')
+    print(k, str, 0x10, `No\r escape`, false, '\n')
     var k string
     println(k)
     {
@@ -42,4 +48,5 @@ func main() {
     abs(int(4.5))
     j := boolean(true)
     var _ = 1
+    staticInit()
 }

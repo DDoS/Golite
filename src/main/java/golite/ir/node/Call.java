@@ -14,7 +14,7 @@ public class Call extends Expr implements Stmt {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     public Call(Function function, List<Expr> arguments) {
-        super(function.getType().getReturnType().get());
+        super(function.getType().getReturnType().orElse(null));
         this.function = function;
         this.arguments = arguments;
     }
@@ -35,9 +35,9 @@ public class Call extends Expr implements Stmt {
     @Override
     public void print(SourcePrinter printer) {
         printer.print("call(").print(function.getName());
-        for (int i = 0, argumentsSize = arguments.size(); i < argumentsSize; i++) {
+        for (Expr argument : arguments) {
             printer.print(", ");
-            arguments.get(i).print(printer);
+            argument.print(printer);
         }
         printer.print(")");
     }

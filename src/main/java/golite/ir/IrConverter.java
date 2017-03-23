@@ -1,6 +1,7 @@
 package golite.ir;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -67,6 +68,7 @@ import golite.semantic.symbol.Function;
 import golite.semantic.symbol.Symbol;
 import golite.semantic.symbol.Variable;
 import golite.semantic.type.BasicType;
+import golite.semantic.type.FunctionType;
 import golite.semantic.type.IndexableType;
 import golite.semantic.type.StructType;
 import golite.semantic.type.Type;
@@ -103,12 +105,35 @@ public class IrConverter extends AnalysisAdapter {
     public void caseAProg(AProg node) {
         node.getDecl().forEach(decl -> decl.apply(this));
         final List<FunctionDecl> functions = new ArrayList<>();
+        final List<VariableDecl> globals = new ArrayList<>();
+        final List<Stmt> staticInitialization = new ArrayList<>();
         for (PDecl decl : node.getDecl()) {
             if (decl instanceof AFuncDecl) {
                 convertedFunctions.get(decl).ifPresent(functions::add);
+            } else if (decl instanceof AVarDecl) {
+                // Variable declarations will create additional statements,
+                // Which are put in a function called before the main
+                for (Stmt stmt : convertedStmts.get(decl)) {
+                    if (stmt instanceof VariableDecl) {
+                        globals.add((VariableDecl) stmt);
+                    } else {
+                        staticInitialization.add(stmt);
+                    }
+                }
             }
         }
-        convertedProgram = new Program(((APkg) node.getPkg()).getIdenf().getText(), functions);
+        //staticInitialization.clear();
+        staticInitialization.add(new VoidReturn());
+        // Add the static initialization function for the global variables
+        final FunctionType staticInitType = new FunctionType(Collections.emptyList(), null);
+        final String staticInitName = findUniqueName("staticInit",
+                functions.stream().map(function -> function.getFunction().getName()).collect(Collectors.toSet()));
+        final Function staticInit = new Function(0, 0, 0, 0, staticInitName, staticInitType,
+                Collections.emptyList());
+        functions.add(new FunctionDecl(staticInit, Collections.emptyList(), staticInitialization, true));
+        // Create the program
+        final String packageName = ((APkg) node.getPkg()).getIdenf().getText();
+        convertedProgram = new Program(packageName, globals, functions);
     }
 
     @Override
@@ -366,13 +391,18 @@ public class IrConverter extends AnalysisAdapter {
         if (uniqueVarNames.containsKey(variable)) {
             throw new IllegalStateException("This method should not have been called twice for the same variable");
         }
-        final String name = variable.getName();
+        String uniqueName = findUniqueName(variable.getName(), uniqueVarNames.values());
+        uniqueVarNames.put(variable, uniqueName);
+        return uniqueName;
+    }
+
+    private String findUniqueName(String name, Collection<String> names) {
         String uniqueName = name;
         int id = 0;
         boolean isUnique;
         do {
             isUnique = true;
-            for (String existingName : uniqueVarNames.values()) {
+            for (String existingName : names) {
                 if (uniqueName.equals(existingName)) {
                     isUnique = false;
                     uniqueName = name + id;
@@ -380,7 +410,6 @@ public class IrConverter extends AnalysisAdapter {
                 }
             }
         } while (!isUnique);
-        uniqueVarNames.put(variable, uniqueName);
         return uniqueName;
     }
 
