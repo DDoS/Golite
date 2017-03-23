@@ -110,7 +110,7 @@ public class CodeGenerator implements IrVisitor {
         final Variable variable = variableDecl.getVariable();
         final LLVMTypeRef type = createType(variable.getType());
         final LLVMValueRef global = LLVMAddGlobal(module, type, variableDecl.getUniqueName());
-        LLVMSetLinkage(global, LLVMInternalLinkage);
+        LLVMSetLinkage(global, LLVMPrivateLinkage);
         LLVMSetInitializer(global, LLVMConstNull(type));
         globalVariables.put(variable, global);
     }

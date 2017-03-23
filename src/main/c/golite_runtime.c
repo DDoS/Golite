@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 
@@ -27,4 +28,13 @@ void goliteRtPrintString(goliteRtString str) {
     for (int32_t i = 0; i < str.length; i++) {
         putchar(str.data[i]);
     }
+}
+
+void staticInit();
+void main();
+
+void start() {
+    staticInit();
+    main();
+    exit(0);
 }

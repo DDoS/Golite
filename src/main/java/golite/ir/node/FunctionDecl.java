@@ -53,6 +53,9 @@ public class FunctionDecl implements IrNode {
 
     @Override
     public void print(SourcePrinter printer) {
+        if (staticInit) {
+            printer.print("init ");
+        }
         printer.print("func ").print(function.getName()).print("(");
         final List<Variable> parameters = function.getParameters();
         for (int i = 0, parametersSize = parameters.size(); i < parametersSize; i++) {

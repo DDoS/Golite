@@ -122,15 +122,12 @@ public class IrConverter extends AnalysisAdapter {
                 }
             }
         }
-        //staticInitialization.clear();
         staticInitialization.add(new VoidReturn());
         // Add the static initialization function for the global variables
         final FunctionType staticInitType = new FunctionType(Collections.emptyList(), null);
-        final String staticInitName = findUniqueName("staticInit",
-                functions.stream().map(function -> function.getFunction().getName()).collect(Collectors.toSet()));
-        final Function staticInit = new Function(0, 0, 0, 0, staticInitName, staticInitType,
+        final Function staticInit = new Function(0, 0, 0, 0, "staticInit", staticInitType,
                 Collections.emptyList());
-        functions.add(new FunctionDecl(staticInit, Collections.emptyList(), staticInitialization, true));
+        functions.add(0, new FunctionDecl(staticInit, Collections.emptyList(), staticInitialization, true));
         // Create the program
         final String packageName = ((APkg) node.getPkg()).getIdenf().getText();
         convertedProgram = new Program(packageName, globals, functions);
