@@ -51,6 +51,7 @@ import static org.bytedeco.javacpp.LLVM.*;
 public class CodeGenerator implements IrVisitor {
     private LLVMModuleRef module;
     private LLVMTypeRef stringType;
+    private LLVMValueRef memsetFunction;
     private LLVMValueRef printBoolFunction;
     private LLVMValueRef printIntFunction;
     private LLVMValueRef printRuneFunction;
@@ -201,7 +202,23 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitMemsetZero(MemsetZero memsetZero) {
-
+        final Expr value = memsetZero.getValue();
+        value.visit(this);
+        // Get the size of the of the memory to clear using an LLVM trick (pointer to second element starting at null, then convert to int)
+        final LLVMBuilderRef builder = builders.peek();
+        final LLVMValueRef nullPtr = LLVMConstPointerNull(createType(value.getType()));
+        final LLVMValueRef[] secondIndex = {LLVMConstInt(LLVMInt64Type(), 1, 0)};
+        final LLVMValueRef firstElementPtr = LLVMBuildGEP(builder, nullPtr, new PointerPointer<>(secondIndex), secondIndex.length,
+                "secondElementPtr");
+        final LLVMValueRef sizeof = LLVMBuildPtrToInt(builder, firstElementPtr, LLVMInt64Type(), "sizeof");
+        // Call the memset intrinsic on a pointer to the value
+        final LLVMValueRef bytePtr = LLVMBuildPointerCast(builder, exprPtrs.get(value), LLVMPointerType(LLVMInt8Type(), 0),
+                value + "Ptr");
+        final LLVMValueRef[] memsetArgs = {
+                bytePtr, LLVMConstInt(LLVMInt8Type(), 0, 0), sizeof,
+                LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt1Type(), 0, 0)
+        };
+        LLVMBuildCall(builder, memsetFunction, new PointerPointer<>(memsetArgs), memsetArgs.length, "");
     }
 
     @Override
@@ -232,7 +249,7 @@ public class CodeGenerator implements IrVisitor {
     public void visitStringLit(StringLit stringLit) {
         final LLVMValueRef value = declareStringConstant(stringLit);
         // Get a pointer to the character array plus 0, then get a pointer to the first character plus 0
-        final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt32Type(), 0, 0)};
+        final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt64Type(), 0, 0), LLVMConstInt(LLVMInt64Type(), 0, 0)};
         final LLVMValueRef stringPtr = LLVMBuildInBoundsGEP(builders.peek(), value, new PointerPointer<>(indices), 2, "");
         // Create the string struct with the length and character array
         final LLVMValueRef[] stringData = {LLVMConstInt(LLVMInt32Type(), stringLit.getUtf8Data().limit(), 0), stringPtr};
@@ -362,11 +379,15 @@ public class CodeGenerator implements IrVisitor {
     }
 
     private void declareExternalSymbols() {
+        final LLVMTypeRef i8Pointer = LLVMPointerType(LLVMInt8Type(), 0);
         // Structure types
         stringType = LLVMStructCreateNamed(LLVMGetGlobalContext(), RUNTIME_STRING);
-        final LLVMTypeRef[] stringStructElements = {LLVMInt32Type(), LLVMPointerType(LLVMInt8Type(), 0)};
+        final LLVMTypeRef[] stringStructElements = {LLVMInt32Type(), i8Pointer};
         LLVMStructSetBody(stringType, new PointerPointer<>(stringStructElements), stringStructElements.length, 0);
-        // Runtime print functions
+        // Intrinsics
+        memsetFunction = createFunction(true, "llvm.memset.p0i8.i64", LLVMVoidType(), i8Pointer, LLVMInt8Type(),
+                LLVMInt64Type(), LLVMInt32Type(), LLVMInt1Type());
+        // Runtime functions
         printBoolFunction = createFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
         printIntFunction = createFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
         printRuneFunction = createFunction(true, RUNTIME_PRINT_RUNE, LLVMVoidType(), LLVMInt32Type());

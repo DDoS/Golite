@@ -29,7 +29,7 @@ func agePerson(person Person) Person {
 
 func main() {
     print(1, "lol\\", 0x10, `No\r escape`, false, '\n')
-    var k = "test"
+    var k string
     println(k)
     {
         var k boolean
