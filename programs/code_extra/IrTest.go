@@ -37,9 +37,9 @@ func main() {
     }
     {
         var k int = abs(3)
-        println(2, k)
+        println(float64(2), k)
     }
-    (abs)(4)
-    j := (boolean)(true)
+    abs(int(4.5))
+    j := boolean(true)
     var _ = 1
 }

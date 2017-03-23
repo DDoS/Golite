@@ -263,7 +263,23 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitCast(Cast cast) {
-
+        final Expr arg = cast.getArgument();
+        arg.visit(this);
+        final LLVMValueRef argValue = getExprValue(arg);
+        final Type argType = arg.getType();
+        final Type castType = cast.getType();
+        final LLVMValueRef value;
+        if (argType.isInteger() && castType == BasicType.FLOAT64) {
+            // Integer to float
+            value = LLVMBuildSIToFP(builders.peek(), argValue, LLVMDoubleType(), "int_to_float64");
+        } else if (argType == BasicType.FLOAT64 && castType.isInteger()) {
+            // Float to integer
+            value = LLVMBuildFPToSI(builders.peek(), argValue, LLVMInt32Type(), "float64_to_int");
+        } else {
+            // Anything else is an identity cast, so ignore it
+            value = argValue;
+        }
+        exprValues.put(cast, value);
     }
 
     private LLVMValueRef placeVariableOnStack(Variable variable, String uniqueName) {
