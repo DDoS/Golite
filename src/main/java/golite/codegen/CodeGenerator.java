@@ -37,6 +37,7 @@ import golite.semantic.type.FunctionType;
 import golite.semantic.type.FunctionType.Parameter;
 import golite.semantic.type.SliceType;
 import golite.semantic.type.StructType;
+import golite.semantic.type.StructType.Field;
 import golite.semantic.type.Type;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
@@ -56,6 +57,7 @@ public class CodeGenerator implements IrVisitor {
     private LLVMValueRef printFloat64Function;
     private LLVMValueRef printStringFunction;
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
+    private final Map<StructType, LLVMTypeRef> structs = new HashMap<>();
     private final Map<Function, LLVMValueRef> functions = new HashMap<>();
     private final Map<Expr, LLVMValueRef> exprValues = new HashMap<>();
     private final Map<Expr, LLVMValueRef> exprPtrs = new HashMap<>();
@@ -289,7 +291,6 @@ public class CodeGenerator implements IrVisitor {
     }
 
     private LLVMTypeRef createType(Type type) {
-        // TODO: cache these maybe?
         if (type == BasicType.BOOL) {
             return LLVMInt1Type();
         }
@@ -309,12 +310,22 @@ public class CodeGenerator implements IrVisitor {
             throw new UnsupportedOperationException("TODO");
         }
         if (type instanceof StructType) {
-            final LLVMTypeRef[] fieldTypes = ((StructType) type).getFields().stream()
-                    .map(field -> createType(field.getType()))
-                    .toArray(LLVMTypeRef[]::new);
-            return LLVMStructType(new PointerPointer<>(fieldTypes), fieldTypes.length, 0);
+            final StructType structType = (StructType) type;
+            final LLVMTypeRef llvmType = structs.get(structType);
+            if (llvmType != null) {
+                return llvmType;
+            }
+            final LLVMTypeRef[] fieldTypes = createFieldTypes((structType).getFields());
+            final LLVMTypeRef namedStruct = LLVMStructCreateNamed(LLVMGetGlobalContext(), "struct");
+            LLVMStructSetBody(namedStruct, new PointerPointer<>(fieldTypes), fieldTypes.length, 0);
+            structs.put(structType, namedStruct);
+            return namedStruct;
         }
         throw new IllegalArgumentException("Unknown type class: " + type);
+    }
+
+    private LLVMTypeRef[] createFieldTypes(List<Field> fields) {
+        return fields.stream().map(field -> createType(field.getType())).toArray(LLVMTypeRef[]::new);
     }
 
     private LLVMValueRef declareStringConstant(StringLit stringLit) {
