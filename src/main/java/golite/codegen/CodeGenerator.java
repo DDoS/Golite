@@ -129,8 +129,16 @@ public class CodeGenerator implements IrVisitor {
             llvmParams[i] = createType(params.get(i).getType());
         }
         final LLVMTypeRef llvmReturn = functionType.getReturnType().map(this::createType).orElse(LLVMVoidType());
+        // Prevent user defined functions from having the same name as the static initializer
+        final String name;
+        if (functionDecl.isStaticInit()) {
+            name = STATIC_INIT_FUNCTION;
+        } else {
+            final String funcName = symbol.getName();
+            name = funcName.equals(STATIC_INIT_FUNCTION) ? STATIC_INIT_FUNCTION + "1" : funcName;
+        }
         // Create the LLVM function
-        final LLVMValueRef function = createFunction(external, symbol.getName(), llvmReturn, llvmParams);
+        final LLVMValueRef function = createFunction(external, name, llvmReturn, llvmParams);
         functions.put(symbol, function);
         // Create the builder for the function
         final LLVMBuilderRef builder = LLVMCreateBuilder();
@@ -422,4 +430,5 @@ public class CodeGenerator implements IrVisitor {
     private static final String RUNTIME_PRINT_RUNE = "goliteRtPrintRune";
     private static final String RUNTIME_PRINT_FLOAT64 = "goliteRtPrintFloat64";
     private static final String RUNTIME_PRINT_STRING = "goliteRtPrintString";
+    private static final String STATIC_INIT_FUNCTION = "staticInit";
 }

@@ -127,7 +127,7 @@ public class IrConverter extends AnalysisAdapter {
         final FunctionType staticInitType = new FunctionType(Collections.emptyList(), null);
         final Function staticInit = new Function(0, 0, 0, 0, "staticInit", staticInitType,
                 Collections.emptyList());
-        functions.add(0, new FunctionDecl(staticInit, Collections.emptyList(), staticInitialization, true));
+        functions.add(new FunctionDecl(staticInit, Collections.emptyList(), staticInitialization, true));
         // Create the program
         final String packageName = ((APkg) node.getPkg()).getIdenf().getText();
         convertedProgram = new Program(packageName, globals, functions);
