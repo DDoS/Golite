@@ -351,16 +351,20 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef index = getExprValue(indexing.getIndex());
         // Find the length of the slice or array
         final LLVMBuilderRef builder = builders.peek();
+        final Type componentType = value.getType().getComponent();
         final LLVMValueRef length;
         if (value.getType() instanceof SliceType) {
             // Get a pointer to the length field (first in the struct)
             final LLVMValueRef lengthIndex = LLVMConstInt(LLVMInt32Type(), 0, 0);
-            final LLVMValueRef lengthPtr = getAggregateMemberPtr(valuePtr, lengthIndex, "length");
+            final LLVMValueRef lengthPtr = getAggregateMemberPtr(valuePtr, lengthIndex, "i8Length");
             // Then load the value at the pointer
-            length = LLVMBuildLoad(builder, lengthPtr, "length");
+            final LLVMValueRef i8Length = LLVMBuildLoad(builder, lengthPtr, "i8Length");
+            // Finally divide it by the length of the components
+            final LLVMValueRef sizeOfComponent = calculateSizeOfType(componentType);
+            length = LLVMBuildSDiv(builder, i8Length, sizeOfComponent, "length");
         } else {
             // This is just a constant int
-            length = LLVMConstInt(LLVMInt32Type(), ((ArrayType) value.getType()).getLength(), 0);
+            length = LLVMConstInt(LLVMInt32Type(), ((ArrayType) value.getType()).getLength(), 1);
         }
         // Call the bounds check function with the length and index
         final LLVMValueRef[] lengthArg = {index, length};
@@ -368,11 +372,11 @@ public class CodeGenerator implements IrVisitor {
         // Get a pointer to the start of the indexable data
         final LLVMValueRef dataPtr;
         if (value.getType() instanceof SliceType) {
-            // For a slice, we first get a pointer to the raw data (char*, second field in the struct)
+            // For a slice, we first get a pointer to the raw data (int8_t*, second field in the struct)
             final LLVMValueRef dataFieldIndex = LLVMConstInt(LLVMInt32Type(), 1, 0);
-            final LLVMValueRef rawDataPtr = getAggregateMemberPtr(valuePtr, dataFieldIndex, "rawData");
+            final LLVMValueRef rawDataPtrPtr = getAggregateMemberPtr(valuePtr, dataFieldIndex, "rawDataPtr");
+            final LLVMValueRef rawDataPtr = LLVMBuildLoad(builder, rawDataPtrPtr, "rawDataPtr");
             // Then we cast this pointer to the array component type
-            final Type componentType = value.getType().getComponent();
             final LLVMTypeRef componentPtrType = LLVMPointerType(createType(componentType), 0);
             dataPtr = LLVMBuildPointerCast(builder, rawDataPtr, componentPtrType, "dataPtr");
         } else {
