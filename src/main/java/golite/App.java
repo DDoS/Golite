@@ -227,7 +227,7 @@ public final class App {
             exception.printStackTrace();
             return 1;
         }
-        final ByteBuffer bitCode = codeGenerator.getBitCode();
+        final ByteBuffer bitCode = codeGenerator.getMachineCode();
         // Write the code to a file
         final File codeOutputFile = deriveOutputFile(CODE_EXTENSION);
         try {

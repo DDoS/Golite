@@ -65,13 +65,13 @@ public class CodeGenerator implements IrVisitor {
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
     private final Map<Variable, LLVMValueRef> globalVariables = new HashMap<>();
     private final Map<Variable, LLVMValueRef> functionVariables = new HashMap<>();
-    private ByteBuffer bitCode;
+    private ByteBuffer machineCode;
 
-    public ByteBuffer getBitCode() {
-        if (bitCode == null) {
+    public ByteBuffer getMachineCode() {
+        if (machineCode == null) {
             throw new IllegalStateException("The generator hasn't been applied yet");
         }
-        return bitCode;
+        return machineCode;
     }
 
     @Override
@@ -86,23 +86,55 @@ public class CodeGenerator implements IrVisitor {
         // TODO: remove this debug printing
         System.out.println(LLVMPrintModuleToString(module).getString());
         // Validate it
-        final BytePointer errorMessagePtr = new BytePointer((Pointer) null);
-        final String errorMessage;
-        if (LLVMVerifyModule(module, LLVMReturnStatusAction, errorMessagePtr) != 0) {
-            errorMessage = errorMessagePtr.getString();
-        } else {
-            errorMessage = null;
+        final BytePointer errorMsgPtr = new BytePointer((Pointer) null);
+        String errorMessage = null;
+        if (LLVMVerifyModule(module, LLVMReturnStatusAction, errorMsgPtr) != 0) {
+            errorMessage = errorMsgPtr.getString();
+            LLVMDisposeMessage(errorMsgPtr);
         }
-        LLVMDisposeMessage(errorMessagePtr);
         if (errorMessage != null) {
             throw new RuntimeException("Failed to verify module: " + errorMessage);
         }
-        // Generate the bit code
-        final LLVMMemoryBufferRef bufferRef = LLVMWriteBitcodeToMemoryBuffer(module);
-        final BytePointer bufferStart = LLVMGetBufferStart(bufferRef);
-        final long bufferSize = LLVMGetBufferSize(bufferRef);
-        bitCode = bufferStart.limit(bufferSize).asByteBuffer();
-        // Delete the module now that we have the code
+        // Generate the machine code
+        // Start by initializing the target machine for the current one
+        LLVMInitializeNativeTarget();
+        LLVMInitializeNativeAsmPrinter();
+        // Then get the target triple string
+        final BytePointer targetTriple = LLVMGetDefaultTargetTriple();
+        final String targetTripleString = targetTriple.getString();
+        LLVMDisposeMessage(targetTriple);
+        // Now get the target from the triple string
+        final PointerPointer<LLVMTargetRef> targetPtr = new PointerPointer<>(new LLVMTargetRef[1]);
+        if (LLVMGetTargetFromTriple(targetTripleString, targetPtr, errorMsgPtr) != 0) {
+            errorMessage = errorMsgPtr.getString();
+            LLVMDisposeMessage(errorMsgPtr);
+        }
+        if (errorMessage != null) {
+            throw new RuntimeException("Failed to get target machine: " + errorMessage);
+        }
+        final LLVMTargetRef target = targetPtr.get(LLVMTargetRef.class);
+        // Now we can create a machine for that target
+        final LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, targetTripleString, "generic", "",
+                LLVMRelocDefault, LLVMCodeModelDefault, LLVMCodeGenLevelDefault);
+        // It's recommended that we set the module data layout and target to the machine and triple
+        LLVMSetModuleDataLayout(module, LLVMCreateTargetDataLayout(machine));
+        LLVMSetTarget(module, targetTriple);
+        // Finally we can actually emit the machine code (as an object file)
+        final PointerPointer<LLVMMemoryBufferRef> memoryBufferPtr = new PointerPointer<>(new LLVMMemoryBufferRef[1]);
+        if (LLVMTargetMachineEmitToMemoryBuffer(machine, module, LLVMObjectFile, errorMsgPtr, memoryBufferPtr) != 0) {
+            errorMessage = errorMsgPtr.getString();
+            LLVMDisposeMessage(errorMsgPtr);
+            if (errorMessage != null) {
+                throw new RuntimeException("Failed emit the machine code: " + errorMessage);
+            }
+        }
+        // Now we just transfer that code to a Java byte buffer
+        final LLVMMemoryBufferRef memoryBuffer = memoryBufferPtr.get(LLVMMemoryBufferRef.class);
+        final BytePointer bufferStart = LLVMGetBufferStart(memoryBuffer);
+        final long bufferSize = LLVMGetBufferSize(memoryBuffer);
+        machineCode = bufferStart.limit(bufferSize).asByteBuffer();
+        // Delete the machine and module now that we have the code
+        LLVMDisposeTargetMachine(machine);
         LLVMDisposeModule(module);
     }
 
