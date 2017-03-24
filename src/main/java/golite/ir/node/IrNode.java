@@ -2,6 +2,7 @@ package golite.ir.node;
 
 import java.io.StringWriter;
 
+import golite.ir.IrVisitor;
 import golite.util.SourcePrinter;
 
 /**

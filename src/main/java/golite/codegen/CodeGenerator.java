@@ -17,7 +17,7 @@ import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrNode;
-import golite.ir.node.IrVisitor;
+import golite.ir.IrVisitor;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;

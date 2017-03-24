@@ -1,5 +1,6 @@
 package golite.ir.node;
 
+import golite.ir.IrVisitor;
 import golite.semantic.type.BasicType;
 import golite.util.SourcePrinter;
 

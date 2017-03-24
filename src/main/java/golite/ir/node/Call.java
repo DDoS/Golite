@@ -2,6 +2,7 @@ package golite.ir.node;
 
 import java.util.List;
 
+import golite.ir.IrVisitor;
 import golite.semantic.symbol.Function;
 import golite.util.SourcePrinter;
 
