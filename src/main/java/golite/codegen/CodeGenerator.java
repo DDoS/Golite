@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import golite.ir.IrVisitor;
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
@@ -15,9 +16,9 @@ import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
+import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrNode;
-import golite.ir.IrVisitor;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
@@ -35,6 +36,7 @@ import golite.semantic.type.ArrayType;
 import golite.semantic.type.BasicType;
 import golite.semantic.type.FunctionType;
 import golite.semantic.type.FunctionType.Parameter;
+import golite.semantic.type.IndexableType;
 import golite.semantic.type.SliceType;
 import golite.semantic.type.StructType;
 import golite.semantic.type.StructType.Field;
@@ -50,13 +52,14 @@ import static org.bytedeco.javacpp.LLVM.*;
  */
 public class CodeGenerator implements IrVisitor {
     private LLVMModuleRef module;
-    private LLVMTypeRef stringType;
+    private LLVMTypeRef sliceRuntimeType;
     private LLVMValueRef memsetFunction;
     private LLVMValueRef printBoolFunction;
     private LLVMValueRef printIntFunction;
     private LLVMValueRef printRuneFunction;
     private LLVMValueRef printFloat64Function;
     private LLVMValueRef printStringFunction;
+    private LLVMValueRef checkBoundsFunction;
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
     private final Map<StructType, LLVMTypeRef> structs = new HashMap<>();
     private final Map<Function, LLVMValueRef> functions = new HashMap<>();
@@ -183,7 +186,7 @@ public class CodeGenerator implements IrVisitor {
         final List<String> paramUniqueNames = functionDecl.getParamUniqueNames();
         for (int i = 0; i < paramVariables.size(); i++) {
             final Variable variable = paramVariables.get(i);
-            final LLVMValueRef varPtr = placeVariableOnStack(variable, paramUniqueNames.get(i));
+            final LLVMValueRef varPtr = allocateStackVariable(variable, paramUniqueNames.get(i));
             functionVariables.put(variable, varPtr);
             // Store the parameter in the stack variable
             LLVMBuildStore(builder, LLVMGetParam(function, i), varPtr);
@@ -200,7 +203,7 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitVariableDecl(VariableDecl variableDecl) {
         final Variable variable = variableDecl.getVariable();
-        final LLVMValueRef varPtr = placeVariableOnStack(variable, variableDecl.getUniqueName());
+        final LLVMValueRef varPtr = allocateStackVariable(variable, variableDecl.getUniqueName());
         functionVariables.put(variable, varPtr);
     }
 
@@ -244,7 +247,7 @@ public class CodeGenerator implements IrVisitor {
         value.visit(this);
         LLVMValueRef arg = getExprValue(value);
         if (value.getType() == BasicType.BOOL) {
-            // Must zero-extent bools (i1) to char (i8)
+            // Must zero-extent bool (i1) to char (i8)
             arg = LLVMBuildZExt(builders.peek(), arg, LLVMInt8Type(), "bool_to_char");
         }
         final LLVMValueRef[] args = {arg};
@@ -259,14 +262,14 @@ public class CodeGenerator implements IrVisitor {
         final LLVMBuilderRef builder = builders.peek();
         final LLVMValueRef nullPtr = LLVMConstPointerNull(createType(value.getType()));
         final LLVMValueRef[] secondIndex = {LLVMConstInt(LLVMInt64Type(), 1, 0)};
-        final LLVMValueRef firstElementPtr = LLVMBuildGEP(builder, nullPtr, new PointerPointer<>(secondIndex), secondIndex.length,
+        final LLVMValueRef secondElementPtr = LLVMBuildGEP(builder, nullPtr, new PointerPointer<>(secondIndex), secondIndex.length,
                 "secondElementPtr");
-        final LLVMValueRef sizeof = LLVMBuildPtrToInt(builder, firstElementPtr, LLVMInt64Type(), "sizeof");
+        final LLVMValueRef size = LLVMBuildPtrToInt(builder, secondElementPtr, LLVMInt64Type(), "size");
         // Call the memset intrinsic on a pointer to the value
-        final LLVMValueRef bytePtr = LLVMBuildPointerCast(builder, exprPtrs.get(value), LLVMPointerType(LLVMInt8Type(), 0),
+        final LLVMValueRef bytePtr = LLVMBuildPointerCast(builder, getExprPtr(value), LLVMPointerType(LLVMInt8Type(), 0),
                 value + "Ptr");
         final LLVMValueRef[] memsetArgs = {
-                bytePtr, LLVMConstInt(LLVMInt8Type(), 0, 0), sizeof,
+                bytePtr, LLVMConstInt(LLVMInt8Type(), 0, 0), size,
                 LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt1Type(), 0, 0)
         };
         LLVMBuildCall(builder, memsetFunction, new PointerPointer<>(memsetArgs), memsetArgs.length, "");
@@ -276,7 +279,7 @@ public class CodeGenerator implements IrVisitor {
     public void visitAssignment(Assignment assignment) {
         assignment.getLeft().visit(this);
         assignment.getRight().visit(this);
-        final LLVMValueRef ptr = exprPtrs.get(assignment.getLeft());
+        final LLVMValueRef ptr = getExprPtr(assignment.getLeft());
         final LLVMValueRef value = getExprValue(assignment.getRight());
         LLVMBuildStore(builders.peek(), value, ptr);
     }
@@ -298,13 +301,12 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitStringLit(StringLit stringLit) {
+        // Declare the string constant, then get a pointer to the first character
         final LLVMValueRef value = declareStringConstant(stringLit);
-        // Get a pointer to the character array plus 0, then get a pointer to the first character plus 0
-        final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt64Type(), 0, 0), LLVMConstInt(LLVMInt64Type(), 0, 0)};
-        final LLVMValueRef stringPtr = LLVMBuildInBoundsGEP(builders.peek(), value, new PointerPointer<>(indices), 2, "");
+        final LLVMValueRef stringPtr = getAggregateMemberPtr(value, LLVMConstInt(LLVMInt64Type(), 0, 0), "strPtr");
         // Create the string struct with the length and character array
         final LLVMValueRef[] stringData = {LLVMConstInt(LLVMInt32Type(), stringLit.getUtf8Data().limit(), 0), stringPtr};
-        final LLVMValueRef stringStruct = LLVMConstNamedStruct(stringType, new PointerPointer<>(stringData), stringData.length);
+        final LLVMValueRef stringStruct = LLVMConstNamedStruct(sliceRuntimeType, new PointerPointer<>(stringData), stringData.length);
         exprValues.put(stringLit, stringStruct);
     }
 
@@ -323,6 +325,50 @@ public class CodeGenerator implements IrVisitor {
             throw new IllegalStateException("Should have found the variable " + identifier.toString());
         }
         exprPtrs.put(identifier, varPtr);
+    }
+
+    @Override
+    public void visitIndexing(Indexing indexing) {
+        final Expr value = indexing.getValue();
+        value.visit(this);
+        final LLVMValueRef llvmValue = getExprPtr(value);
+        indexing.getIndex().visit(this);
+        final LLVMValueRef llvmIndex = getExprValue(indexing.getIndex());
+        // Find the length of the slice or array
+        final LLVMBuilderRef builder = builders.peek();
+        final LLVMValueRef length;
+        if (value.getType() instanceof SliceType) {
+            // Get a pointer to the length field (first in the struct)
+            final LLVMValueRef lengthIndex = LLVMConstInt(LLVMInt32Type(), 0, 0);
+            final LLVMValueRef lengthPtr = getAggregateMemberPtr(llvmValue, lengthIndex, "length");
+            // Then load the value at the pointer
+            length = LLVMBuildLoad(builder, lengthPtr, "length");
+        } else {
+            // This is just a constant int
+            length = LLVMConstInt(LLVMInt32Type(), ((ArrayType) value.getType()).getLength(), 0);
+        }
+        // Call the bounds check function with the length and index
+        final LLVMValueRef[] lengthArg = {llvmIndex, length};
+        LLVMBuildCall(builder, checkBoundsFunction, new PointerPointer<>(lengthArg), lengthArg.length, "");
+        // Get a pointer to the start of the indexable data
+        final LLVMValueRef dataPtr;
+        if (value.getType() instanceof SliceType) {
+            // For a slice, we first get a pointer to the raw data (char*, second field in the struct)
+            final LLVMValueRef dataFieldIndex = LLVMConstInt(LLVMInt32Type(), 1, 0);
+            final LLVMValueRef rawDataPtr = getAggregateMemberPtr(llvmValue, dataFieldIndex, "rawData");
+            // Then we cast this pointer to the array component type
+            final Type componentType = ((IndexableType) value.getType()).getComponent();
+            final LLVMTypeRef componentPtrType = LLVMPointerType(createType(componentType), 0);
+            dataPtr = LLVMBuildPointerCast(builder, rawDataPtr, componentPtrType, "dataPtr");
+        } else {
+            // For arrays we just have to get a pointer to the first element
+            final LLVMValueRef firstIndex = LLVMConstInt(LLVMInt64Type(), 0, 0);
+            dataPtr = getAggregateMemberPtr(llvmValue, firstIndex, "rawData");
+        }
+        // Then we can address the pointer at the index into the array
+        final LLVMValueRef[] indices = {llvmIndex};
+        final LLVMValueRef componentPtr = LLVMBuildGEP(builder, dataPtr, new PointerPointer<>(indices), indices.length, "element");
+        exprPtrs.put(indexing, componentPtr);
     }
 
     @Override
@@ -360,7 +406,12 @@ public class CodeGenerator implements IrVisitor {
         exprValues.put(cast, value);
     }
 
-    private LLVMValueRef placeVariableOnStack(Variable variable, String uniqueName) {
+    private LLVMValueRef getAggregateMemberPtr(LLVMValueRef value, LLVMValueRef index, String memberName) {
+        final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt64Type(), 0, 0), index};
+        return LLVMBuildInBoundsGEP(builders.peek(), value, new PointerPointer<>(indices), indices.length, memberName + "Ptr");
+    }
+
+    private LLVMValueRef allocateStackVariable(Variable variable, String uniqueName) {
         final LLVMTypeRef type = createType(variable.getType());
         return LLVMBuildAlloca(builders.peek(), type, uniqueName);
     }
@@ -374,6 +425,18 @@ public class CodeGenerator implements IrVisitor {
         // Otherwise we need to load the pointer
         final LLVMValueRef ptr = exprPtrs.get(expr);
         return LLVMBuildLoad(builders.peek(), ptr, IrNode.toString(expr));
+    }
+
+    private LLVMValueRef getExprPtr(Expr expr) {
+        // This might already be a pointer value
+        final LLVMValueRef ptr = exprPtrs.get(expr);
+        if (ptr != null) {
+            return ptr;
+        }
+        // Otherwise we need to store the value and return a pointer to the memory
+        final LLVMValueRef value = exprValues.get(expr);
+        final LLVMValueRef memory = LLVMBuildAlloca(builders.peek(), createType(expr.getType()), IrNode.toString(expr));
+        return LLVMBuildStore(builders.peek(), value, memory);
     }
 
     private LLVMValueRef createFunction(boolean external, String name, LLVMTypeRef returnType, LLVMTypeRef... parameters) {
@@ -395,13 +458,14 @@ public class CodeGenerator implements IrVisitor {
             return LLVMDoubleType();
         }
         if (type == BasicType.STRING) {
-            return stringType;
+            return sliceRuntimeType;
         }
         if (type instanceof ArrayType) {
-            throw new UnsupportedOperationException("TODO");
+            final ArrayType arrayType = (ArrayType) type;
+            return LLVMArrayType(createType(arrayType.getComponent()), arrayType.getLength());
         }
         if (type instanceof SliceType) {
-            throw new UnsupportedOperationException("TODO");
+            return sliceRuntimeType;
         }
         if (type instanceof StructType) {
             final StructType structType = (StructType) type;
@@ -442,9 +506,9 @@ public class CodeGenerator implements IrVisitor {
     private void declareExternalSymbols() {
         final LLVMTypeRef i8Pointer = LLVMPointerType(LLVMInt8Type(), 0);
         // Structure types
-        stringType = LLVMStructCreateNamed(LLVMGetGlobalContext(), RUNTIME_STRING);
+        sliceRuntimeType = LLVMStructCreateNamed(LLVMGetGlobalContext(), RUNTIME_SLICE);
         final LLVMTypeRef[] stringStructElements = {LLVMInt32Type(), i8Pointer};
-        LLVMStructSetBody(stringType, new PointerPointer<>(stringStructElements), stringStructElements.length, 0);
+        LLVMStructSetBody(sliceRuntimeType, new PointerPointer<>(stringStructElements), stringStructElements.length, 0);
         // Intrinsics
         memsetFunction = createFunction(true, "llvm.memset.p0i8.i64", LLVMVoidType(), i8Pointer, LLVMInt8Type(),
                 LLVMInt64Type(), LLVMInt32Type(), LLVMInt1Type());
@@ -453,14 +517,16 @@ public class CodeGenerator implements IrVisitor {
         printIntFunction = createFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
         printRuneFunction = createFunction(true, RUNTIME_PRINT_RUNE, LLVMVoidType(), LLVMInt32Type());
         printFloat64Function = createFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
-        printStringFunction = createFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), stringType);
+        printStringFunction = createFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), sliceRuntimeType);
+        checkBoundsFunction = createFunction(true, RUNTIME_CHECK_BOUNDS, LLVMVoidType(), LLVMInt32Type(), LLVMInt32Type());
     }
 
-    private static final String RUNTIME_STRING = "goliteRtString";
+    private static final String RUNTIME_SLICE = "goliteRtSlice";
     private static final String RUNTIME_PRINT_BOOL = "goliteRtPrintBool";
     private static final String RUNTIME_PRINT_INT = "goliteRtPrintInt";
     private static final String RUNTIME_PRINT_RUNE = "goliteRtPrintRune";
     private static final String RUNTIME_PRINT_FLOAT64 = "goliteRtPrintFloat64";
     private static final String RUNTIME_PRINT_STRING = "goliteRtPrintString";
+    private static final String RUNTIME_CHECK_BOUNDS = "goliteRtCheckBounds";
     private static final String STATIC_INIT_FUNCTION = "staticInit";
 }

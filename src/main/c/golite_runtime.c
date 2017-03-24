@@ -5,7 +5,7 @@
 typedef struct {
     int32_t length;
     int8_t* data;
-} goliteRtString;
+} goliteRtSlice;
 
 void goliteRtPrintBool(int8_t c) {
     printf("%s", c ? "true" : "false");
@@ -24,9 +24,16 @@ void goliteRtPrintFloat64(double d) {
     printf("%f", d);
 }
 
-void goliteRtPrintString(goliteRtString str) {
+void goliteRtPrintString(goliteRtSlice str) {
     for (int32_t i = 0; i < str.length; i++) {
         putchar(str.data[i]);
+    }
+}
+
+void goliteRtCheckBounds(int32_t index, int32_t length) {
+    if (index < 0 || index >= length) {
+        printf("Index %i out of bounds [%i, %i)\n", index, 0, length);
+        exit(1);
     }
 }
 
