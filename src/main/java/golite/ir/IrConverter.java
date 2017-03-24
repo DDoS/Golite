@@ -88,7 +88,7 @@ public class IrConverter extends AnalysisAdapter {
     private Program convertedProgram;
     private final Map<AFuncDecl, Optional<FunctionDecl>> convertedFunctions = new HashMap<>();
     private final Map<Node, List<Stmt>> convertedStmts = new HashMap<>();
-    private final Map<PExpr, Expr> convertedExprs = new HashMap<>();
+    private final Map<PExpr, Expr<?>> convertedExprs = new HashMap<>();
     private final Map<Variable, String> uniqueVarNames = new HashMap<>();
 
     public IrConverter(SemanticData semantics) {
@@ -230,8 +230,8 @@ public class IrConverter extends AnalysisAdapter {
         // Split into individual assignments
         final List<Stmt> stmts = new ArrayList<>();
         for (int i = 0; i < lefts.size(); i++) {
-            final Expr left = convertedExprs.get(lefts.get(i));
-            final Expr right = convertedExprs.get(rights.get(i));
+            final Expr<?> left = convertedExprs.get(lefts.get(i));
+            final Expr<?> right = convertedExprs.get(rights.get(i));
             stmts.add(new Assignment(left, right));
         }
         convertedStmts.put(node, stmts);
@@ -254,7 +254,8 @@ public class IrConverter extends AnalysisAdapter {
         final List<Stmt> stmts = new ArrayList<>();
         for (PExpr expr : exprs) {
             expr.apply(this);
-            final Expr converted = convertedExprs.get(expr);
+            @SuppressWarnings("unchecked")
+            final Expr<BasicType> converted = (Expr<BasicType>) convertedExprs.get(expr);
             final Type type = semantics.getExprType(expr).get().deepResolve();
             final Stmt printStmt;
             if (type == BasicType.BOOL) {
@@ -362,7 +363,7 @@ public class IrConverter extends AnalysisAdapter {
             throw new IllegalStateException("Non-variable identifiers should have been handled earlier");
         }
         final Variable variable = ((Variable) symbol).dealias();
-        final Expr expr;
+        final Expr<?> expr;
         // Special case for the pre-declared booleans identifiers: convert them to bool literals
         if (variable.equals(UniverseContext.TRUE_VARIABLE)) {
             expr = new BoolLit(true);
@@ -378,16 +379,19 @@ public class IrConverter extends AnalysisAdapter {
     public void caseASelectExpr(ASelectExpr node) {
         final PExpr value = node.getValue();
         value.apply(this);
-        final Expr convertedValue = convertedExprs.get(value);
+        @SuppressWarnings("unchecked")
+        final Expr<StructType> convertedValue = (Expr<StructType>) convertedExprs.get(value);
         convertedExprs.put(node, new Select(convertedValue, node.getIdenf().getText()));
     }
 
     @Override
     public void caseAIndexExpr(AIndexExpr node) {
         node.getValue().apply(this);
-        final Expr value = convertedExprs.get(node.getValue());
+        @SuppressWarnings("unchecked")
+        final Expr<IndexableType> value = (Expr<IndexableType>) convertedExprs.get(node.getValue());
         node.getIndex().apply(this);
-        final Expr index = convertedExprs.get(node.getIndex());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> index = (Expr<BasicType>) convertedExprs.get(node.getIndex());
         convertedExprs.put(node, new Indexing(value, index));
     }
 
@@ -405,14 +409,15 @@ public class IrConverter extends AnalysisAdapter {
             if (args.size() != 1) {
                 throw new IllegalStateException("Expected only one argument in the cast");
             }
-            final Expr convertedArg = convertedExprs.get(args.get(0));
+            @SuppressWarnings("unchecked")
+            final Expr<BasicType> convertedArg = (Expr<BasicType>) convertedExprs.get(args.get(0));
             final BasicType castType = (BasicType) symbol.getType().deepResolve();
             convertedExprs.put(node, new Cast(castType, convertedArg));
             return;
         }
         if (symbol instanceof Function) {
             // Call
-            final List<Expr> convertedArgs = args.stream().map(convertedExprs::get).collect(Collectors.toList());
+            final List<Expr<?>> convertedArgs = args.stream().map(convertedExprs::get).collect(Collectors.toList());
             convertedExprs.put(node, new Call(((Function) symbol).dealias(), convertedArgs));
             return;
         }

@@ -64,8 +64,8 @@ public class CodeGenerator implements IrVisitor {
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
     private final Map<StructType, LLVMTypeRef> structs = new HashMap<>();
     private final Map<Function, LLVMValueRef> functions = new HashMap<>();
-    private final Map<Expr, LLVMValueRef> exprValues = new HashMap<>();
-    private final Map<Expr, LLVMValueRef> exprPtrs = new HashMap<>();
+    private final Map<Expr<?>, LLVMValueRef> exprValues = new HashMap<>();
+    private final Map<Expr<?>, LLVMValueRef> exprPtrs = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
     private final Map<Variable, LLVMValueRef> globalVariables = new HashMap<>();
     private final Map<Variable, LLVMValueRef> functionVariables = new HashMap<>();
@@ -244,7 +244,7 @@ public class CodeGenerator implements IrVisitor {
         generatePrintStmt(printString.getValue(), printStringFunction);
     }
 
-    private void generatePrintStmt(Expr value, LLVMValueRef printFunction) {
+    private void generatePrintStmt(Expr<BasicType> value, LLVMValueRef printFunction) {
         value.visit(this);
         LLVMValueRef arg = getExprValue(value);
         if (value.getType() == BasicType.BOOL) {
@@ -257,7 +257,7 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitMemsetZero(MemsetZero memsetZero) {
-        final Expr value = memsetZero.getValue();
+        final Expr<?> value = memsetZero.getValue();
         value.visit(this);
         // Get the size of the of the memory to clear using an LLVM trick (pointer to second element starting at null, then convert to int)
         final LLVMBuilderRef builder = builders.peek();
@@ -331,11 +331,11 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitSelect(Select select) {
         // Get a pointer to the struct value
-        final Expr value = select.getValue();
+        final Expr<StructType> value = select.getValue();
         value.visit(this);
         final LLVMValueRef valuePtr = getExprPtr(value);
         // Get the constant index into that struct
-        final int index = ((StructType) value.getType()).fieldIndex(select.getField());
+        final int index = value.getType().fieldIndex(select.getField());
         final LLVMValueRef indexValue = LLVMConstInt(LLVMInt32Type(), index, 0);
         // The resulting value is a pointer to the field in the struct
         final LLVMValueRef fieldPtr = getAggregateMemberPtr(valuePtr, indexValue, select.getField());
@@ -344,7 +344,7 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitIndexing(Indexing indexing) {
-        final Expr value = indexing.getValue();
+        final Expr<IndexableType> value = indexing.getValue();
         value.visit(this);
         final LLVMValueRef valuePtr = getExprPtr(value);
         indexing.getIndex().visit(this);
@@ -372,7 +372,7 @@ public class CodeGenerator implements IrVisitor {
             final LLVMValueRef dataFieldIndex = LLVMConstInt(LLVMInt32Type(), 1, 0);
             final LLVMValueRef rawDataPtr = getAggregateMemberPtr(valuePtr, dataFieldIndex, "rawData");
             // Then we cast this pointer to the array component type
-            final Type componentType = ((IndexableType) value.getType()).getComponent();
+            final Type componentType = value.getType().getComponent();
             final LLVMTypeRef componentPtrType = LLVMPointerType(createType(componentType), 0);
             dataPtr = LLVMBuildPointerCast(builder, rawDataPtr, componentPtrType, "dataPtr");
         } else {
@@ -392,7 +392,7 @@ public class CodeGenerator implements IrVisitor {
         final Function function = call.getFunction();
         final LLVMValueRef llvmFunction = functions.get(function);
         // Codegen the arguments
-        final List<Expr> args = call.getArguments();
+        final List<Expr<?>> args = call.getArguments();
         args.forEach(arg -> arg.visit(this));
         final LLVMValueRef[] argValues = args.stream().map(this::getExprValue).toArray(LLVMValueRef[]::new);
         // Build the call
@@ -403,7 +403,7 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitCast(Cast cast) {
-        final Expr arg = cast.getArgument();
+        final Expr<BasicType> arg = cast.getArgument();
         arg.visit(this);
         final LLVMValueRef argValue = getExprValue(arg);
         final Type argType = arg.getType();
@@ -432,7 +432,7 @@ public class CodeGenerator implements IrVisitor {
         return LLVMBuildAlloca(builders.peek(), type, uniqueName);
     }
 
-    private LLVMValueRef getExprValue(Expr expr) {
+    private LLVMValueRef getExprValue(Expr<?> expr) {
         // This might be directly a value
         final LLVMValueRef value = exprValues.get(expr);
         if (value != null) {
@@ -443,7 +443,7 @@ public class CodeGenerator implements IrVisitor {
         return LLVMBuildLoad(builders.peek(), ptr, IrNode.toString(expr));
     }
 
-    private LLVMValueRef getExprPtr(Expr expr) {
+    private LLVMValueRef getExprPtr(Expr<?> expr) {
         // This might already be a pointer value
         final LLVMValueRef ptr = exprPtrs.get(expr);
         if (ptr != null) {

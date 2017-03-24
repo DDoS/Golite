@@ -11,9 +11,9 @@ import golite.util.SourcePrinter;
  *
  */
 public class MemsetZero implements Stmt {
-    private final Expr value;
+    private final Expr<?> value;
 
-    public MemsetZero(Expr value) {
+    public MemsetZero(Expr<?> value) {
         final Type type = value.getType();
         if (type != BasicType.STRING && !(type instanceof IndexableType) && !(type instanceof StructType)) {
             throw new IllegalArgumentException("Cannot memset the type " + type.getClass());
@@ -21,7 +21,7 @@ public class MemsetZero implements Stmt {
         this.value = value;
     }
 
-    public Expr getValue() {
+    public Expr<?> getValue() {
         return value;
     }
 

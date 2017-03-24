@@ -10,7 +10,7 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class StringLit extends Expr {
+public class StringLit extends Expr<BasicType> {
     private String value;
     private ByteBuffer utf8Data;
 

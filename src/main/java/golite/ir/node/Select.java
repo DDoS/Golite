@@ -11,17 +11,17 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class Select extends Expr {
-    private final Expr value;
+public class Select extends Expr<Type> {
+    private final Expr<StructType> value;
     private final String field;
 
-    public Select(Expr value, String field) {
+    public Select(Expr<StructType> value, String field) {
         super(checkFieldType(value.getType(), field));
         this.value = value;
         this.field = field;
     }
 
-    public Expr getValue() {
+    public Expr<StructType> getValue() {
         return value;
     }
 
@@ -40,11 +40,8 @@ public class Select extends Expr {
         printer.print(".").print(field);
     }
 
-    private static Type checkFieldType(Type type, String field) {
-        if (!(type instanceof StructType)) {
-            throw new IllegalArgumentException("Expected a struct-typed value expression");
-        }
-        final Optional<Field> optField = ((StructType) type).getField(field);
+    private static Type checkFieldType(StructType type, String field) {
+        final Optional<Field> optField = type.getField(field);
         if (!optField.isPresent()) {
             throw new IllegalArgumentException("Field " + field + " does not exist");
         }

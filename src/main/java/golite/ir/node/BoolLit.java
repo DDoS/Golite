@@ -7,7 +7,7 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class BoolLit extends Expr {
+public class BoolLit extends Expr<BasicType> {
     private final boolean value;
 
     public BoolLit(boolean value) {

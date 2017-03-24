@@ -8,16 +8,16 @@ import golite.util.SourcePrinter;
  *
  */
 public class PrintFloat64 implements Stmt {
-    private final Expr value;
+    private final Expr<BasicType> value;
 
-    public PrintFloat64(Expr value) {
+    public PrintFloat64(Expr<BasicType> value) {
         this.value = value;
         if (value.getType() != BasicType.FLOAT64) {
             throw new IllegalArgumentException("Expected a float64-typed expression");
         }
     }
 
-    public Expr getValue() {
+    public Expr<BasicType> getValue() {
         return value;
     }
 

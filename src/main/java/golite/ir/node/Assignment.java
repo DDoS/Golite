@@ -7,19 +7,19 @@ import golite.util.SourcePrinter;
  *
  */
 public class Assignment implements Stmt {
-    private final Expr left;
-    private final Expr right;
+    private final Expr<?> left;
+    private final Expr<?> right;
 
-    public Assignment(Expr left, Expr right) {
+    public Assignment(Expr<?> left, Expr<?> right) {
         this.left = left;
         this.right = right;
     }
 
-    public Expr getLeft() {
+    public Expr<?> getLeft() {
         return left;
     }
 
-    public Expr getRight() {
+    public Expr<?> getRight() {
         return right;
     }
 

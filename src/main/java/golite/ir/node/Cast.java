@@ -7,15 +7,15 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class Cast extends Expr implements Stmt {
-    private final Expr argument;
+public class Cast extends Expr<BasicType> implements Stmt {
+    private final Expr<BasicType> argument;
 
-    public Cast(BasicType type, Expr argument) {
+    public Cast(BasicType type, Expr<BasicType> argument) {
         super(type);
         this.argument = argument;
     }
 
-    public Expr getArgument() {
+    public Expr<BasicType> getArgument() {
         return argument;
     }
 

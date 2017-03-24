@@ -2,12 +2,13 @@ package golite.ir.node;
 
 import golite.ir.IrVisitor;
 import golite.semantic.symbol.Variable;
+import golite.semantic.type.Type;
 import golite.util.SourcePrinter;
 
 /**
  *
  */
-public class Identifier extends Expr {
+public class Identifier extends Expr<Type> {
     private final Variable variable;
     private final String uniqueName;
 

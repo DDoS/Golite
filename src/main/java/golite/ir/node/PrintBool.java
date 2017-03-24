@@ -8,16 +8,16 @@ import golite.util.SourcePrinter;
  *
  */
 public class PrintBool implements Stmt {
-    private final Expr value;
+    private final Expr<BasicType> value;
 
-    public PrintBool(Expr value) {
+    public PrintBool(Expr<BasicType> value) {
         this.value = value;
         if (value.getType() != BasicType.BOOL) {
             throw new IllegalArgumentException("Expected a bool-typed expression");
         }
     }
 
-    public Expr getValue() {
+    public Expr<BasicType> getValue() {
         return value;
     }
 

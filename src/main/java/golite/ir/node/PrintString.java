@@ -8,16 +8,16 @@ import golite.util.SourcePrinter;
  *
  */
 public class PrintString implements Stmt {
-    private final Expr value;
+    private final Expr<BasicType> value;
 
-    public PrintString(Expr value) {
+    public PrintString(Expr<BasicType> value) {
         this.value = value;
         if (value.getType() != BasicType.STRING) {
             throw new IllegalArgumentException("Expected a string-typed expression");
         }
     }
 
-    public Expr getValue() {
+    public Expr<BasicType> getValue() {
         return value;
     }
 

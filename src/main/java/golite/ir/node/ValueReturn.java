@@ -7,13 +7,13 @@ import golite.util.SourcePrinter;
  *
  */
 public class ValueReturn implements Stmt {
-    private final Expr value;
+    private final Expr<?> value;
 
-    public ValueReturn(Expr value) {
+    public ValueReturn(Expr<?> value) {
         this.value = value;
     }
 
-    public Expr getValue() {
+    public Expr<?> getValue() {
         return value;
     }
 

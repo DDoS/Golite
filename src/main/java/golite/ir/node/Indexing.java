@@ -1,6 +1,7 @@
 package golite.ir.node;
 
 import golite.ir.IrVisitor;
+import golite.semantic.type.BasicType;
 import golite.semantic.type.IndexableType;
 import golite.semantic.type.Type;
 import golite.util.SourcePrinter;
@@ -8,12 +9,12 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class Indexing extends Expr {
-    private final Expr value;
-    private final Expr index;
+public class Indexing extends Expr<Type> {
+    private final Expr<IndexableType> value;
+    private final Expr<BasicType> index;
 
-    public Indexing(Expr value, Expr index) {
-        super(checkIndexableType(value.getType()));
+    public Indexing(Expr<IndexableType> value, Expr<BasicType> index) {
+        super(value.getType().getComponent());
         if (!index.getType().isInteger()) {
             throw new IllegalArgumentException("Expected an integer-typed index expression");
         }
@@ -21,11 +22,11 @@ public class Indexing extends Expr {
         this.index = index;
     }
 
-    public Expr getValue() {
+    public Expr<IndexableType> getValue() {
         return value;
     }
 
-    public Expr getIndex() {
+    public Expr<BasicType> getIndex() {
         return index;
     }
 
@@ -40,12 +41,5 @@ public class Indexing extends Expr {
         printer.print("[");
         index.print(printer);
         printer.print("]");
-    }
-
-    private static Type checkIndexableType(Type type) {
-        if (!(type instanceof IndexableType)) {
-            throw new IllegalArgumentException("Expected an indexable-typed value expression");
-        }
-        return ((IndexableType) type).getComponent();
     }
 }
