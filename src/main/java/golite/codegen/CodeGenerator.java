@@ -89,20 +89,33 @@ public class CodeGenerator implements IrVisitor {
         // Codegen it
         program.getGlobals().forEach(this::codeGenGlobal);
         program.getFunctions().forEach(function -> function.visit(this));
-        // TODO: remove this debug printing
-        System.out.println(LLVMPrintModuleToString(module).getString());
         // Validate it
         final BytePointer errorMsgPtr = new BytePointer((Pointer) null);
-        String errorMessage = null;
+        String errorMsg = null;
         if (LLVMVerifyModule(module, LLVMReturnStatusAction, errorMsgPtr) != 0) {
-            errorMessage = errorMsgPtr.getString();
+            errorMsg = errorMsgPtr.getString();
             LLVMDisposeMessage(errorMsgPtr);
         }
-        if (errorMessage != null) {
-            throw new RuntimeException("Failed to verify module: " + errorMessage);
+        if (errorMsg != null) {
+            final BytePointer moduleString = LLVMPrintModuleToString(module);
+            String detailedErrorMsg = "Failed to verify module: " + errorMsg +
+                    "\n==================\n" + moduleString.getString();
+            LLVMDisposeMessage(moduleString);
+            throw new RuntimeException(detailedErrorMsg);
         }
-        // Generate the machine code
-        // Start by initializing the target machine for the current one
+        // Apply some important optimization passes
+        LLVMPassManagerRef pass = LLVMCreatePassManager();
+        LLVMAddConstantPropagationPass(pass);
+        LLVMAddInstructionCombiningPass(pass);
+        LLVMAddPromoteMemoryToRegisterPass(pass);
+        LLVMAddGVNPass(pass);
+        LLVMAddCFGSimplificationPass(pass);
+        LLVMRunPassManager(pass, module);
+        // TODO: remove debug printing
+        final BytePointer moduleString = LLVMPrintModuleToString(module);
+        System.out.println(moduleString.getString());
+        LLVMDisposeMessage(moduleString);
+        // Generate the machine code: start by initializing the target machine for the current one
         LLVMInitializeNativeTarget();
         LLVMInitializeNativeAsmPrinter();
         // Then get the target triple string
@@ -112,11 +125,11 @@ public class CodeGenerator implements IrVisitor {
         // Now get the target from the triple string
         final PointerPointer<LLVMTargetRef> targetPtr = new PointerPointer<>(new LLVMTargetRef[1]);
         if (LLVMGetTargetFromTriple(targetTripleString, targetPtr, errorMsgPtr) != 0) {
-            errorMessage = errorMsgPtr.getString();
+            errorMsg = errorMsgPtr.getString();
             LLVMDisposeMessage(errorMsgPtr);
         }
-        if (errorMessage != null) {
-            throw new RuntimeException("Failed to get target machine: " + errorMessage);
+        if (errorMsg != null) {
+            throw new RuntimeException("Failed to get target machine: " + errorMsg);
         }
         final LLVMTargetRef target = targetPtr.get(LLVMTargetRef.class);
         // Now we can create a machine for that target
@@ -128,10 +141,10 @@ public class CodeGenerator implements IrVisitor {
         // Finally we can actually emit the machine code (as an object file)
         final PointerPointer<LLVMMemoryBufferRef> memoryBufferPtr = new PointerPointer<>(new LLVMMemoryBufferRef[1]);
         if (LLVMTargetMachineEmitToMemoryBuffer(machine, module, LLVMObjectFile, errorMsgPtr, memoryBufferPtr) != 0) {
-            errorMessage = errorMsgPtr.getString();
+            errorMsg = errorMsgPtr.getString();
             LLVMDisposeMessage(errorMsgPtr);
-            if (errorMessage != null) {
-                throw new RuntimeException("Failed emit the machine code: " + errorMessage);
+            if (errorMsg != null) {
+                throw new RuntimeException("Failed emit the machine code: " + errorMsg);
             }
         }
         // Now we just transfer that code to a Java byte buffer
