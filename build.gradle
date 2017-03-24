@@ -63,11 +63,11 @@ configure([compileJava, compileTestJava]) {
 jar {
     manifest {
         attributes "Main-Class": mainClassName,
-            "Built-By": System.properties['user.name'],
-            "Created-By": System.properties['java.vm.version'] + " (" + System.properties['java.vm.vendor'] + ")",
-            "Implementation-Title": name,
-            "Implementation-Version": version + "+" + ciSystem + "-b" + buildNumber + ".git-" + commit,
-            "Implementation-Vendor": url
+                "Built-By": System.properties['user.name'],
+                "Created-By": System.properties['java.vm.version'] + " (" + System.properties['java.vm.vendor'] + ")",
+                "Implementation-Title": name,
+                "Implementation-Version": version + "+" + ciSystem + "-b" + buildNumber + ".git-" + commit,
+                "Implementation-Vendor": url
     }
 }
 
@@ -89,4 +89,32 @@ test {
     }
     // this will ensure that tests are rerun if the program files change
     inputs.dir 'programs'
+}
+
+task compileRuntime {
+    def runtimeSource = 'src/main/c/golite_runtime.c'
+    def outputDir = "$buildDir/objs/"
+    def outputObj = outputDir + 'golite_runtime.o'
+
+    inputs.files runtimeSource
+    outputs.file outputObj
+
+    def outputDirFile = new File(outputDir)
+    if (!outputDirFile.exists()) {
+        outputDirFile.mkdirs()
+    }
+
+    doLast {
+        exec {
+            commandLine 'gcc', '-c', runtimeSource, '-o', outputObj
+        }
+    }
+}
+
+build {
+    dependsOn compileRuntime
+}
+
+run {
+    dependsOn compileRuntime
 }

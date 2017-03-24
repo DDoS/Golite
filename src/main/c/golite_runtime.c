@@ -31,6 +31,8 @@ void goliteRtPrintString(goliteRtString str) {
 }
 
 void staticInit();
+
+#pragma GCC diagnostic ignored "-Wmain-return-type"
 void main();
 
 void start() {
