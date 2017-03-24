@@ -1,5 +1,6 @@
 package golite.ir;
 
+import golite.ir.node.Append;
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
@@ -67,4 +68,6 @@ public interface IrVisitor {
     void visitCall(Call call);
 
     void visitCast(Cast cast);
+
+    void visitAppend(Append append);
 }

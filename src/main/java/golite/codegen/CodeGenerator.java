@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import golite.ir.IrVisitor;
+import golite.ir.node.Append;
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
@@ -61,6 +62,7 @@ public class CodeGenerator implements IrVisitor {
     private LLVMValueRef printFloat64Function;
     private LLVMValueRef printStringFunction;
     private LLVMValueRef checkBoundsFunction;
+    private LLVMValueRef sliceAppendFunction;
     private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
     private final Map<StructType, LLVMTypeRef> structs = new HashMap<>();
     private final Map<Function, LLVMValueRef> functions = new HashMap<>();
@@ -260,15 +262,11 @@ public class CodeGenerator implements IrVisitor {
         final Expr<?> value = memsetZero.getValue();
         value.visit(this);
         // Get the size of the of the memory to clear using an LLVM trick (pointer to second element starting at null, then convert to int)
-        final LLVMBuilderRef builder = builders.peek();
-        final LLVMValueRef nullPtr = LLVMConstPointerNull(createType(value.getType()));
-        final LLVMValueRef[] secondIndex = {LLVMConstInt(LLVMInt64Type(), 1, 0)};
-        final LLVMValueRef secondElementPtr = LLVMBuildGEP(builder, nullPtr, new PointerPointer<>(secondIndex), secondIndex.length,
-                "secondElementPtr");
-        final LLVMValueRef size = LLVMBuildPtrToInt(builder, secondElementPtr, LLVMInt64Type(), "size");
+        final LLVMValueRef size = calculateSizeOfType(value.getType());
         // Call the memset intrinsic on a pointer to the value
-        final LLVMValueRef bytePtr = LLVMBuildPointerCast(builder, getExprPtr(value), LLVMPointerType(LLVMInt8Type(), 0),
-                value + "Ptr");
+        final LLVMBuilderRef builder = builders.peek();
+        final LLVMTypeRef i8Ptr = LLVMPointerType(LLVMInt8Type(), 0);
+        final LLVMValueRef bytePtr = LLVMBuildPointerCast(builder, getExprPtr(value), i8Ptr, value + "Ptr");
         final LLVMValueRef[] memsetArgs = {
                 bytePtr, LLVMConstInt(LLVMInt8Type(), 0, 0), size,
                 LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt1Type(), 0, 0)
@@ -287,7 +285,7 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitIntLit(IntLit intLit) {
-        exprValues.put(intLit, LLVMConstInt(LLVMInt32Type(), intLit.getValue(), 0));
+        exprValues.put(intLit, LLVMConstInt(LLVMInt32Type(), intLit.getValue(), 1));
     }
 
     @Override
@@ -306,7 +304,7 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef value = declareStringConstant(stringLit);
         final LLVMValueRef stringPtr = getAggregateMemberPtr(value, LLVMConstInt(LLVMInt64Type(), 0, 0), "strPtr");
         // Create the string struct with the length and character array
-        final LLVMValueRef[] stringData = {LLVMConstInt(LLVMInt32Type(), stringLit.getUtf8Data().limit(), 0), stringPtr};
+        final LLVMValueRef[] stringData = {LLVMConstInt(LLVMInt32Type(), stringLit.getUtf8Data().limit(), 1), stringPtr};
         final LLVMValueRef stringStruct = LLVMConstNamedStruct(sliceRuntimeType, new PointerPointer<>(stringData), stringData.length);
         exprValues.put(stringLit, stringStruct);
     }
@@ -336,7 +334,7 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef valuePtr = getExprPtr(value);
         // Get the constant index into that struct
         final int index = value.getType().fieldIndex(select.getField());
-        final LLVMValueRef indexValue = LLVMConstInt(LLVMInt32Type(), index, 0);
+        final LLVMValueRef indexValue = LLVMConstInt(LLVMInt32Type(), index, 1);
         // The resulting value is a pointer to the field in the struct
         final LLVMValueRef fieldPtr = getAggregateMemberPtr(valuePtr, indexValue, select.getField());
         exprPtrs.put(select, fieldPtr);
@@ -426,14 +424,24 @@ public class CodeGenerator implements IrVisitor {
         exprValues.put(cast, value);
     }
 
-    private LLVMValueRef getAggregateMemberPtr(LLVMValueRef valuePtr, LLVMValueRef index, String memberName) {
-        final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt64Type(), 0, 0), index};
-        return LLVMBuildInBoundsGEP(builders.peek(), valuePtr, new PointerPointer<>(indices), indices.length, memberName + "Ptr");
-    }
-
-    private LLVMValueRef allocateStackVariable(Variable variable, String uniqueName) {
-        final LLVMTypeRef type = createType(variable.getType());
-        return LLVMBuildAlloca(builders.peek(), type, uniqueName);
+    @Override
+    public void visitAppend(Append append) {
+        append.getLeft().visit(this);
+        append.getRight().visit(this);
+        final LLVMBuilderRef builder = builders.peek();
+        // First get the slice value
+        final LLVMValueRef slice = getExprValue(append.getLeft());
+        // Then get a pointer to the data to append, cast to int_t*
+        final LLVMValueRef rightPtr = getExprPtr(append.getRight());
+        final LLVMTypeRef i8Ptr = LLVMPointerType(LLVMInt8Type(), 0);
+        final LLVMValueRef appendDataPtr = LLVMBuildPointerCast(builder, rightPtr, i8Ptr, "appendDataPtr");
+        // Next we calculate the size of the data to append
+        final LLVMValueRef appendLength = calculateSizeOfType(append.getRight().getType());
+        // Finally we can call the append function with the values obtained previously
+        final LLVMValueRef[] appendCallArgs = {slice, appendDataPtr, appendLength};
+        final LLVMValueRef appendCall = LLVMBuildCall(builder, sliceAppendFunction, new PointerPointer<>(appendCallArgs),
+                appendCallArgs.length, "append");
+        exprValues.put(append, appendCall);
     }
 
     private LLVMValueRef getExprValue(Expr<?> expr) {
@@ -455,8 +463,30 @@ public class CodeGenerator implements IrVisitor {
         }
         // Otherwise we need to store the value and return a pointer to the memory
         final LLVMValueRef value = exprValues.get(expr);
-        final LLVMValueRef memory = LLVMBuildAlloca(builders.peek(), createType(expr.getType()), IrNode.toString(expr));
-        return LLVMBuildStore(builders.peek(), value, memory);
+        final LLVMValueRef memory = LLVMBuildAlloca(builders.peek(), createType(expr.getType()), IrNode.toString(expr) + "Ptr");
+        LLVMBuildStore(builders.peek(), value, memory);
+        return memory;
+    }
+
+    private LLVMValueRef getAggregateMemberPtr(LLVMValueRef valuePtr, LLVMValueRef index, String memberName) {
+        final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt64Type(), 0, 0), index};
+        return LLVMBuildInBoundsGEP(builders.peek(), valuePtr, new PointerPointer<>(indices), indices.length, memberName + "Ptr");
+    }
+
+    private LLVMValueRef allocateStackVariable(Variable variable, String uniqueName) {
+        final LLVMTypeRef type = createType(variable.getType());
+        return LLVMBuildAlloca(builders.peek(), type, uniqueName);
+    }
+
+    private LLVMValueRef calculateSizeOfType(Type type) {
+        // LLVM trick: get pointer to second element starting at null
+        final LLVMBuilderRef builder = builders.peek();
+        final LLVMValueRef nullPtr = LLVMConstPointerNull(LLVMPointerType(createType(type), 0));
+        final LLVMValueRef[] secondIndex = {LLVMConstInt(LLVMInt64Type(), 1, 0)};
+        final LLVMValueRef secondElementPtr = LLVMBuildGEP(builder, nullPtr, new PointerPointer<>(secondIndex), secondIndex.length,
+                "secondElementPtr");
+        // Then convert it to int, which will be the size of the first element of the array (also the size of the type)
+        return LLVMBuildPtrToInt(builder, secondElementPtr, LLVMInt32Type(), "size");
     }
 
     private LLVMValueRef createFunction(boolean external, String name, LLVMTypeRef returnType, LLVMTypeRef... parameters) {
@@ -530,8 +560,8 @@ public class CodeGenerator implements IrVisitor {
         final LLVMTypeRef[] stringStructElements = {LLVMInt32Type(), i8Pointer};
         LLVMStructSetBody(sliceRuntimeType, new PointerPointer<>(stringStructElements), stringStructElements.length, 0);
         // Intrinsics
-        memsetFunction = createFunction(true, "llvm.memset.p0i8.i64", LLVMVoidType(), i8Pointer, LLVMInt8Type(),
-                LLVMInt64Type(), LLVMInt32Type(), LLVMInt1Type());
+        memsetFunction = createFunction(true, "llvm.memset.p0i8.i32", LLVMVoidType(), i8Pointer, LLVMInt8Type(),
+                LLVMInt32Type(), LLVMInt32Type(), LLVMInt1Type());
         // Runtime functions
         printBoolFunction = createFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
         printIntFunction = createFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
@@ -539,6 +569,8 @@ public class CodeGenerator implements IrVisitor {
         printFloat64Function = createFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
         printStringFunction = createFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), sliceRuntimeType);
         checkBoundsFunction = createFunction(true, RUNTIME_CHECK_BOUNDS, LLVMVoidType(), LLVMInt32Type(), LLVMInt32Type());
+        sliceAppendFunction = createFunction(true, RUNTIME_SLICE_APPEND, sliceRuntimeType,
+                sliceRuntimeType, i8Pointer, LLVMInt32Type());
     }
 
     private static final String RUNTIME_SLICE = "goliteRtSlice";
@@ -548,5 +580,6 @@ public class CodeGenerator implements IrVisitor {
     private static final String RUNTIME_PRINT_FLOAT64 = "goliteRtPrintFloat64";
     private static final String RUNTIME_PRINT_STRING = "goliteRtPrintString";
     private static final String RUNTIME_CHECK_BOUNDS = "goliteRtCheckBounds";
+    private static final String RUNTIME_SLICE_APPEND = "goliteRtSliceAppend";
     private static final String STATIC_INIT_FUNCTION = "staticInit";
 }

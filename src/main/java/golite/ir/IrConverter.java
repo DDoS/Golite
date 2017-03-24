@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import golite.analysis.AnalysisAdapter;
+import golite.ir.node.Append;
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
@@ -76,6 +77,7 @@ import golite.semantic.symbol.Variable;
 import golite.semantic.type.BasicType;
 import golite.semantic.type.FunctionType;
 import golite.semantic.type.IndexableType;
+import golite.semantic.type.SliceType;
 import golite.semantic.type.StructType;
 import golite.semantic.type.Type;
 
@@ -422,6 +424,16 @@ public class IrConverter extends AnalysisAdapter {
             return;
         }
         throw new IllegalStateException("Unexpected call to symbol type: " + symbol.getClass());
+    }
+
+    @Override
+    public void caseAAppendExpr(AAppendExpr node) {
+        node.getLeft().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<SliceType> left = (Expr<SliceType>) convertedExprs.get(node.getLeft());
+        node.getRight().apply(this);
+        final Expr<?> right = convertedExprs.get(node.getRight());
+        convertedExprs.put(node, new Append(left, right));
     }
 
     @Override
