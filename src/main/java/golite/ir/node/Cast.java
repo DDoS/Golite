@@ -26,8 +26,7 @@ public class Cast extends Expr implements Stmt {
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.print("cast(").print(type.toString()).print(", ");
+        printer.print("cast(").print(type.toString()).print(") ");
         argument.print(printer);
-        printer.print(")");
     }
 }

@@ -20,6 +20,7 @@ import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
+import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
@@ -33,6 +34,7 @@ import golite.ir.node.StringLit;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
+import golite.node.AAssignStmt;
 import golite.node.ABlockStmt;
 import golite.node.ACallExpr;
 import golite.node.ADeclStmt;
@@ -41,6 +43,7 @@ import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AFuncDecl;
 import golite.node.AIdentExpr;
+import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
@@ -216,6 +219,22 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
+    public void caseAAssignStmt(AAssignStmt node) {
+        final List<PExpr> lefts = node.getLeft();
+        lefts.forEach(left -> left.apply(this));
+        final List<PExpr> rights = node.getRight();
+        rights.forEach(right -> right.apply(this));
+        // Split into individual assignments
+        final List<Stmt> stmts = new ArrayList<>();
+        for (int i = 0; i < lefts.size(); i++) {
+            final Expr left = convertedExprs.get(lefts.get(i));
+            final Expr right = convertedExprs.get(rights.get(i));
+            stmts.add(new Assignment(left, right));
+        }
+        convertedStmts.put(node, stmts);
+    }
+
+    @Override
     public void caseAPrintStmt(APrintStmt node) {
         final List<Stmt> stmts = convertPrintStmt(node.getExpr());
         convertedStmts.put(node, stmts);
@@ -350,6 +369,15 @@ public class IrConverter extends AnalysisAdapter {
             expr = new Identifier(variable, uniqueVarNames.get(variable));
         }
         convertedExprs.put(node, expr);
+    }
+
+    @Override
+    public void caseAIndexExpr(AIndexExpr node) {
+        node.getValue().apply(this);
+        final Expr value = convertedExprs.get(node.getValue());
+        node.getIndex().apply(this);
+        final Expr index = convertedExprs.get(node.getIndex());
+        convertedExprs.put(node, new Indexing(value, index));
     }
 
     @Override

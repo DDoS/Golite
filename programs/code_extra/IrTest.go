@@ -22,13 +22,17 @@ type Person struct {
 var person Person
 
 func agePerson(person Person) Person {
-    person.age += 40
-    person.name = "Uncle " + person.name
+    //person.age += 40
+    //person.name = "Uncle " + person.name
     return person
 }
 
 func staticInit() {
     agePerson(person)
+    var arr [16]bool
+    var sli []int
+    arr[1] = true
+    println(arr[1])
 }
 
 var str = "lol\\"
