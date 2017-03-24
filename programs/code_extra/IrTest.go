@@ -24,14 +24,16 @@ var person Person
 func agePerson(person Person) Person {
     //person.age += 40
     //person.name = "Uncle " + person.name
+    person.name = "Test"
+    println(person.name, ' ', person.age)
     return person
 }
 
 func staticInit() {
     agePerson(person)
-    var arr [16]bool
+    var arr [16]string
     var sli []int
-    arr[1] = true
+    arr[1] = "lol"
     println(arr[1])
 }
 

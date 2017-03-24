@@ -16,6 +16,7 @@ import golite.ir.node.PrintInt;
 import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
+import golite.ir.node.Select;
 import golite.ir.node.StringLit;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
@@ -58,6 +59,8 @@ public interface IrVisitor {
     void visitStringLit(StringLit stringLit);
 
     void visitIdentifier(Identifier identifier);
+
+    void visitSelect(Select select);
 
     void visitIndexing(Indexing indexing);
 

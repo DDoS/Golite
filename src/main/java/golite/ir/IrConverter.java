@@ -29,11 +29,13 @@ import golite.ir.node.PrintInt;
 import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
+import golite.ir.node.Select;
 import golite.ir.node.Stmt;
 import golite.ir.node.StringLit;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
+import golite.node.AAppendExpr;
 import golite.node.AAssignStmt;
 import golite.node.ABlockStmt;
 import golite.node.ACallExpr;
@@ -53,6 +55,7 @@ import golite.node.APrintlnStmt;
 import golite.node.AProg;
 import golite.node.AReturnStmt;
 import golite.node.ARuneExpr;
+import golite.node.ASelectExpr;
 import golite.node.AStringIntrExpr;
 import golite.node.AStringRawExpr;
 import golite.node.ATypeDecl;
@@ -369,6 +372,14 @@ public class IrConverter extends AnalysisAdapter {
             expr = new Identifier(variable, uniqueVarNames.get(variable));
         }
         convertedExprs.put(node, expr);
+    }
+
+    @Override
+    public void caseASelectExpr(ASelectExpr node) {
+        final PExpr value = node.getValue();
+        value.apply(this);
+        final Expr convertedValue = convertedExprs.get(value);
+        convertedExprs.put(node, new Select(convertedValue, node.getIdenf().getText()));
     }
 
     @Override

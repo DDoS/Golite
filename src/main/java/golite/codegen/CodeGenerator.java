@@ -26,6 +26,7 @@ import golite.ir.node.PrintInt;
 import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
+import golite.ir.node.Select;
 import golite.ir.node.StringLit;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
@@ -328,19 +329,33 @@ public class CodeGenerator implements IrVisitor {
     }
 
     @Override
+    public void visitSelect(Select select) {
+        // Get a pointer to the struct value
+        final Expr value = select.getValue();
+        value.visit(this);
+        final LLVMValueRef valuePtr = getExprPtr(value);
+        // Get the constant index into that struct
+        final int index = ((StructType) value.getType()).fieldIndex(select.getField());
+        final LLVMValueRef indexValue = LLVMConstInt(LLVMInt32Type(), index, 0);
+        // The resulting value is a pointer to the field in the struct
+        final LLVMValueRef fieldPtr = getAggregateMemberPtr(valuePtr, indexValue, select.getField());
+        exprPtrs.put(select, fieldPtr);
+    }
+
+    @Override
     public void visitIndexing(Indexing indexing) {
         final Expr value = indexing.getValue();
         value.visit(this);
-        final LLVMValueRef llvmValue = getExprPtr(value);
+        final LLVMValueRef valuePtr = getExprPtr(value);
         indexing.getIndex().visit(this);
-        final LLVMValueRef llvmIndex = getExprValue(indexing.getIndex());
+        final LLVMValueRef index = getExprValue(indexing.getIndex());
         // Find the length of the slice or array
         final LLVMBuilderRef builder = builders.peek();
         final LLVMValueRef length;
         if (value.getType() instanceof SliceType) {
             // Get a pointer to the length field (first in the struct)
             final LLVMValueRef lengthIndex = LLVMConstInt(LLVMInt32Type(), 0, 0);
-            final LLVMValueRef lengthPtr = getAggregateMemberPtr(llvmValue, lengthIndex, "length");
+            final LLVMValueRef lengthPtr = getAggregateMemberPtr(valuePtr, lengthIndex, "length");
             // Then load the value at the pointer
             length = LLVMBuildLoad(builder, lengthPtr, "length");
         } else {
@@ -348,14 +363,14 @@ public class CodeGenerator implements IrVisitor {
             length = LLVMConstInt(LLVMInt32Type(), ((ArrayType) value.getType()).getLength(), 0);
         }
         // Call the bounds check function with the length and index
-        final LLVMValueRef[] lengthArg = {llvmIndex, length};
+        final LLVMValueRef[] lengthArg = {index, length};
         LLVMBuildCall(builder, checkBoundsFunction, new PointerPointer<>(lengthArg), lengthArg.length, "");
         // Get a pointer to the start of the indexable data
         final LLVMValueRef dataPtr;
         if (value.getType() instanceof SliceType) {
             // For a slice, we first get a pointer to the raw data (char*, second field in the struct)
             final LLVMValueRef dataFieldIndex = LLVMConstInt(LLVMInt32Type(), 1, 0);
-            final LLVMValueRef rawDataPtr = getAggregateMemberPtr(llvmValue, dataFieldIndex, "rawData");
+            final LLVMValueRef rawDataPtr = getAggregateMemberPtr(valuePtr, dataFieldIndex, "rawData");
             // Then we cast this pointer to the array component type
             final Type componentType = ((IndexableType) value.getType()).getComponent();
             final LLVMTypeRef componentPtrType = LLVMPointerType(createType(componentType), 0);
@@ -363,11 +378,12 @@ public class CodeGenerator implements IrVisitor {
         } else {
             // For arrays we just have to get a pointer to the first element
             final LLVMValueRef firstIndex = LLVMConstInt(LLVMInt64Type(), 0, 0);
-            dataPtr = getAggregateMemberPtr(llvmValue, firstIndex, "rawData");
+            dataPtr = getAggregateMemberPtr(valuePtr, firstIndex, "rawData");
         }
         // Then we can address the pointer at the index into the array
-        final LLVMValueRef[] indices = {llvmIndex};
-        final LLVMValueRef componentPtr = LLVMBuildGEP(builder, dataPtr, new PointerPointer<>(indices), indices.length, "element");
+        final LLVMValueRef[] indices = {index};
+        final LLVMValueRef componentPtr = LLVMBuildGEP(builder, dataPtr, new PointerPointer<>(indices), indices.length,
+                "componentPtr");
         exprPtrs.put(indexing, componentPtr);
     }
 
@@ -406,9 +422,9 @@ public class CodeGenerator implements IrVisitor {
         exprValues.put(cast, value);
     }
 
-    private LLVMValueRef getAggregateMemberPtr(LLVMValueRef value, LLVMValueRef index, String memberName) {
+    private LLVMValueRef getAggregateMemberPtr(LLVMValueRef valuePtr, LLVMValueRef index, String memberName) {
         final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt64Type(), 0, 0), index};
-        return LLVMBuildInBoundsGEP(builders.peek(), value, new PointerPointer<>(indices), indices.length, memberName + "Ptr");
+        return LLVMBuildInBoundsGEP(builders.peek(), valuePtr, new PointerPointer<>(indices), indices.length, memberName + "Ptr");
     }
 
     private LLVMValueRef allocateStackVariable(Variable variable, String uniqueName) {
