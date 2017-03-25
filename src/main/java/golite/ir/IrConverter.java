@@ -229,11 +229,29 @@ public class IrConverter extends AnalysisAdapter {
         lefts.forEach(left -> left.apply(this));
         final List<PExpr> rights = node.getRight();
         rights.forEach(right -> right.apply(this));
-        // Split into individual assignments
+        // For single assignments, we can just assign the right to the left immediately
+        if (lefts.size() == 1) {
+            final Expr<?> left = convertedExprs.get(lefts.get(0));
+            final Expr<?> right = convertedExprs.get(rights.get(0));
+            convertedStmts.put(node, Collections.singletonList(new Assignment(left, right)));
+            return;
+        }
+        // For multiple assignments, we first need to assign each right to a new intermediate variable
         final List<Stmt> stmts = new ArrayList<>();
+        final List<Variable> tmpVars = new ArrayList<>();
+        for (int i = 0; i < lefts.size(); i++) {
+            final Expr<?> right = convertedExprs.get(rights.get(i));
+            final Variable leftVar = newVariable(right.getType(), "assignTmp");
+            tmpVars.add(leftVar);
+            stmts.add(new VariableDecl(leftVar, leftVar.getName()));
+            final Identifier left = new Identifier(leftVar, leftVar.getName());
+            stmts.add(new Assignment(left, right));
+        }
+        // Then we assign the intermediate variables to the right expressions
         for (int i = 0; i < lefts.size(); i++) {
             final Expr<?> left = convertedExprs.get(lefts.get(i));
-            final Expr<?> right = convertedExprs.get(rights.get(i));
+            final Variable rightVar = tmpVars.get(i);
+            final Identifier right = new Identifier(rightVar, rightVar.getName());
             stmts.add(new Assignment(left, right));
         }
         convertedStmts.put(node, stmts);
@@ -464,6 +482,13 @@ public class IrConverter extends AnalysisAdapter {
             }
         } while (!isUnique);
         return uniqueName;
+    }
+
+    private Variable newVariable(Type type, String name) {
+        final String uniqueName = findUniqueName(name, uniqueVarNames.values());
+        final Variable variable = new Variable(0, 0, 0, 0, uniqueName, type);
+        uniqueVarNames.put(variable, uniqueName);
+        return variable;
     }
 
     private static Stmt defaultInitializer(Identifier variableExpr, Type type) {
