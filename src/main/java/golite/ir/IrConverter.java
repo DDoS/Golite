@@ -8,7 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import golite.analysis.AnalysisAdapter;
@@ -41,6 +40,7 @@ import golite.node.AAssignStmt;
 import golite.node.ABlockStmt;
 import golite.node.ACallExpr;
 import golite.node.ADeclStmt;
+import golite.node.ADeclVarShortStmt;
 import golite.node.AEmptyStmt;
 import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
@@ -173,8 +173,9 @@ public class IrConverter extends AnalysisAdapter {
     public void caseAVarDecl(AVarDecl node) {
         final List<Stmt> stmts = new ArrayList<>();
         // Two statements per variable declaration: declaration and initialization
-        final Set<Variable> variables = semantics.getVariableSymbols(node).get();
+        final List<Variable> variables = semantics.getVariableSymbols(node).get();
         final List<TIdenf> idenfs = node.getIdenf();
+        final List<PExpr> exprs = node.getExpr();
         for (int i = 0; i < idenfs.size(); i++) {
             final String variableName = idenfs.get(i).getText();
             // Ignore blank variables
@@ -184,25 +185,64 @@ public class IrConverter extends AnalysisAdapter {
             // Find the symbol for the variable that was declared
             final Variable variable = variables.stream()
                     .filter(var -> var.getName().equals(variableName))
-                    .findFirst().get().dealias();
-            // Find unique names for variables to prevent conflicts from removing scopes
-            final String uniqueName = findUniqueName(variable);
-            stmts.add(new VariableDecl(variable, uniqueName));
-            // Then initialize the variables with assignments
-            final Identifier variableExpr = new Identifier(variable, uniqueName);
-            final Stmt initializer;
-            if (node.getExpr().isEmpty()) {
-                // No explicit initializer, use a default
-                initializer = defaultInitializer(variableExpr, variable.getType());
-            } else {
-                final PExpr expr = node.getExpr().get(i);
-                expr.apply(this);
-                convertedExprs.get(expr);
-                initializer = new Assignment(variableExpr, convertedExprs.get(expr));
-            }
-            stmts.add(initializer);
+                    .findFirst().get();
+            // The declare it
+            convertVariableDecl(stmts, variable, exprs.isEmpty() ? null : exprs.get(i));
         }
         convertedStmts.put(node, stmts);
+    }
+
+    @Override
+    public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
+        final List<Stmt> stmts = new ArrayList<>();
+        final List<Variable> variables = semantics.getVariableSymbols(node).get();
+        // First we handle the new variables, and create temporary variables for the assignments
+        final List<PExpr> lefts = node.getLeft();
+        final List<PExpr> rights = node.getRight();
+        final List<Variable> tmpVars = new ArrayList<>();
+        for (int i = 0; i < lefts.size(); i++) {
+            final Variable variable = variables.get(i);
+            if (variable == null) {
+                // Just an assignment, so handle it the same way
+                final PExpr right = rights.get(i);
+                right.apply(this);
+                createTmpAssignVar(stmts, tmpVars, convertedExprs.get(right));
+            } else {
+                // New variable declaration
+                convertVariableDecl(stmts, variable, rights.get(i));
+            }
+        }
+        // Then we assign the intermediate variables to the right expressions
+        for (int i = 0, j = 0; i < lefts.size(); i++) {
+            if (variables.get(i) != null) {
+                // Not an assignment: skip it
+                continue;
+            }
+            final PExpr left = lefts.get(i);
+            left.apply(this);
+            stmts.add(createAssignFromVar(convertedExprs.get(left), tmpVars.get(j++)));
+        }
+        convertedStmts.put(node, stmts);
+    }
+
+    private void convertVariableDecl(List<Stmt> stmts, Variable variable, PExpr initializer) {
+        // First dealias the variable
+        variable = variable.dealias();
+        // Find unique names for variables to prevent conflicts from removing scopes
+        final String uniqueName = findUniqueName(variable);
+        stmts.add(new VariableDecl(variable, uniqueName));
+        // Then initialize the variables with assignments
+        final Identifier variableExpr = new Identifier(variable, uniqueName);
+        final Stmt initialAssign;
+        if (initializer == null) {
+            // No explicit initializer, use a default
+            initialAssign = defaultInitializer(variableExpr, variable.getType());
+        } else {
+            // Otherwise assign to the given value
+            initializer.apply(this);
+            initialAssign = new Assignment(variableExpr, convertedExprs.get(initializer));
+        }
+        stmts.add(initialAssign);
     }
 
     @Override
@@ -240,21 +280,26 @@ public class IrConverter extends AnalysisAdapter {
         final List<Stmt> stmts = new ArrayList<>();
         final List<Variable> tmpVars = new ArrayList<>();
         for (int i = 0; i < lefts.size(); i++) {
-            final Expr<?> right = convertedExprs.get(rights.get(i));
-            final Variable leftVar = newVariable(right.getType(), "assignTmp");
-            tmpVars.add(leftVar);
-            stmts.add(new VariableDecl(leftVar, leftVar.getName()));
-            final Identifier left = new Identifier(leftVar, leftVar.getName());
-            stmts.add(new Assignment(left, right));
+            createTmpAssignVar(stmts, tmpVars, convertedExprs.get(rights.get(i)));
         }
         // Then we assign the intermediate variables to the right expressions
         for (int i = 0; i < lefts.size(); i++) {
-            final Expr<?> left = convertedExprs.get(lefts.get(i));
-            final Variable rightVar = tmpVars.get(i);
-            final Identifier right = new Identifier(rightVar, rightVar.getName());
-            stmts.add(new Assignment(left, right));
+            stmts.add(createAssignFromVar(convertedExprs.get(lefts.get(i)), tmpVars.get(i)));
         }
         convertedStmts.put(node, stmts);
+    }
+
+    private void createTmpAssignVar(List<Stmt> stmts, List<Variable> tmpVars, Expr<?> right) {
+        final Variable leftVar = newVariable(right.getType(), "assignTmp");
+        tmpVars.add(leftVar);
+        stmts.add(new VariableDecl(leftVar, leftVar.getName()));
+        final Identifier left = new Identifier(leftVar, leftVar.getName());
+        stmts.add(new Assignment(left, right));
+    }
+
+    private Assignment createAssignFromVar(Expr<?> left, Variable variable) {
+        final Identifier right = new Identifier(variable, variable.getName());
+        return new Assignment(left, right);
     }
 
     @Override

@@ -53,7 +53,7 @@ func main() {
         var k int = abs(3)
         println(float64(2), k)
     }
-    abs(int(4.5))
+    println(abs(int(4.5)))
     j := boolean(true)
     var _ = 1
     staticInit()

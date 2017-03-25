@@ -2,12 +2,10 @@ package golite.semantic.check;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import golite.analysis.AnalysisAdapter;
@@ -130,7 +128,7 @@ public class TypeChecker extends AnalysisAdapter {
     private final Map<PExpr, Type> exprNodeTypes = new HashMap<>();
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
     private final Map<AFuncDecl, Function> funcSymbols = new HashMap<>();
-    private final Map<Node, Set<Variable>> varSymbols = new HashMap<>();
+    private final Map<Node, List<Variable>> varSymbols = new HashMap<>();
     private final Map<AIdentExpr, Symbol> identSymbols = new HashMap<>();
     private final Map<Context, Node> contextNodes = new HashMap<>();
     private Context context;
@@ -186,7 +184,7 @@ public class TypeChecker extends AnalysisAdapter {
             valueTypes.add(exprNodeTypes.get(exprNode));
         }
         // Declare the variables
-        final Set<Variable> variables = new LinkedHashSet<>();
+        final List<Variable> variables = new ArrayList<>();
         if (node.getType() != null) {
             // If we have the type, then declare a variable for each identifier, all with the same type
             node.getType().apply(this);
@@ -234,7 +232,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Check that all exprs on RHS are well-typed
         node.getRight().forEach(exp -> exp.apply(this));
         // Check that vars already declared are assigned to expressions of the same type
-        final Set<Variable> variables = new LinkedHashSet<>();
+        final List<Variable> variables = new ArrayList<>();
         for (int i = 0; i < node.getLeft().size(); i++) {
             node.getRight().get(i).apply(this);
             final Type rightType = exprNodeTypes.get(node.getRight().get(i));
@@ -247,11 +245,14 @@ public class TypeChecker extends AnalysisAdapter {
             // If the var has already been declared, make sure RHS expr has the same type
             final Optional<Symbol> optVar = context.lookupSymbol(idenf, false);
             if (optVar.isPresent() && optVar.get() instanceof Variable) {
-                final Type leftType = optVar.get().getType();
+                final Symbol var = optVar.get();
+                final Type leftType = var.getType();
                 if (!leftType.equals(rightType)) {
                     throw new TypeCheckerException(node, "Cannot assign type " + rightType + " to type " + leftType);
                 }
                 exprNodeTypes.put(leftNode, leftType);
+                identSymbols.put(leftNode, var);
+                variables.add(null);
             } else {
                 // Var hasn't been declared - declare as new var with the same type as RHS expr
                 final Variable variable = new Variable(new NodePosition(leftNode), idenf, rightType);
@@ -304,7 +305,7 @@ public class TypeChecker extends AnalysisAdapter {
         contextNodes.put(context, node);
         // Declare the parameters as variables
         params.forEach(context::declareSymbol);
-        varSymbols.put(node, new LinkedHashSet<>(params));
+        varSymbols.put(node, params);
         // Type check the statements
         node.getStmt().forEach(stmt -> stmt.apply(this));
         // Check that all code paths return if the function returns a value
