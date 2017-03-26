@@ -19,6 +19,8 @@ import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
+import golite.ir.node.Jump;
+import golite.ir.node.Label;
 import golite.ir.node.LogicAnd;
 import golite.ir.node.LogicNot;
 import golite.ir.node.LogicOr;
@@ -64,6 +66,10 @@ public interface IrVisitor {
     void visitMemsetZero(MemsetZero memsetZero);
 
     void visitAssignment(Assignment assignment);
+
+    void visitJump(Jump jump);
+
+    void visitLabel(Label label);
 
     void visitBoolLit(BoolLit boolLit);
 

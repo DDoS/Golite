@@ -29,6 +29,8 @@ import golite.ir.node.Identifier;
 import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrNode;
+import golite.ir.node.Jump;
+import golite.ir.node.Label;
 import golite.ir.node.LogicAnd;
 import golite.ir.node.LogicNot;
 import golite.ir.node.LogicOr;
@@ -308,6 +310,16 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef ptr = getExprPtr(assignment.getLeft());
         final LLVMValueRef value = getExprValue(assignment.getRight());
         LLVMBuildStore(builders.peek(), value, ptr);
+    }
+
+    @Override
+    public void visitJump(Jump jump) {
+
+    }
+
+    @Override
+    public void visitLabel(Label label) {
+
     }
 
     @Override
