@@ -8,8 +8,13 @@ It has some disadvantages in that it is comparitively more difficulat to impleme
 
 ### Test Programs
 
-MultiAssignSwap.go : It's a good edge case for Code Generation. a, b = b, a should swap variables, which won't work unless you codegenerate intermediate variables for the values. 
-switch_codegen.go: Checks if the generated code is able to handle the comparison condition in a case conditional. Many languages like C don't support these kind of Case conditions by default, so it is an interesting case.
-switch_codegen_booleans.go: This again checks if the generated code is able to handle two booleans in a case conditional. Many languages like C don't support these kind of case conditions by default, so it is an interesting case as well.
-array_default.go : It's a good test case to check if an array is initialized during the codegen by default. We used a multidimentional float array to check this.
-scope_var.go: This program is to ensure that the scopes are handled currectly by the codegen. The value of the variable outside the function scope should be replaced by the newly declared in-scope value.
+#### MultiAssignSwap.go :
+It's a good edge case for Code Generation. a, b = b, a should swap variables, which won't work unless you codegenerate intermediate variables for the values. 
+#### switch_codegen.go: 
+Checks if the generated code is able to handle the comparison condition in a case conditional. Many languages like C don't support these kind of Case conditions by default, so it is an interesting case.
+#### switch_codegen_booleans.go:
+This again checks if the generated code is able to handle two booleans in a case conditional. Many languages like C don't support these kind of case conditions by default, so it is an interesting case as well.
+#### array_default.go :
+It's a good test case to check if an array is initialized during the codegen by default. We used a multidimentional float array to check this.
+#### scope_var.go: 
+This program is to ensure that the scopes are handled currectly by the codegen. The value of the variable outside the function scope should be replaced by the newly declared in-scope value.
