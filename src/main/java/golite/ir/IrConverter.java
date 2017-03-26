@@ -542,6 +542,14 @@ public class IrConverter extends AnalysisAdapter {
         if (leftType instanceof ArrayType) {
             // Arrays need to be compared element per element (memcmp does not work with structs, bools, floats or padding data)
             final ArrayType arrayType = (ArrayType) leftType;
+            // arrLeft := left expr
+            final Variable<ArrayType> arrLeftVar = newVariable(arrayType, "arrLeft");
+            final VariableDecl<ArrayType> arrLeft = new VariableDecl<>(arrLeftVar);
+            final Assignment arrLeftInit = new Assignment(new Identifier<>(arrLeftVar), left);
+            // arrRight := right expr
+            final Variable<ArrayType> arrRightVar = newVariable(arrayType, "arrRight");
+            final VariableDecl<ArrayType> arrRight = new VariableDecl<>(arrRightVar);
+            final Assignment arrRightInit = new Assignment(new Identifier<>(arrRightVar), right);
             // arrEq := true
             final Variable<BasicType> equalVar = newVariable(BasicType.BOOL, "arrEq");
             final VariableDecl<BasicType> equal = new VariableDecl<>(equalVar);
@@ -559,6 +567,8 @@ public class IrConverter extends AnalysisAdapter {
             final Jump loopEntry = new Jump(endLabel, loopCondition);
             // Add all the statements so far to the list
             functionStmts.addAll(Arrays.asList(
+                    arrLeft, arrLeftInit,
+                    arrRight, arrRightInit,
                     equal, equalInit,
                     index, indexInit,
                     startLabel,
@@ -566,9 +576,9 @@ public class IrConverter extends AnalysisAdapter {
             ));
             // arrEq = equals(arr1[arrIdx], arr2[arrIdx])
             @SuppressWarnings("unchecked")
-            final Indexing<?> leftComp = new Indexing<>((Expr<? extends IndexableType>) left, new Identifier<>(indexVar));
+            final Indexing<?> leftComp = new Indexing<>(new Identifier<>(arrLeftVar), new Identifier<>(indexVar));
             @SuppressWarnings("unchecked")
-            final Indexing<?> rightComp = new Indexing<>((Expr<? extends IndexableType>) right, new Identifier<>(indexVar));
+            final Indexing<?> rightComp = new Indexing<>(new Identifier<>(arrRightVar), new Identifier<>(indexVar));
             final Expr<BasicType> compEqual = convertEqual(false, leftComp, rightComp);
             final Assignment updateEqual = new Assignment(new Identifier<>(equalVar), compEqual);
             // arrIdx++
@@ -595,13 +605,24 @@ public class IrConverter extends AnalysisAdapter {
         if (leftType instanceof StructType) {
             // Same idea with structs, except that we compare fields (but not _ fields)
             final StructType structType = (StructType) leftType;
+            // structLeft := left expr
+            final Variable<StructType> structLeftVar = newVariable(structType, "structLeft");
+            final VariableDecl<StructType> structLeft = new VariableDecl<>(structLeftVar);
+            final Assignment structLeftInit = new Assignment(new Identifier<>(structLeftVar), left);
+            // structRight := right expr
+            final Variable<StructType> structRightVar = newVariable(structType, "structRight");
+            final VariableDecl<StructType> structRight = new VariableDecl<>(structRightVar);
+            final Assignment structRightInit = new Assignment(new Identifier<>(structRightVar), right);
             // structEq := true
             final Variable<BasicType> equalVar = newVariable(BasicType.BOOL, "structEq");
             final VariableDecl<BasicType> equal = new VariableDecl<>(equalVar);
             final Assignment equalInit = new Assignment(new Identifier<>(equalVar), new BoolLit(true));
             // Add all the statements so far to the list
-            functionStmts.add(equal);
-            functionStmts.add(equalInit);
+            functionStmts.addAll(Arrays.asList(
+                    structLeft, structLeftInit,
+                    structRight, structRightInit,
+                    equal, equalInit
+            ));
             // Labels to structEq = false and to the end
             final Label notEqualLabel = newLabel("structNeq");
             final Label endLabel = newLabel("endStructEq");
@@ -612,9 +633,9 @@ public class IrConverter extends AnalysisAdapter {
                     continue;
                 }
                 @SuppressWarnings("unchecked")
-                final Select leftField = new Select((Expr<StructType>) left, fieldName);
+                final Select leftField = new Select(new Identifier<>(structLeftVar), fieldName);
                 @SuppressWarnings("unchecked")
-                final Select rightField = new Select((Expr<StructType>) right, fieldName);
+                final Select rightField = new Select(new Identifier<>(structRightVar), fieldName);
                 final Expr<BasicType> compEqual = new LogicNot(convertEqual(false, leftField, rightField));
                 // Jump to not equal if !equals(struct1.field, struct2.field)
                 final Jump notEqualJump = new Jump(notEqualLabel, compEqual);
