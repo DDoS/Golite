@@ -30,6 +30,7 @@ import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrNode;
 import golite.ir.node.LogicAnd;
+import golite.ir.node.LogicNot;
 import golite.ir.node.LogicOr;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
@@ -40,6 +41,8 @@ import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Select;
 import golite.ir.node.StringLit;
+import golite.ir.node.UnaArFloat64;
+import golite.ir.node.UnaArInt;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
@@ -466,6 +469,21 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef appendCall = LLVMBuildCall(builder, sliceAppendFunction, new PointerPointer<>(appendCallArgs),
                 appendCallArgs.length, "append");
         exprValues.put(append, appendCall);
+    }
+
+    @Override
+    public void visitLogicNot(LogicNot logicNot) {
+
+    }
+
+    @Override
+    public void visitUnaArInt(UnaArInt unaArInt) {
+
+    }
+
+    @Override
+    public void visitUnaArFloat64(UnaArFloat64 unaArFloat64) {
+
     }
 
     @Override

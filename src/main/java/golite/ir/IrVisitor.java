@@ -20,6 +20,7 @@ import golite.ir.node.Identifier;
 import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.LogicAnd;
+import golite.ir.node.LogicNot;
 import golite.ir.node.LogicOr;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
@@ -30,6 +31,8 @@ import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Select;
 import golite.ir.node.StringLit;
+import golite.ir.node.UnaArFloat64;
+import golite.ir.node.UnaArInt;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
@@ -81,6 +84,12 @@ public interface IrVisitor {
     void visitCast(Cast cast);
 
     void visitAppend(Append append);
+
+    void visitLogicNot(LogicNot logicNot);
+
+    void visitUnaArInt(UnaArInt unaArInt);
+
+    void visitUnaArFloat64(UnaArFloat64 unaArFloat64);
 
     void visitBinArInt(BinArInt binArInt);
 
