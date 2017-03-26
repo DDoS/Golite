@@ -1,24 +1,22 @@
 # Milestone 3
 
-## Implementation
+## Motivation
 
 We have chosen to implement Milestone 4 using low-level code, specifically, LLVM-IR. More specifically, 
 we plan to first convert Golite to a simpler IR and thereby convert this IR to a LLVM IR representation,
-specifically using the LLVM C API. We plan to use LLVM because of the several advantages it offers over 
-other approaches. Firstly, LLVM libraries are designed to facilitate re-usability and extendibility with
-LLVM supporting several languages including C and C++. Secondly, LLVM IR enables a clean seperation of the
-compiler frontend and backend. This enables easy swap of a new frontend/backend due to the same LLVM 
-intermediate representation.E.g., with this independent IR, a C-language front-end can be reused regardless 
-of the targeted object code. Similarly, another back-end could be reused similarly with another programming
-language enabling implementation of a compiler pipeline architecture. Also, LLVM IR supports different features
-for different languages. It is also possible to create new optimization passes with minimal code changes to 
-existing cose. Finally, LLVM IR is comparitively easy to work with and due to its popularity is well documented
-and standardized.
+specifically using the LLVM C API. We plan to use LLVM because as a backend, its used by several popular
+languages like Rust, Swift, C, C++, D, etc. Not just LLVM offers some optimization by default, but with
+LLVM, it's also possible to create new optimization passes with minimal code changes to existing code.
+Finally, LLVM IR is comparitively easy to work with and due to its popularity is well documented
+and standardized meaning that if we get stuck somewhere, we have the documentation to look at and resolve 
+the issue.
 
 It has some disadvantages in that it is comparitively more difficulat to implement than higher level languages
 like C/C++ but we wanted to take on this challenging task and in the process learn more about LLVM IR 
 implementation. It also supports a much smaller set of languages compared to GCC (IR) but we are not 
 concerned with the extendibility for other languages, so we can chose to ignore it.
+
+## Implementation
 
 ### Test Programs
 
