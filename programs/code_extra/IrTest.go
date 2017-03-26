@@ -42,9 +42,7 @@ func staticInit() {
 func testEquals() {
     var arr1 [16]Person
     var arr2 [16]Person
-    b := arr1 != arr2
-    j := arr1 == arr2
-    println(b)
+    println(arr1 != arr2)
 }
 
 var str = "lol\\"
