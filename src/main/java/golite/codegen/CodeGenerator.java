@@ -15,12 +15,10 @@ import golite.ir.node.BinArInt;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
 import golite.ir.node.Cast;
-import golite.ir.node.CmpArray;
 import golite.ir.node.CmpBool;
 import golite.ir.node.CmpFloat64;
 import golite.ir.node.CmpInt;
 import golite.ir.node.CmpString;
-import golite.ir.node.CmpStruct;
 import golite.ir.node.ConcatString;
 import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
@@ -530,16 +528,6 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitCmpString(CmpString cmpString) {
-
-    }
-
-    @Override
-    public void visitCmpArray(CmpArray cmpArray) {
-
-    }
-
-    @Override
-    public void visitCmpStruct(CmpStruct cmpStruct) {
 
     }
 

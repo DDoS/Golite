@@ -35,8 +35,10 @@ public class LogicOr extends Expr<BasicType> {
 
     @Override
     public void print(SourcePrinter printer) {
+        printer.print("(");
         left.print(printer);
         printer.print(" || ");
         right.print(printer);
+        printer.print(")");
     }
 }

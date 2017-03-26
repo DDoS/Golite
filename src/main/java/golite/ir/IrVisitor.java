@@ -7,12 +7,10 @@ import golite.ir.node.BinArInt;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
 import golite.ir.node.Cast;
-import golite.ir.node.CmpArray;
 import golite.ir.node.CmpBool;
 import golite.ir.node.CmpFloat64;
 import golite.ir.node.CmpInt;
 import golite.ir.node.CmpString;
-import golite.ir.node.CmpStruct;
 import golite.ir.node.ConcatString;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
@@ -110,10 +108,6 @@ public interface IrVisitor {
     void visitCmpFloat64(CmpFloat64 cmpFloat64);
 
     void visitCmpString(CmpString cmpString);
-
-    void visitCmpArray(CmpArray cmpArray);
-
-    void visitCmpStruct(CmpStruct cmpStruct);
 
     void visitLogicAnd(LogicAnd logicAnd);
 

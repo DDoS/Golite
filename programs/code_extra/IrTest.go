@@ -37,9 +37,13 @@ func staticInit() {
     sli = append(sli, 3)
     println(arr[1])
     println(sli[0])
+}
 
-    var arr2 [16]string
-    b := arr == arr2
+func testEquals() {
+    var arr1 [16]Person
+    var arr2 [16]Person
+    b := arr1 == arr2
+    println(b)
 }
 
 var str = "lol\\"
@@ -60,4 +64,5 @@ func main() {
     j := boolean(true)
     var _ = 1
     staticInit()
+    testEquals()
 }

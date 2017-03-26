@@ -92,6 +92,7 @@ import golite.semantic.type.FunctionType;
 import golite.semantic.type.IndexableType;
 import golite.semantic.type.SliceType;
 import golite.semantic.type.StructType;
+import golite.semantic.type.StructType.Field;
 import golite.semantic.type.Type;
 
 /**
@@ -524,6 +525,7 @@ public class IrConverter extends AnalysisAdapter {
             return equal;
         }
         if (leftType instanceof ArrayType) {
+            // Arrays need to be compared element per element (memcmp does not work with structs, bools, floats or padding data)
             final ArrayType arrayType = (ArrayType) leftType;
             // arrEq := true
             final Variable<BasicType> equalVar = newVariable(BasicType.BOOL, "arrEq");
@@ -567,6 +569,49 @@ public class IrConverter extends AnalysisAdapter {
                     endLabel
             ));
             // The result if in arrEq
+            return new Identifier<>(equalVar);
+        }
+        if (leftType instanceof StructType) {
+            // Same idea with structs, except that we compare fields (but not _ fields)
+            final StructType structType = (StructType) leftType;
+            // structEq := true
+            final Variable<BasicType> equalVar = newVariable(BasicType.BOOL, "structEq");
+            final VariableDecl<BasicType> equal = new VariableDecl<>(equalVar);
+            final Assignment equalInit = new Assignment(new Identifier<>(equalVar), new BoolLit(true));
+            // Add all the statements so far to the list
+            functionStmts.add(equal);
+            functionStmts.add(equalInit);
+            // Labels to structEq = false and to the end
+            final Label notEqualLabel = newLabel("structNeq");
+            final Label endLabel = newLabel("endStructEq");
+            // Compare each field
+            for (Field field : structType.getFields()) {
+                final String fieldName = field.getName();
+                if (fieldName.equals("_")) {
+                    continue;
+                }
+                @SuppressWarnings("unchecked")
+                final Select leftField = new Select((Expr<StructType>) left, fieldName);
+                @SuppressWarnings("unchecked")
+                final Select rightField = new Select((Expr<StructType>) right, fieldName);
+                final Expr<BasicType> compEqual = new LogicNot(convertEqual(leftField, rightField));
+                // Jump to not equal if !equals(struct1.field, struct2.field)
+                final Jump notEqualJump = new Jump(notEqualLabel, compEqual);
+                // Add the statement to the list
+                functionStmts.add(notEqualJump);
+            }
+            // Jump to end
+            final Jump equalJump = new Jump(endLabel, new BoolLit(true));
+            // structEq := false
+            final Assignment updateNotEqual = new Assignment(new Identifier<>(equalVar), new BoolLit(false));
+            // Add all the statements so far to the list
+            functionStmts.addAll(Arrays.asList(
+                    equalJump,
+                    notEqualLabel,
+                    updateNotEqual,
+                    endLabel
+            ));
+            // The result if in structEq
             return new Identifier<>(equalVar);
         }
         throw new UnsupportedOperationException(leftType.toString());

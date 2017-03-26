@@ -41,9 +41,11 @@ public class CmpFloat64 extends Expr<BasicType> {
 
     @Override
     public void print(SourcePrinter printer) {
+        printer.print("(");
         left.print(printer);
         printer.print(" ").print(op.toString()).print(" ");
         right.print(printer);
+        printer.print(")");
     }
 
     public enum Op {
