@@ -22,7 +22,7 @@ public class CodeBlockContext extends Context {
     }
 
     @Override
-    public void declareSymbol(Symbol symbol) {
+    public void declareSymbol(Symbol<?> symbol) {
         if (symbol instanceof Function) {
             throw new IllegalStateException("Cannot declare a function in a block context");
         }

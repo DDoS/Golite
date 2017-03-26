@@ -85,8 +85,8 @@ public class CodeGenerator implements IrVisitor {
     private final Map<Expr<?>, LLVMValueRef> exprValues = new HashMap<>();
     private final Map<Expr<?>, LLVMValueRef> exprPtrs = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
-    private final Map<Variable, LLVMValueRef> globalVariables = new HashMap<>();
-    private final Map<Variable, LLVMValueRef> functionVariables = new HashMap<>();
+    private final Map<Variable<?>, LLVMValueRef> globalVariables = new HashMap<>();
+    private final Map<Variable<?>, LLVMValueRef> functionVariables = new HashMap<>();
     private ByteBuffer machineCode;
 
     public ByteBuffer getMachineCode() {
@@ -173,8 +173,8 @@ public class CodeGenerator implements IrVisitor {
         LLVMDisposeModule(module);
     }
 
-    private void codeGenGlobal(VariableDecl variableDecl) {
-        final Variable variable = variableDecl.getVariable();
+    private void codeGenGlobal(VariableDecl<?> variableDecl) {
+        final Variable<?> variable = variableDecl.getVariable();
         final LLVMTypeRef type = createType(variable.getType());
         final LLVMValueRef global = LLVMAddGlobal(module, type, variableDecl.getUniqueName());
         LLVMSetLinkage(global, LLVMPrivateLinkage);
@@ -214,10 +214,10 @@ public class CodeGenerator implements IrVisitor {
         final LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
         LLVMPositionBuilderAtEnd(builder, entry);
         // Place the variables values for the parameters on the stack
-        final List<Variable> paramVariables = symbol.getParameters();
+        final List<Variable<?>> paramVariables = symbol.getParameters();
         final List<String> paramUniqueNames = functionDecl.getParamUniqueNames();
         for (int i = 0; i < paramVariables.size(); i++) {
-            final Variable variable = paramVariables.get(i);
+            final Variable<?> variable = paramVariables.get(i);
             final LLVMValueRef varPtr = allocateStackVariable(variable, paramUniqueNames.get(i));
             functionVariables.put(variable, varPtr);
             // Store the parameter in the stack variable
@@ -233,8 +233,8 @@ public class CodeGenerator implements IrVisitor {
     }
 
     @Override
-    public void visitVariableDecl(VariableDecl variableDecl) {
-        final Variable variable = variableDecl.getVariable();
+    public void visitVariableDecl(VariableDecl<?> variableDecl) {
+        final Variable<?> variable = variableDecl.getVariable();
         final LLVMValueRef varPtr = allocateStackVariable(variable, variableDecl.getUniqueName());
         functionVariables.put(variable, varPtr);
     }
@@ -349,7 +349,7 @@ public class CodeGenerator implements IrVisitor {
     }
 
     @Override
-    public void visitIdentifier(Identifier identifier) {
+    public void visitIdentifier(Identifier<?> identifier) {
         // Only put a pointer to the variable, it will be loaded when necessary
         // Start by checking the function variables
         LLVMValueRef varPtr = functionVariables.get(identifier.getVariable());
@@ -582,7 +582,7 @@ public class CodeGenerator implements IrVisitor {
         return LLVMBuildInBoundsGEP(builders.peek(), valuePtr, new PointerPointer<>(indices), indices.length, memberName + "Ptr");
     }
 
-    private LLVMValueRef allocateStackVariable(Variable variable, String uniqueName) {
+    private LLVMValueRef allocateStackVariable(Variable<?> variable, String uniqueName) {
         final LLVMTypeRef type = createType(variable.getType());
         return LLVMBuildAlloca(builders.peek(), type, uniqueName);
     }

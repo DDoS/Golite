@@ -8,17 +8,21 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class Identifier extends Expr<Type> {
-    private final Variable variable;
+public class Identifier<T extends Type> extends Expr<T> {
+    private final Variable<T> variable;
     private final String uniqueName;
 
-    public Identifier(Variable variable, String uniqueName) {
+    public Identifier(Variable<T> variable) {
+        this(variable, variable.getName());
+    }
+
+    public Identifier(Variable<T> variable, String uniqueName) {
         super(variable.getType());
         this.variable = variable;
         this.uniqueName = uniqueName;
     }
 
-    public Variable getVariable() {
+    public Variable<T> getVariable() {
         return variable;
     }
 

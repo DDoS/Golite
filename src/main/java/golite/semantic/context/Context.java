@@ -16,7 +16,7 @@ import golite.util.SourcePrinter;
 public abstract class Context {
     private final Context parent;
     private final int id;
-    protected final Map<String, Symbol> symbols = new LinkedHashMap<>();
+    protected final Map<String, Symbol<?>> symbols = new LinkedHashMap<>();
 
     protected Context(Context parent, int id) {
         this.parent = parent;
@@ -34,22 +34,22 @@ public abstract class Context {
         return id;
     }
 
-    public Optional<Symbol> lookupSymbol(String name) {
+    public Optional<Symbol<?>> lookupSymbol(String name) {
         return lookupSymbol(name, true);
     }
 
-    public Optional<Symbol> lookupSymbol(String name, boolean recursive) {
+    public Optional<Symbol<?>> lookupSymbol(String name, boolean recursive) {
         if (name.equals("_")) {
             throw new IllegalArgumentException("Cannot resolve the blank identifier");
         }
-        final Symbol symbol = symbols.get(name);
+        final Symbol<?> symbol = symbols.get(name);
         if (symbol != null) {
             return Optional.of(symbol);
         }
         return recursive && parent != null ? parent.lookupSymbol(name) : Optional.empty();
     }
 
-    public void declareSymbol(Symbol symbol) {
+    public void declareSymbol(Symbol<?> symbol) {
         final String name = symbol.getName();
         if (name.equals("_")) {
             // Don't declare blank symbols

@@ -29,11 +29,11 @@ public class SemanticData {
     private final Map<PExpr, Type> exprNodeTypes;
     private final Map<Context, Node> contextNodes;
     private final Map<AFuncDecl, Function> funcSymbols;
-    private final Map<Node, List<Variable>> varSymbols;
-    private final Map<AIdentExpr, Symbol> identSymbols;
+    private final Map<Node, List<Variable<?>>> varSymbols;
+    private final Map<AIdentExpr, Symbol<?>> identSymbols;
 
     public SemanticData(Map<PExpr, Type> exprNodeTypes, Map<Context, Node> contextNodes, Map<AFuncDecl,
-            Function> funcSymbols, Map<Node, List<Variable>> varSymbols, Map<AIdentExpr, Symbol> identSymbols) {
+            Function> funcSymbols, Map<Node, List<Variable<?>>> varSymbols, Map<AIdentExpr, Symbol<?>> identSymbols) {
         this.exprNodeTypes = exprNodeTypes;
         this.contextNodes = contextNodes;
         this.funcSymbols = funcSymbols;
@@ -49,11 +49,11 @@ public class SemanticData {
         return Optional.ofNullable(funcSymbols.get(node));
     }
 
-    public Optional<List<Variable>> getVariableSymbols(Node node) {
+    public Optional<List<Variable<?>>> getVariableSymbols(Node node) {
         return Optional.ofNullable(varSymbols.get(node));
     }
 
-    public Optional<Symbol> getIdentifierSymbol(AIdentExpr node) {
+    public Optional<Symbol<?>> getIdentifierSymbol(AIdentExpr node) {
         return Optional.ofNullable(identSymbols.get(node));
     }
 

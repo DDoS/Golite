@@ -128,8 +128,8 @@ public class TypeChecker extends AnalysisAdapter {
     private final Map<PExpr, Type> exprNodeTypes = new HashMap<>();
     private final Map<PType, Type> typeNodeTypes = new HashMap<>();
     private final Map<AFuncDecl, Function> funcSymbols = new HashMap<>();
-    private final Map<Node, List<Variable>> varSymbols = new HashMap<>();
-    private final Map<AIdentExpr, Symbol> identSymbols = new HashMap<>();
+    private final Map<Node, List<Variable<?>>> varSymbols = new HashMap<>();
+    private final Map<AIdentExpr, Symbol<?>> identSymbols = new HashMap<>();
     private final Map<Context, Node> contextNodes = new HashMap<>();
     private Context context;
     private int nextContextID = 0;
@@ -184,7 +184,7 @@ public class TypeChecker extends AnalysisAdapter {
             valueTypes.add(exprNodeTypes.get(exprNode));
         }
         // Declare the variables
-        final List<Variable> variables = new ArrayList<>();
+        final List<Variable<?>> variables = new ArrayList<>();
         if (node.getType() != null) {
             // If we have the type, then declare a variable for each identifier, all with the same type
             node.getType().apply(this);
@@ -198,7 +198,7 @@ public class TypeChecker extends AnalysisAdapter {
             }
             // Declare the variables
             for (TIdenf idenf : node.getIdenf()) {
-                final Variable variable = new Variable(position, idenf.getText(), type);
+                final Variable<?> variable = new Variable<>(position, idenf.getText(), type);
                 context.declareSymbol(variable);
                 variables.add(variable);
             }
@@ -206,7 +206,7 @@ public class TypeChecker extends AnalysisAdapter {
             // Otherwise declare the variable for each identifier using the value types
             final List<TIdenf> idenfs = node.getIdenf();
             for (int i = 0; i < idenfs.size(); i++) {
-                final Variable variable = new Variable(position, idenfs.get(i).getText(), valueTypes.get(i));
+                final Variable<?> variable = new Variable<>(position, idenfs.get(i).getText(), valueTypes.get(i));
                 context.declareSymbol(variable);
                 variables.add(variable);
             }
@@ -232,7 +232,7 @@ public class TypeChecker extends AnalysisAdapter {
         // Check that all exprs on RHS are well-typed
         node.getRight().forEach(exp -> exp.apply(this));
         // Check that vars already declared are assigned to expressions of the same type
-        final List<Variable> variables = new ArrayList<>();
+        final List<Variable<?>> variables = new ArrayList<>();
         for (int i = 0; i < node.getLeft().size(); i++) {
             node.getRight().get(i).apply(this);
             final Type rightType = exprNodeTypes.get(node.getRight().get(i));
@@ -243,9 +243,9 @@ public class TypeChecker extends AnalysisAdapter {
                 continue;
             }
             // If the var has already been declared, make sure RHS expr has the same type
-            final Optional<Symbol> optVar = context.lookupSymbol(idenf, false);
-            if (optVar.isPresent() && optVar.get() instanceof Variable) {
-                final Symbol var = optVar.get();
+            final Optional<Symbol<?>> optVar = context.lookupSymbol(idenf, false);
+            if (optVar.isPresent() && optVar.get() instanceof Variable<?>) {
+                final Symbol<?> var = optVar.get();
                 final Type leftType = var.getType();
                 if (!leftType.equals(rightType)) {
                     throw new TypeCheckerException(node, "Cannot assign type " + rightType + " to type " + leftType);
@@ -255,7 +255,7 @@ public class TypeChecker extends AnalysisAdapter {
                 variables.add(null);
             } else {
                 // Var hasn't been declared - declare as new var with the same type as RHS expr
-                final Variable variable = new Variable(new NodePosition(leftNode), idenf, rightType);
+                final Variable<?> variable = new Variable<>(new NodePosition(leftNode), idenf, rightType);
                 context.declareSymbol(variable);
                 variables.add(variable);
             }
@@ -268,19 +268,19 @@ public class TypeChecker extends AnalysisAdapter {
         node.getType().apply(this);
         // The type to declare is an alias to that type
         final AliasType alias = new AliasType(context.getID(), node.getIdenf().getText(), typeNodeTypes.get(node.getType()));
-        context.declareSymbol(new DeclaredType(new NodePosition(node), node.getIdenf().getText(), alias));
+        context.declareSymbol(new DeclaredType<>(new NodePosition(node), node.getIdenf().getText(), alias));
     }
 
     @Override
     public void caseAFuncDecl(AFuncDecl node) {
         // Create variables for the parameters, which will be declared into the function context
-        final List<Variable> params = new ArrayList<>();
+        final List<Variable<?>> params = new ArrayList<>();
         for (PParam pParam : node.getParam()) {
             final NodePosition paramPos = new NodePosition(pParam);
             final AParam param = (AParam) pParam;
             param.getType().apply(this);
             final Type paramType = typeNodeTypes.get(param.getType());
-            param.getIdenf().forEach(idenf -> params.add(new Variable(paramPos, idenf.getText(), paramType)));
+            param.getIdenf().forEach(idenf -> params.add(new Variable<>(paramPos, idenf.getText(), paramType)));
         }
         // Now check the return type (if it exists)
         final Type returnType;
@@ -660,13 +660,13 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseAIdentExpr(AIdentExpr node) {
         // Resolve the symbol for the name
         final String name = node.getIdenf().getText();
-        final Optional<Symbol> optSymbol = context.lookupSymbol(name);
+        final Optional<Symbol<?>> optSymbol = context.lookupSymbol(name);
         if (!optSymbol.isPresent()) {
             throw new TypeCheckerException(node, "Undeclared symbol: " + name);
         }
-        final Symbol symbol = optSymbol.get();
+        final Symbol<?> symbol = optSymbol.get();
         // If the symbol is a variable or function, add the type
-        if (symbol instanceof Variable || symbol instanceof Function) {
+        if (symbol instanceof Variable<?> || symbol instanceof Function) {
             exprNodeTypes.put(node, symbol.getType());
             identSymbols.put(node, symbol);
             return;
@@ -757,7 +757,7 @@ public class TypeChecker extends AnalysisAdapter {
         final PExpr value = node.getValue();
         if (value instanceof AIdentExpr) {
             final AIdentExpr identExpr = (AIdentExpr) value;
-            final Optional<Symbol> symbol = context.lookupSymbol((identExpr).getIdenf().getText());
+            final Optional<Symbol<?>> symbol = context.lookupSymbol((identExpr).getIdenf().getText());
             if (symbol.isPresent() && symbol.get() instanceof DeclaredType) {
                 // It's a cast
                 identSymbols.put(identExpr, symbol.get());
@@ -1053,12 +1053,12 @@ public class TypeChecker extends AnalysisAdapter {
     public void caseANameType(ANameType node) {
         // Resolve the symbol for the name
         final String name = node.getIdenf().getText();
-        final Optional<Symbol> optSymbol = context.lookupSymbol(name);
+        final Optional<Symbol<?>> optSymbol = context.lookupSymbol(name);
         if (!optSymbol.isPresent()) {
             throw new TypeCheckerException(node.getIdenf(), "Undeclared symbol: " + name);
         }
         // Check that the symbol is a type
-        final Symbol symbol = optSymbol.get();
+        final Symbol<?> symbol = optSymbol.get();
         if (!(symbol instanceof DeclaredType)) {
             throw new TypeCheckerException(node.getIdenf(), "Not a type: " + symbol);
         }

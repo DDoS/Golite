@@ -47,7 +47,7 @@ public interface IrVisitor {
 
     void visitFunctionDecl(FunctionDecl function);
 
-    void visitVariableDecl(VariableDecl variableDecl);
+    void visitVariableDecl(VariableDecl<?> variableDecl);
 
     void visitVoidReturn(VoidReturn voidReturn);
 
@@ -79,7 +79,7 @@ public interface IrVisitor {
 
     void visitStringLit(StringLit stringLit);
 
-    void visitIdentifier(Identifier identifier);
+    void visitIdentifier(Identifier<?> identifier);
 
     void visitSelect(Select select);
 

@@ -2,21 +2,26 @@ package golite.ir.node;
 
 import golite.ir.IrVisitor;
 import golite.semantic.symbol.Variable;
+import golite.semantic.type.Type;
 import golite.util.SourcePrinter;
 
 /**
  *
  */
-public class VariableDecl implements Stmt {
-    private final Variable symbol;
+public class VariableDecl<T extends Type> implements Stmt {
+    private final Variable<T> symbol;
     private final String uniqueName;
 
-    public VariableDecl(Variable symbol, String uniqueName) {
+    public VariableDecl(Variable<T> variable) {
+        this(variable, variable.getName());
+    }
+
+    public VariableDecl(Variable<T> symbol, String uniqueName) {
         this.symbol = symbol;
         this.uniqueName = uniqueName;
     }
 
-    public Variable getVariable() {
+    public Variable<T> getVariable() {
         return symbol;
     }
 
