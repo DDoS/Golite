@@ -23,6 +23,26 @@ public class AliasType extends Type {
     }
 
     @Override
+    public boolean isNumeric() {
+        return inner.isNumeric();
+    }
+
+    @Override
+    public boolean isInteger() {
+        return inner.isInteger();
+    }
+
+    @Override
+    public boolean isComparable() {
+        return inner.isComparable();
+    }
+
+    @Override
+    public boolean isOrdered() {
+        return inner.isOrdered();
+    }
+
+    @Override
     public Type resolve() {
         Type innerMost = inner;
         while (innerMost instanceof AliasType) {
