@@ -43,7 +43,9 @@ public class Program implements IrNode {
             printer.newLine();
             global.print(printer);
         });
-        printer.newLine();
+        if (!globals.isEmpty()) {
+            printer.newLine();
+        }
         functions.forEach(function -> {
             printer.newLine();
             function.print(printer);

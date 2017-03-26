@@ -34,7 +34,7 @@ public class Jump implements Stmt {
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.print("Jump(").print(label.getName()).print(", ");
+        printer.print("jump(").print(label.getName()).print(", ");
         condition.print(printer);
         printer.print(")");
     }
