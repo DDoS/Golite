@@ -1,7 +1,7 @@
 # Milestone 3
 
 ## Implementation
-Type declarations simply create a new `DeclaredType` symbol in the context. The type is an alias
+
 We have chosen to implement Milestone 4 using low-level code, specifically, LLVM-IR. More specifically, 
 we plan to first convert Golite to a simpler IR and thereby convert this IR to a LLVM IR representation,
 specifically using the LLVM C API. We plan to use LLVM because of the several advantages it offers over 
