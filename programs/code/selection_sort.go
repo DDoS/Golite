@@ -1,4 +1,4 @@
-// Selection Sorting a huge array in GoLite
+// Selection Sorting a huge array in GoLite 
 
 package main
 
