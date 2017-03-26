@@ -37,6 +37,9 @@ func staticInit() {
     sli = append(sli, 3)
     println(arr[1])
     println(sli[0])
+
+    var arr2 [16]string
+    b := arr == arr2
 }
 
 var str = "lol\\"

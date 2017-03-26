@@ -13,6 +13,10 @@ public class Label implements Stmt {
         this.name = name;
     }
 
+    public String getName() {
+        return name;
+    }
+
     @Override
     public void visit(IrVisitor visitor) {
         visitor.visitLabel(this);

@@ -8,10 +8,10 @@ import golite.util.SourcePrinter;
  *
  */
 public class Jump implements Stmt {
-    private final Expr<BasicType> condition;
     private final Label label;
+    private final Expr<BasicType> condition;
 
-    public Jump(Expr<BasicType> condition, Label label) {
+    public Jump(Label label, Expr<BasicType> condition) {
         if (condition.getType() != BasicType.BOOL) {
             throw new IllegalArgumentException("Expected a bool-typed expression");
         }
@@ -19,12 +19,12 @@ public class Jump implements Stmt {
         this.label = label;
     }
 
-    public Expr<BasicType> getCondition() {
-        return condition;
-    }
-
     public Label getLabel() {
         return label;
+    }
+
+    public Expr<BasicType> getCondition() {
+        return condition;
     }
 
     @Override
@@ -34,9 +34,7 @@ public class Jump implements Stmt {
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.print("Jump(");
-        label.print(printer);
-        printer.print(", ");
+        printer.print("Jump(").print(label.getName()).print(", ");
         condition.print(printer);
         printer.print(")");
     }

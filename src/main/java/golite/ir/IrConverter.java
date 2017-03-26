@@ -1,6 +1,7 @@
 package golite.ir;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,17 +14,25 @@ import java.util.stream.Collectors;
 import golite.analysis.AnalysisAdapter;
 import golite.ir.node.Append;
 import golite.ir.node.Assignment;
+import golite.ir.node.BinArInt;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
 import golite.ir.node.Cast;
+import golite.ir.node.CmpBool;
+import golite.ir.node.CmpFloat64;
 import golite.ir.node.CmpInt;
 import golite.ir.node.CmpInt.Op;
+import golite.ir.node.CmpString;
 import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
+import golite.ir.node.Jump;
+import golite.ir.node.Label;
+import golite.ir.node.LogicNot;
+import golite.ir.node.LogicOr;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
@@ -93,9 +102,10 @@ public class IrConverter extends AnalysisAdapter {
     private final SemanticData semantics;
     private Program convertedProgram;
     private final Map<AFuncDecl, Optional<FunctionDecl>> convertedFunctions = new HashMap<>();
-    private final Map<Node, List<Stmt>> convertedStmts = new HashMap<>();
+    private final List<Stmt> functionStmts = new ArrayList<>();
     private final Map<PExpr, Expr<?>> convertedExprs = new HashMap<>();
     private final Map<Variable<?>, String> uniqueVarNames = new HashMap<>();
+    private final Map<Label, String> uniqueLabelNames = new HashMap<>();
 
     public IrConverter(SemanticData semantics) {
         this.semantics = semantics;
@@ -115,26 +125,27 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAProg(AProg node) {
-        node.getDecl().forEach(decl -> decl.apply(this));
-        final List<FunctionDecl> functions = new ArrayList<>();
+        // First we handle the global variables
+        node.getDecl().stream().filter(decl -> decl instanceof AVarDecl).forEach(decl -> decl.apply(this));
         final List<VariableDecl<?>> globals = new ArrayList<>();
+        // Variable declarations will create additional statements, which are put in a function called before the main
         final List<Stmt> staticInitialization = new ArrayList<>();
-        for (PDecl decl : node.getDecl()) {
-            if (decl instanceof AFuncDecl) {
-                convertedFunctions.get(decl).ifPresent(functions::add);
-            } else if (decl instanceof AVarDecl) {
-                // Variable declarations will create additional statements,
-                // Which are put in a function called before the main
-                for (Stmt stmt : convertedStmts.get(decl)) {
-                    if (stmt instanceof VariableDecl<?>) {
-                        globals.add((VariableDecl<?>) stmt);
-                    } else {
-                        staticInitialization.add(stmt);
-                    }
-                }
+        for (Stmt stmt : functionStmts) {
+            if (stmt instanceof VariableDecl<?>) {
+                globals.add((VariableDecl<?>) stmt);
+            } else {
+                staticInitialization.add(stmt);
             }
         }
         staticInitialization.add(new VoidReturn());
+        // Then we do the function declarations
+        node.getDecl().stream().filter(decl -> decl instanceof AFuncDecl).forEach(decl -> decl.apply(this));
+        final List<FunctionDecl> functions = new ArrayList<>();
+        for (PDecl decl : node.getDecl()) {
+            if (decl instanceof AFuncDecl) {
+                convertedFunctions.get(decl).ifPresent(functions::add);
+            }
+        }
         // Add the static initialization function for the global variables
         final FunctionType staticInitType = new FunctionType(Collections.emptyList(), null);
         final Function staticInit = new Function(0, 0, 0, 0, "staticInit", staticInitType,
@@ -157,25 +168,18 @@ public class IrConverter extends AnalysisAdapter {
         final List<String> uniqueParamNames = symbol.getParameters().stream()
                 .map(this::findUniqueName).collect(Collectors.toList());
         // Type check the statements
-        final List<Stmt> stmts = new ArrayList<>();
-        node.getStmt().forEach(stmt -> {
-            stmt.apply(this);
-            if (convertedStmts.containsKey(stmt)) {
-                // TODO: remove this check when done
-                stmts.addAll(convertedStmts.get(stmt));
-            }
-        });
+        functionStmts.clear();
+        node.getStmt().forEach(stmt -> stmt.apply(this));
         // If the function has no return value and does not have a final return statement, then add one
         if (!symbol.getType().getReturnType().isPresent()
-                && (stmts.isEmpty() || !(stmts.get(stmts.size() - 1) instanceof VoidReturn))) {
-            stmts.add(new VoidReturn());
+                && (functionStmts.isEmpty() || !(functionStmts.get(functionStmts.size() - 1) instanceof VoidReturn))) {
+            functionStmts.add(new VoidReturn());
         }
-        convertedFunctions.put(node, Optional.of(new FunctionDecl(symbol, uniqueParamNames, stmts)));
+        convertedFunctions.put(node, Optional.of(new FunctionDecl(symbol, uniqueParamNames, new ArrayList<>(functionStmts))));
     }
 
     @Override
     public void caseAVarDecl(AVarDecl node) {
-        final List<Stmt> stmts = new ArrayList<>();
         // Two statements per variable declaration: declaration and initialization
         final List<Variable<?>> variables = semantics.getVariableSymbols(node).get();
         final List<TIdenf> idenfs = node.getIdenf();
@@ -191,14 +195,12 @@ public class IrConverter extends AnalysisAdapter {
                     .filter(var -> var.getName().equals(variableName))
                     .findFirst().get();
             // The declare it
-            convertVariableDecl(stmts, variable, exprs.isEmpty() ? null : exprs.get(i));
+            convertVariableDecl(functionStmts, variable, exprs.isEmpty() ? null : exprs.get(i));
         }
-        convertedStmts.put(node, stmts);
     }
 
     @Override
     public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
-        final List<Stmt> stmts = new ArrayList<>();
         final List<Variable<?>> variables = semantics.getVariableSymbols(node).get();
         // First we handle the new variables, and create temporary variables for the assignments
         final List<PExpr> lefts = node.getLeft();
@@ -210,10 +212,10 @@ public class IrConverter extends AnalysisAdapter {
                 // Just an assignment, so handle it the same way
                 final PExpr right = rights.get(i);
                 right.apply(this);
-                createTmpAssignVar(stmts, tmpVars, convertedExprs.get(right));
+                createTmpAssignVar(functionStmts, tmpVars, convertedExprs.get(right));
             } else {
                 // New variable declaration
-                convertVariableDecl(stmts, variable, rights.get(i));
+                convertVariableDecl(functionStmts, variable, rights.get(i));
             }
         }
         // Then we assign the intermediate variables to the right expressions
@@ -224,9 +226,8 @@ public class IrConverter extends AnalysisAdapter {
             }
             final PExpr left = lefts.get(i);
             left.apply(this);
-            stmts.add(createAssignFromVar(convertedExprs.get(left), tmpVars.get(j++)));
+            functionStmts.add(createAssignFromVar(convertedExprs.get(left), tmpVars.get(j++)));
         }
-        convertedStmts.put(node, stmts);
     }
 
     private <T extends Type> void convertVariableDecl(List<Stmt> stmts, Variable<T> variable, PExpr initializer) {
@@ -256,15 +257,14 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAEmptyStmt(AEmptyStmt node) {
-        convertedStmts.put(node, Collections.emptyList());
+        // Nothing to do here
     }
 
     @Override
     public void caseAExprStmt(AExprStmt node) {
         node.getExpr().apply(this);
         // The IR for expressions that are statements implement the Stmt interface
-        final Stmt stmt = (Stmt) convertedExprs.get(node.getExpr());
-        convertedStmts.put(node, Collections.singletonList(stmt));
+        functionStmts.add((Stmt) convertedExprs.get(node.getExpr()));
     }
 
     @Override
@@ -277,20 +277,18 @@ public class IrConverter extends AnalysisAdapter {
         if (lefts.size() == 1) {
             final Expr<?> left = convertedExprs.get(lefts.get(0));
             final Expr<?> right = convertedExprs.get(rights.get(0));
-            convertedStmts.put(node, Collections.singletonList(new Assignment(left, right)));
+            functionStmts.add(new Assignment(left, right));
             return;
         }
         // For multiple assignments, we first need to assign each right to a new intermediate variable
-        final List<Stmt> stmts = new ArrayList<>();
         final List<Variable<?>> tmpVars = new ArrayList<>();
         for (int i = 0; i < lefts.size(); i++) {
-            createTmpAssignVar(stmts, tmpVars, convertedExprs.get(rights.get(i)));
+            createTmpAssignVar(functionStmts, tmpVars, convertedExprs.get(rights.get(i)));
         }
         // Then we assign the intermediate variables to the right expressions
         for (int i = 0; i < lefts.size(); i++) {
-            stmts.add(createAssignFromVar(convertedExprs.get(lefts.get(i)), tmpVars.get(i)));
+            functionStmts.add(createAssignFromVar(convertedExprs.get(lefts.get(i)), tmpVars.get(i)));
         }
-        convertedStmts.put(node, stmts);
     }
 
     private <T extends Type> void createTmpAssignVar(List<Stmt> stmts, List<Variable<?>> tmpVars, Expr<T> right) {
@@ -308,19 +306,16 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAPrintStmt(APrintStmt node) {
-        final List<Stmt> stmts = convertPrintStmt(node.getExpr());
-        convertedStmts.put(node, stmts);
+        convertPrintStmt(node.getExpr());
     }
 
     @Override
     public void caseAPrintlnStmt(APrintlnStmt node) {
-        final List<Stmt> stmts = convertPrintStmt(node.getExpr());
-        stmts.add(new PrintString(new StringLit("\n")));
-        convertedStmts.put(node, stmts);
+        convertPrintStmt(node.getExpr());
+        functionStmts.add(new PrintString(new StringLit("\n")));
     }
 
-    private List<Stmt> convertPrintStmt(LinkedList<PExpr> exprs) {
-        final List<Stmt> stmts = new ArrayList<>();
+    private void convertPrintStmt(LinkedList<PExpr> exprs) {
         for (PExpr expr : exprs) {
             expr.apply(this);
             @SuppressWarnings("unchecked")
@@ -340,9 +335,8 @@ public class IrConverter extends AnalysisAdapter {
             } else {
                 throw new IllegalStateException("Unexpected type: " + type);
             }
-            stmts.add(printStmt);
+            functionStmts.add(printStmt);
         }
-        return stmts;
     }
 
     @Override
@@ -355,27 +349,21 @@ public class IrConverter extends AnalysisAdapter {
             value.apply(this);
             return_ = new ValueReturn(convertedExprs.get(value));
         }
-        convertedStmts.put(node, Collections.singletonList(return_));
+        functionStmts.add(return_);
     }
 
     @Override
     public void caseABlockStmt(ABlockStmt node) {
-        final List<Stmt> stmts = new ArrayList<>();
         for (PStmt stmt : node.getStmt()) {
             stmt.apply(this);
-            stmts.addAll(convertedStmts.get(stmt));
         }
-        convertedStmts.put(node, stmts);
     }
 
     @Override
     public void caseADeclStmt(ADeclStmt node) {
-        final List<Stmt> stmts = new ArrayList<>();
         for (PDecl decl : node.getDecl()) {
             decl.apply(this);
-            stmts.addAll(convertedStmts.get(decl));
         }
-        convertedStmts.put(node, stmts);
     }
 
     @Override
@@ -461,7 +449,7 @@ public class IrConverter extends AnalysisAdapter {
         node.getIndex().apply(this);
         @SuppressWarnings("unchecked")
         final Expr<BasicType> index = (Expr<BasicType>) convertedExprs.get(node.getIndex());
-        convertedExprs.put(node, new Indexing(value, index));
+        convertedExprs.put(node, new Indexing<>(value, index));
     }
 
     @Override
@@ -504,6 +492,87 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
+    public void caseAEqExpr(AEqExpr node) {
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        final Expr<?> left = convertedExprs.get(node.getLeft());
+        final Expr<?> right = convertedExprs.get(node.getRight());
+        final Expr<BasicType> equal = convertEqual(left, right);
+        convertedExprs.put(node, equal);
+    }
+
+    private Expr<BasicType> convertEqual(Expr<?> left, Expr<?> right) {
+        final Type leftType = left.getType();
+        if (leftType == BasicType.BOOL) {
+            @SuppressWarnings("unchecked")
+            final CmpBool equal = new CmpBool((Expr<BasicType>) left, (Expr<BasicType>) right, CmpBool.Op.EQ);
+            return equal;
+        }
+        if (leftType.isInteger()) {
+            @SuppressWarnings("unchecked")
+            final CmpInt equal = new CmpInt((Expr<BasicType>) left, (Expr<BasicType>) right, CmpInt.Op.EQ);
+            return equal;
+        }
+        if (leftType == BasicType.FLOAT64) {
+            @SuppressWarnings("unchecked")
+            final CmpFloat64 equal = new CmpFloat64((Expr<BasicType>) left, (Expr<BasicType>) right, CmpFloat64.Op.EQ);
+            return equal;
+        }
+        if (leftType == BasicType.STRING) {
+            @SuppressWarnings("unchecked")
+            final CmpString equal = new CmpString((Expr<BasicType>) left, (Expr<BasicType>) right, CmpString.Op.EQ);
+            return equal;
+        }
+        if (leftType instanceof ArrayType) {
+            final ArrayType arrayType = (ArrayType) leftType;
+            // arrEq := true
+            final Variable<BasicType> equalVar = newVariable(BasicType.BOOL, "arrEq");
+            final VariableDecl<BasicType> equal = new VariableDecl<>(equalVar);
+            final Assignment equalInit = new Assignment(new Identifier<>(equalVar), new BoolLit(true));
+            // arrIdx := 0
+            final Variable<BasicType> indexVar = newVariable(BasicType.INT, "arrIdx");
+            final VariableDecl<BasicType> index = new VariableDecl<>(indexVar);
+            final Assignment indexInit = new Assignment(new Identifier<>(indexVar), new IntLit(0));
+            // Labels at the start and end of the loop body
+            final Label startLabel = newLabel("startLoop");
+            final Label endLabel = newLabel("endLoop");
+            // Jump to end label if arrIdx >= arrayLength || !arrEq
+            final CmpInt cmpIndex = new CmpInt(new Identifier<>(indexVar), new IntLit(arrayType.getLength()), Op.GREAT_EQ);
+            final LogicOr loopCondition = new LogicOr(cmpIndex, new LogicNot(new Identifier<>(equalVar)));
+            final Jump loopEntry = new Jump(endLabel, loopCondition);
+            // Add all the statements so far to the list
+            functionStmts.addAll(Arrays.asList(
+                    equal, equalInit,
+                    index, indexInit,
+                    startLabel,
+                    loopEntry
+            ));
+            // arrEq = equals(arr1[arrIdx], arr2[arrIdx])
+            @SuppressWarnings("unchecked")
+            final Indexing<?> leftComp = new Indexing<>((Expr<? extends IndexableType>) left, new Identifier<>(indexVar));
+            @SuppressWarnings("unchecked")
+            final Indexing<?> rightComp = new Indexing<>((Expr<? extends IndexableType>) right, new Identifier<>(indexVar));
+            final Expr<BasicType> compEqual = convertEqual(leftComp, rightComp);
+            final Assignment updateEqual = new Assignment(new Identifier<>(equalVar), compEqual);
+            // arrIdx++
+            final BinArInt add1Idx = new BinArInt(new Identifier<>(indexVar), new IntLit(1), BinArInt.Op.ADD);
+            final Assignment incrIdx = new Assignment(new Identifier<>(indexVar), add1Idx);
+            // Jump to start of loop
+            final Jump loopBack = new Jump(startLabel, new BoolLit(true));
+            // Add all the statements so far to the list
+            functionStmts.addAll(Arrays.asList(
+                    updateEqual,
+                    incrIdx,
+                    loopBack,
+                    endLabel
+            ));
+            // The result if in arrEq
+            return new Identifier<>(equalVar);
+        }
+        throw new UnsupportedOperationException(leftType.toString());
+    }
+
+    @Override
     public void defaultCase(Node node) {
     }
 
@@ -538,6 +607,13 @@ public class IrConverter extends AnalysisAdapter {
         final Variable<T> variable = new Variable<>(0, 0, 0, 0, uniqueName, type);
         uniqueVarNames.put(variable, uniqueName);
         return variable;
+    }
+
+    private Label newLabel(String name) {
+        final String uniqueName = findUniqueName(name, uniqueLabelNames.values());
+        final Label label = new Label(uniqueName);
+        uniqueLabelNames.put(label, uniqueName);
+        return label;
     }
 
     private static <T extends Type> Stmt defaultInitializer(Identifier<T> variableExpr, T type) {

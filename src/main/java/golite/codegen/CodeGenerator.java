@@ -380,8 +380,8 @@ public class CodeGenerator implements IrVisitor {
     }
 
     @Override
-    public void visitIndexing(Indexing indexing) {
-        final Expr<IndexableType> value = indexing.getValue();
+    public void visitIndexing(Indexing<?> indexing) {
+        final Expr<? extends IndexableType> value = indexing.getValue();
         value.visit(this);
         final LLVMValueRef valuePtr = getExprPtr(value);
         indexing.getIndex().visit(this);

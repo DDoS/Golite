@@ -39,6 +39,11 @@ public class Program implements IrNode {
     @Override
     public void print(SourcePrinter printer) {
         printer.print("package ").print(packageName).newLine();
+        globals.forEach(global -> {
+            printer.newLine();
+            global.print(printer);
+        });
+        printer.newLine();
         functions.forEach(function -> {
             printer.newLine();
             function.print(printer);

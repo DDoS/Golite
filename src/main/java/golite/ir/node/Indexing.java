@@ -9,11 +9,11 @@ import golite.util.SourcePrinter;
 /**
  *
  */
-public class Indexing extends Expr<Type> {
-    private final Expr<IndexableType> value;
+public class Indexing<T extends IndexableType> extends Expr<Type> {
+    private final Expr<T> value;
     private final Expr<BasicType> index;
 
-    public Indexing(Expr<IndexableType> value, Expr<BasicType> index) {
+    public Indexing(Expr<T> value, Expr<BasicType> index) {
         super(value.getType().getComponent());
         if (!index.getType().isInteger()) {
             throw new IllegalArgumentException("Expected an integer-typed index expression");
@@ -22,7 +22,7 @@ public class Indexing extends Expr<Type> {
         this.index = index;
     }
 
-    public Expr<IndexableType> getValue() {
+    public Expr<T> getValue() {
         return value;
     }
 

@@ -83,7 +83,7 @@ public interface IrVisitor {
 
     void visitSelect(Select select);
 
-    void visitIndexing(Indexing indexing);
+    void visitIndexing(Indexing<?> indexing);
 
     void visitCall(Call call);
 
