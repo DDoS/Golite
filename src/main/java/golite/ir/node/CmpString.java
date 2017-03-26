@@ -13,7 +13,7 @@ public class CmpString extends Expr<BasicType> {
     private final Op op;
 
     public CmpString(Expr<BasicType> left, Expr<BasicType> right, Op op) {
-        super(BasicType.STRING);
+        super(BasicType.BOOL);
         if (left.getType() != BasicType.STRING || right.getType() != BasicType.STRING) {
             throw new IllegalArgumentException("Expected string-typed expressions");
         }

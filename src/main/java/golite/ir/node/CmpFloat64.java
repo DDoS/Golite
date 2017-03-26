@@ -13,7 +13,7 @@ public class CmpFloat64 extends Expr<BasicType> {
     private final Op op;
 
     public CmpFloat64(Expr<BasicType> left, Expr<BasicType> right, Op op) {
-        super(BasicType.FLOAT64);
+        super(BasicType.BOOL);
         if (left.getType() != BasicType.FLOAT64 || right.getType() != BasicType.FLOAT64) {
             throw new IllegalArgumentException("Expected float64-typed expressions");
         }

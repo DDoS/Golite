@@ -13,7 +13,7 @@ public class CmpInt extends Expr<BasicType> {
     private final Op op;
 
     public CmpInt(Expr<BasicType> left, Expr<BasicType> right, Op op) {
-        super(BasicType.INT);
+        super(BasicType.BOOL);
         if (!left.getType().isInteger() || !right.getType().isInteger()) {
             throw new IllegalArgumentException("Expected integer-typed expressions");
         }
