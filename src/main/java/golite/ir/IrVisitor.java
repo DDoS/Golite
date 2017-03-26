@@ -2,14 +2,25 @@ package golite.ir;
 
 import golite.ir.node.Append;
 import golite.ir.node.Assignment;
+import golite.ir.node.BinArFloat64;
+import golite.ir.node.BinArInt;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
 import golite.ir.node.Cast;
+import golite.ir.node.CmpArray;
+import golite.ir.node.CmpBool;
+import golite.ir.node.CmpFloat64;
+import golite.ir.node.CmpInt;
+import golite.ir.node.CmpString;
+import golite.ir.node.CmpStruct;
+import golite.ir.node.ConcatString;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
 import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
+import golite.ir.node.LogicAnd;
+import golite.ir.node.LogicOr;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
@@ -70,4 +81,26 @@ public interface IrVisitor {
     void visitCast(Cast cast);
 
     void visitAppend(Append append);
+
+    void visitBinArInt(BinArInt binArInt);
+
+    void visitConcatString(ConcatString concatString);
+
+    void visitBinArFloat64(BinArFloat64 binArFloat64);
+
+    void visitCmpBool(CmpBool cmpBool);
+
+    void visitCmpInt(CmpInt cmpInt);
+
+    void visitCmpFloat64(CmpFloat64 cmpFloat64);
+
+    void visitCmpString(CmpString cmpString);
+
+    void visitCmpArray(CmpArray cmpArray);
+
+    void visitCmpStruct(CmpStruct cmpStruct);
+
+    void visitLogicAnd(LogicAnd logicAnd);
+
+    void visitLogicOr(LogicOr logicOr);
 }

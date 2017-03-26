@@ -10,9 +10,18 @@ import java.util.Map;
 import golite.ir.IrVisitor;
 import golite.ir.node.Append;
 import golite.ir.node.Assignment;
+import golite.ir.node.BinArFloat64;
+import golite.ir.node.BinArInt;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
 import golite.ir.node.Cast;
+import golite.ir.node.CmpArray;
+import golite.ir.node.CmpBool;
+import golite.ir.node.CmpFloat64;
+import golite.ir.node.CmpInt;
+import golite.ir.node.CmpString;
+import golite.ir.node.CmpStruct;
+import golite.ir.node.ConcatString;
 import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
@@ -20,6 +29,8 @@ import golite.ir.node.Identifier;
 import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrNode;
+import golite.ir.node.LogicAnd;
+import golite.ir.node.LogicOr;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
@@ -455,6 +466,61 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef appendCall = LLVMBuildCall(builder, sliceAppendFunction, new PointerPointer<>(appendCallArgs),
                 appendCallArgs.length, "append");
         exprValues.put(append, appendCall);
+    }
+
+    @Override
+    public void visitBinArInt(BinArInt binArInt) {
+
+    }
+
+    @Override
+    public void visitConcatString(ConcatString concatString) {
+
+    }
+
+    @Override
+    public void visitBinArFloat64(BinArFloat64 binArFloat64) {
+
+    }
+
+    @Override
+    public void visitCmpBool(CmpBool cmpBool) {
+
+    }
+
+    @Override
+    public void visitCmpInt(CmpInt cmpInt) {
+
+    }
+
+    @Override
+    public void visitCmpFloat64(CmpFloat64 cmpFloat64) {
+
+    }
+
+    @Override
+    public void visitCmpString(CmpString cmpString) {
+
+    }
+
+    @Override
+    public void visitCmpArray(CmpArray cmpArray) {
+
+    }
+
+    @Override
+    public void visitCmpStruct(CmpStruct cmpStruct) {
+
+    }
+
+    @Override
+    public void visitLogicAnd(LogicAnd logicAnd) {
+
+    }
+
+    @Override
+    public void visitLogicOr(LogicOr logicOr) {
+
     }
 
     private LLVMValueRef getExprValue(Expr<?> expr) {
