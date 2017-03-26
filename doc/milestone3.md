@@ -3,12 +3,16 @@
 ## Motivation
 
 We have chosen to implement Milestone 4 using low-level code, specifically, LLVM IR. More specifically, 
-we plan to first convert Golite to a simpler custom IR and before converting it to the LLVM IR using the LLVM C API.
+we plan to first convert Golite to a simpler custom IR before converting it to the LLVM IR using the LLVM C API.
 
 We plan to use LLVM because as a backend, as it's used by several popular
 languages like Rust, Swift, C, C++, D, etc. It can compile to many different targets and offers optimization passed for free.
 LLVM IR is comparatively easy to work with, and due to its popularity it's well documented
 and standardized, meaning that if we get stuck somewhere we have documentation to look at to help us.
+
+Also it has a proper API to generate it using objects, which is a lot nicer than trying to print a language like C.
+With it we can manipulate the IR more freely. Since we're working with the AST directly, things like names don't matter.
+If there's a conflict, LLVM will take care of generating new names when printing.
 
 It has some disadvantages in that it is comparatively more difficult to implement than higher level languages
 like C/C++, but we wanted to take on this challenging task and in the process learn more about LLVM.
@@ -93,7 +97,7 @@ It is converted to the follow custom IR:
         return
     }
 
-As you can see, a lot of the implicit semantic are made explicit (such as zero values). The equality operator
+As you can see, a lot of the implicit semantics are made explicit (such as zero values). The equality operator
 is also expanded into a loop to compare the arrays of structs. The last function is a special one, which is
 called before `main`, and is used to initialize the global variables.
 
@@ -109,18 +113,22 @@ to an object file. To obtain an executable, we simply need to link the two objec
 
 ## Test Programs
 
-#### MultiAssignSwap.go :
-It's a good edge case for Code Generation. a, b = b, a should swap variables, which won't work unless you 
-codegenerate intermediate variables for the values. 
-#### switch_codegen.go: 
-Checks if the generated code is able to handle the comparison condition in a case conditional. Many languages 
-like C don't support these kind of Case conditions by default, so it is an interesting case.
-#### switch_codegen_booleans.go:
+### MultiAssignSwap.go
+It's a good edge case for Code Generation. `a, b = b, a` should swap variables, which won't work unless you 
+generate intermediate variables for the values.
+
+### switch_codegen.go
+This checks if the generated code is able to handle the comparison condition in a case conditional. Many languages 
+like C don't support these kind of case conditions by default, so it is an interesting case.
+
+### switch_codegen_booleans.go
 This again checks if the generated code is able to handle two booleans in a case conditional. Many languages
 like C don't support these kind of case conditions by default, so it is an interesting case as well.
-#### array_default.go :
-It's a good test case to check if an array is initialized during the codegen by default. We used a multidimentional 
+
+### array_default.go
+It's a good test case to check if an array is initialized during the codegen by default. We used a multi-dimensional 
 float array to check this.
-#### scope_var.go: 
-This program is to ensure that the scopes are handled currectly by the codegen. The value of the variable outside
+
+### scope_var.go
+This program is to ensure that the scopes are handled correctly by the codegen. The value of the variable outside
 the function scope should be replaced by the newly declared in-scope value.
