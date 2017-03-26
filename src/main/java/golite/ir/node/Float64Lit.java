@@ -1,12 +1,13 @@
 package golite.ir.node;
 
+import golite.ir.IrVisitor;
 import golite.semantic.type.BasicType;
 import golite.util.SourcePrinter;
 
 /**
  *
  */
-public class Float64Lit extends Expr {
+public class Float64Lit extends Expr<BasicType> {
     private final double value;
 
     public Float64Lit(double value) {

@@ -1,12 +1,13 @@
 package golite.ir.node;
 
+import golite.ir.IrVisitor;
 import golite.semantic.type.BasicType;
 import golite.util.SourcePrinter;
 
 /**
  *
  */
-public class IntLit extends Expr {
+public class IntLit extends Expr<BasicType> {
     private final int value;
 
     public IntLit(int value) {

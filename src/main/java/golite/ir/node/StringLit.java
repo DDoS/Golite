@@ -3,13 +3,14 @@ package golite.ir.node;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
+import golite.ir.IrVisitor;
 import golite.semantic.type.BasicType;
 import golite.util.SourcePrinter;
 
 /**
  *
  */
-public class StringLit extends Expr {
+public class StringLit extends Expr<BasicType> {
     private String value;
     private ByteBuffer utf8Data;
 

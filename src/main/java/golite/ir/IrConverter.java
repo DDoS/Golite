@@ -8,10 +8,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import golite.analysis.AnalysisAdapter;
+import golite.ir.node.Append;
 import golite.ir.node.Assignment;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
@@ -20,6 +20,7 @@ import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
 import golite.ir.node.Identifier;
+import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
@@ -28,19 +29,24 @@ import golite.ir.node.PrintInt;
 import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
+import golite.ir.node.Select;
 import golite.ir.node.Stmt;
 import golite.ir.node.StringLit;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
+import golite.node.AAppendExpr;
+import golite.node.AAssignStmt;
 import golite.node.ABlockStmt;
 import golite.node.ACallExpr;
 import golite.node.ADeclStmt;
+import golite.node.ADeclVarShortStmt;
 import golite.node.AEmptyStmt;
 import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AFuncDecl;
 import golite.node.AIdentExpr;
+import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
@@ -50,6 +56,7 @@ import golite.node.APrintlnStmt;
 import golite.node.AProg;
 import golite.node.AReturnStmt;
 import golite.node.ARuneExpr;
+import golite.node.ASelectExpr;
 import golite.node.AStringIntrExpr;
 import golite.node.AStringRawExpr;
 import golite.node.ATypeDecl;
@@ -70,6 +77,7 @@ import golite.semantic.symbol.Variable;
 import golite.semantic.type.BasicType;
 import golite.semantic.type.FunctionType;
 import golite.semantic.type.IndexableType;
+import golite.semantic.type.SliceType;
 import golite.semantic.type.StructType;
 import golite.semantic.type.Type;
 
@@ -82,7 +90,7 @@ public class IrConverter extends AnalysisAdapter {
     private Program convertedProgram;
     private final Map<AFuncDecl, Optional<FunctionDecl>> convertedFunctions = new HashMap<>();
     private final Map<Node, List<Stmt>> convertedStmts = new HashMap<>();
-    private final Map<PExpr, Expr> convertedExprs = new HashMap<>();
+    private final Map<PExpr, Expr<?>> convertedExprs = new HashMap<>();
     private final Map<Variable, String> uniqueVarNames = new HashMap<>();
 
     public IrConverter(SemanticData semantics) {
@@ -165,8 +173,9 @@ public class IrConverter extends AnalysisAdapter {
     public void caseAVarDecl(AVarDecl node) {
         final List<Stmt> stmts = new ArrayList<>();
         // Two statements per variable declaration: declaration and initialization
-        final Set<Variable> variables = semantics.getVariableSymbols(node).get();
+        final List<Variable> variables = semantics.getVariableSymbols(node).get();
         final List<TIdenf> idenfs = node.getIdenf();
+        final List<PExpr> exprs = node.getExpr();
         for (int i = 0; i < idenfs.size(); i++) {
             final String variableName = idenfs.get(i).getText();
             // Ignore blank variables
@@ -176,25 +185,64 @@ public class IrConverter extends AnalysisAdapter {
             // Find the symbol for the variable that was declared
             final Variable variable = variables.stream()
                     .filter(var -> var.getName().equals(variableName))
-                    .findFirst().get().dealias();
-            // Find unique names for variables to prevent conflicts from removing scopes
-            final String uniqueName = findUniqueName(variable);
-            stmts.add(new VariableDecl(variable, uniqueName));
-            // Then initialize the variables with assignments
-            final Identifier variableExpr = new Identifier(variable, uniqueName);
-            final Stmt initializer;
-            if (node.getExpr().isEmpty()) {
-                // No explicit initializer, use a default
-                initializer = defaultInitializer(variableExpr, variable.getType());
-            } else {
-                final PExpr expr = node.getExpr().get(i);
-                expr.apply(this);
-                convertedExprs.get(expr);
-                initializer = new Assignment(variableExpr, convertedExprs.get(expr));
-            }
-            stmts.add(initializer);
+                    .findFirst().get();
+            // The declare it
+            convertVariableDecl(stmts, variable, exprs.isEmpty() ? null : exprs.get(i));
         }
         convertedStmts.put(node, stmts);
+    }
+
+    @Override
+    public void caseADeclVarShortStmt(ADeclVarShortStmt node) {
+        final List<Stmt> stmts = new ArrayList<>();
+        final List<Variable> variables = semantics.getVariableSymbols(node).get();
+        // First we handle the new variables, and create temporary variables for the assignments
+        final List<PExpr> lefts = node.getLeft();
+        final List<PExpr> rights = node.getRight();
+        final List<Variable> tmpVars = new ArrayList<>();
+        for (int i = 0; i < lefts.size(); i++) {
+            final Variable variable = variables.get(i);
+            if (variable == null) {
+                // Just an assignment, so handle it the same way
+                final PExpr right = rights.get(i);
+                right.apply(this);
+                createTmpAssignVar(stmts, tmpVars, convertedExprs.get(right));
+            } else {
+                // New variable declaration
+                convertVariableDecl(stmts, variable, rights.get(i));
+            }
+        }
+        // Then we assign the intermediate variables to the right expressions
+        for (int i = 0, j = 0; i < lefts.size(); i++) {
+            if (variables.get(i) != null) {
+                // Not an assignment: skip it
+                continue;
+            }
+            final PExpr left = lefts.get(i);
+            left.apply(this);
+            stmts.add(createAssignFromVar(convertedExprs.get(left), tmpVars.get(j++)));
+        }
+        convertedStmts.put(node, stmts);
+    }
+
+    private void convertVariableDecl(List<Stmt> stmts, Variable variable, PExpr initializer) {
+        // First dealias the variable
+        variable = variable.dealias();
+        // Find unique names for variables to prevent conflicts from removing scopes
+        final String uniqueName = findUniqueName(variable);
+        stmts.add(new VariableDecl(variable, uniqueName));
+        // Then initialize the variables with assignments
+        final Identifier variableExpr = new Identifier(variable, uniqueName);
+        final Stmt initialAssign;
+        if (initializer == null) {
+            // No explicit initializer, use a default
+            initialAssign = defaultInitializer(variableExpr, variable.getType());
+        } else {
+            // Otherwise assign to the given value
+            initializer.apply(this);
+            initialAssign = new Assignment(variableExpr, convertedExprs.get(initializer));
+        }
+        stmts.add(initialAssign);
     }
 
     @Override
@@ -216,6 +264,45 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
+    public void caseAAssignStmt(AAssignStmt node) {
+        final List<PExpr> lefts = node.getLeft();
+        lefts.forEach(left -> left.apply(this));
+        final List<PExpr> rights = node.getRight();
+        rights.forEach(right -> right.apply(this));
+        // For single assignments, we can just assign the right to the left immediately
+        if (lefts.size() == 1) {
+            final Expr<?> left = convertedExprs.get(lefts.get(0));
+            final Expr<?> right = convertedExprs.get(rights.get(0));
+            convertedStmts.put(node, Collections.singletonList(new Assignment(left, right)));
+            return;
+        }
+        // For multiple assignments, we first need to assign each right to a new intermediate variable
+        final List<Stmt> stmts = new ArrayList<>();
+        final List<Variable> tmpVars = new ArrayList<>();
+        for (int i = 0; i < lefts.size(); i++) {
+            createTmpAssignVar(stmts, tmpVars, convertedExprs.get(rights.get(i)));
+        }
+        // Then we assign the intermediate variables to the right expressions
+        for (int i = 0; i < lefts.size(); i++) {
+            stmts.add(createAssignFromVar(convertedExprs.get(lefts.get(i)), tmpVars.get(i)));
+        }
+        convertedStmts.put(node, stmts);
+    }
+
+    private void createTmpAssignVar(List<Stmt> stmts, List<Variable> tmpVars, Expr<?> right) {
+        final Variable leftVar = newVariable(right.getType(), "assignTmp");
+        tmpVars.add(leftVar);
+        stmts.add(new VariableDecl(leftVar, leftVar.getName()));
+        final Identifier left = new Identifier(leftVar, leftVar.getName());
+        stmts.add(new Assignment(left, right));
+    }
+
+    private Assignment createAssignFromVar(Expr<?> left, Variable variable) {
+        final Identifier right = new Identifier(variable, variable.getName());
+        return new Assignment(left, right);
+    }
+
+    @Override
     public void caseAPrintStmt(APrintStmt node) {
         final List<Stmt> stmts = convertPrintStmt(node.getExpr());
         convertedStmts.put(node, stmts);
@@ -232,7 +319,8 @@ public class IrConverter extends AnalysisAdapter {
         final List<Stmt> stmts = new ArrayList<>();
         for (PExpr expr : exprs) {
             expr.apply(this);
-            final Expr converted = convertedExprs.get(expr);
+            @SuppressWarnings("unchecked")
+            final Expr<BasicType> converted = (Expr<BasicType>) convertedExprs.get(expr);
             final Type type = semantics.getExprType(expr).get().deepResolve();
             final Stmt printStmt;
             if (type == BasicType.BOOL) {
@@ -340,7 +428,7 @@ public class IrConverter extends AnalysisAdapter {
             throw new IllegalStateException("Non-variable identifiers should have been handled earlier");
         }
         final Variable variable = ((Variable) symbol).dealias();
-        final Expr expr;
+        final Expr<?> expr;
         // Special case for the pre-declared booleans identifiers: convert them to bool literals
         if (variable.equals(UniverseContext.TRUE_VARIABLE)) {
             expr = new BoolLit(true);
@@ -350,6 +438,26 @@ public class IrConverter extends AnalysisAdapter {
             expr = new Identifier(variable, uniqueVarNames.get(variable));
         }
         convertedExprs.put(node, expr);
+    }
+
+    @Override
+    public void caseASelectExpr(ASelectExpr node) {
+        final PExpr value = node.getValue();
+        value.apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<StructType> convertedValue = (Expr<StructType>) convertedExprs.get(value);
+        convertedExprs.put(node, new Select(convertedValue, node.getIdenf().getText()));
+    }
+
+    @Override
+    public void caseAIndexExpr(AIndexExpr node) {
+        node.getValue().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<IndexableType> value = (Expr<IndexableType>) convertedExprs.get(node.getValue());
+        node.getIndex().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> index = (Expr<BasicType>) convertedExprs.get(node.getIndex());
+        convertedExprs.put(node, new Indexing(value, index));
     }
 
     @Override
@@ -366,18 +474,29 @@ public class IrConverter extends AnalysisAdapter {
             if (args.size() != 1) {
                 throw new IllegalStateException("Expected only one argument in the cast");
             }
-            final Expr convertedArg = convertedExprs.get(args.get(0));
+            @SuppressWarnings("unchecked")
+            final Expr<BasicType> convertedArg = (Expr<BasicType>) convertedExprs.get(args.get(0));
             final BasicType castType = (BasicType) symbol.getType().deepResolve();
             convertedExprs.put(node, new Cast(castType, convertedArg));
             return;
         }
         if (symbol instanceof Function) {
             // Call
-            final List<Expr> convertedArgs = args.stream().map(convertedExprs::get).collect(Collectors.toList());
+            final List<Expr<?>> convertedArgs = args.stream().map(convertedExprs::get).collect(Collectors.toList());
             convertedExprs.put(node, new Call(((Function) symbol).dealias(), convertedArgs));
             return;
         }
         throw new IllegalStateException("Unexpected call to symbol type: " + symbol.getClass());
+    }
+
+    @Override
+    public void caseAAppendExpr(AAppendExpr node) {
+        node.getLeft().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<SliceType> left = (Expr<SliceType>) convertedExprs.get(node.getLeft());
+        node.getRight().apply(this);
+        final Expr<?> right = convertedExprs.get(node.getRight());
+        convertedExprs.put(node, new Append(left, right));
     }
 
     @Override
@@ -408,6 +527,13 @@ public class IrConverter extends AnalysisAdapter {
             }
         } while (!isUnique);
         return uniqueName;
+    }
+
+    private Variable newVariable(Type type, String name) {
+        final String uniqueName = findUniqueName(name, uniqueVarNames.values());
+        final Variable variable = new Variable(0, 0, 0, 0, uniqueName, type);
+        uniqueVarNames.put(variable, uniqueName);
+        return variable;
     }
 
     private static Stmt defaultInitializer(Identifier variableExpr, Type type) {

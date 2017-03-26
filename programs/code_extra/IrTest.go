@@ -22,13 +22,21 @@ type Person struct {
 var person Person
 
 func agePerson(person Person) Person {
-    person.age += 40
-    person.name = "Uncle " + person.name
+    //person.age += 40
+    //person.name = "Uncle " + person.name
+    person.name = "Test"
+    println(person.name, ' ', person.age)
     return person
 }
 
 func staticInit() {
     agePerson(person)
+    var arr [16]string
+    var sli []int
+    arr[1] = "lol"
+    sli = append(sli, 3)
+    println(arr[1])
+    println(sli[0])
 }
 
 var str = "lol\\"
@@ -45,7 +53,7 @@ func main() {
         var k int = abs(3)
         println(float64(2), k)
     }
-    abs(int(4.5))
+    println(abs(int(4.5)))
     j := boolean(true)
     var _ = 1
     staticInit()

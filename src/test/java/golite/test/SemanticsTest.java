@@ -15,6 +15,21 @@ import org.junit.Test;
 
 public class SemanticsTest {
     @Test
+    public void testBenchmarkPrograms() throws Exception {
+        testPrograms(true, "benchmarks");
+    }
+
+    @Test
+    public void testCodePrograms() throws Exception {
+        testPrograms(true, "code");
+    }
+
+    @Test
+    public void testExtraCodePrograms() throws Exception {
+        testPrograms(true, "code_extra");
+    }
+
+    @Test
     public void testValidPrograms() throws Exception {
         testPrograms(true, "valid");
     }

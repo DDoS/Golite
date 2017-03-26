@@ -2,10 +2,10 @@ package golite.semantic;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 
 import golite.node.AFuncDecl;
@@ -29,11 +29,11 @@ public class SemanticData {
     private final Map<PExpr, Type> exprNodeTypes;
     private final Map<Context, Node> contextNodes;
     private final Map<AFuncDecl, Function> funcSymbols;
-    private final Map<Node, Set<Variable>> varSymbols;
+    private final Map<Node, List<Variable>> varSymbols;
     private final Map<AIdentExpr, Symbol> identSymbols;
 
     public SemanticData(Map<PExpr, Type> exprNodeTypes, Map<Context, Node> contextNodes, Map<AFuncDecl,
-            Function> funcSymbols, Map<Node, Set<Variable>> varSymbols, Map<AIdentExpr, Symbol> identSymbols) {
+            Function> funcSymbols, Map<Node, List<Variable>> varSymbols, Map<AIdentExpr, Symbol> identSymbols) {
         this.exprNodeTypes = exprNodeTypes;
         this.contextNodes = contextNodes;
         this.funcSymbols = funcSymbols;
@@ -49,7 +49,7 @@ public class SemanticData {
         return Optional.ofNullable(funcSymbols.get(node));
     }
 
-    public Optional<Set<Variable>> getVariableSymbols(Node node) {
+    public Optional<List<Variable>> getVariableSymbols(Node node) {
         return Optional.ofNullable(varSymbols.get(node));
     }
 

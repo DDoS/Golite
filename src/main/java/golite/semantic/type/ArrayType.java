@@ -11,6 +11,10 @@ public class ArrayType extends IndexableType {
         this.length = length;
     }
 
+    public int getLength() {
+        return length;
+    }
+
     @Override
     public boolean isComparable() {
         return component.isComparable();

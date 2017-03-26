@@ -30,6 +30,15 @@ public class StructType extends Type {
         return fields;
     }
 
+    public int fieldIndex(String name) {
+        for (int i = 0; i < fields.size(); i++) {
+            if (fields.get(i).getName().equals(name)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
     @Override
     public StructType deepResolve() {
         return new StructType(fields.stream().map(Field::deepResolve).collect(Collectors.toList()));

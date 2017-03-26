@@ -1,21 +1,23 @@
 package golite.ir.node;
 
 import golite.ir.IrVisitor;
+import golite.semantic.type.SliceType;
 import golite.util.SourcePrinter;
 
 /**
  *
  */
-public class Assignment implements Stmt {
-    private final Expr<?> left;
+public class Append extends Expr<SliceType> {
+    private final Expr<SliceType> left;
     private final Expr<?> right;
 
-    public Assignment(Expr<?> left, Expr<?> right) {
+    public Append(Expr<SliceType> left, Expr<?> right) {
+        super(left.getType());
         this.left = left;
         this.right = right;
     }
 
-    public Expr<?> getLeft() {
+    public Expr<SliceType> getLeft() {
         return left;
     }
 
@@ -25,12 +27,12 @@ public class Assignment implements Stmt {
 
     @Override
     public void visit(IrVisitor visitor) {
-        visitor.visitAssignment(this);
+        visitor.visitAppend(this);
     }
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.print("assign(");
+        printer.print("append(");
         left.print(printer);
         printer.print(", ");
         right.print(printer);
