@@ -62,6 +62,7 @@ import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
+import golite.node.ANeqExpr;
 import golite.node.APkg;
 import golite.node.APrintStmt;
 import golite.node.APrintlnStmt;
@@ -498,30 +499,44 @@ public class IrConverter extends AnalysisAdapter {
         node.getRight().apply(this);
         final Expr<?> left = convertedExprs.get(node.getLeft());
         final Expr<?> right = convertedExprs.get(node.getRight());
-        final Expr<BasicType> equal = convertEqual(left, right);
+        final Expr<BasicType> equal = convertEqual(false, left, right);
         convertedExprs.put(node, equal);
     }
 
-    private Expr<BasicType> convertEqual(Expr<?> left, Expr<?> right) {
+    @Override
+    public void caseANeqExpr(ANeqExpr node) {
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        final Expr<?> left = convertedExprs.get(node.getLeft());
+        final Expr<?> right = convertedExprs.get(node.getRight());
+        final Expr<BasicType> equal = convertEqual(true, left, right);
+        convertedExprs.put(node, equal);
+    }
+
+    private Expr<BasicType> convertEqual(boolean not, Expr<?> left, Expr<?> right) {
         final Type leftType = left.getType();
         if (leftType == BasicType.BOOL) {
             @SuppressWarnings("unchecked")
-            final CmpBool equal = new CmpBool((Expr<BasicType>) left, (Expr<BasicType>) right, CmpBool.Op.EQ);
+            final CmpBool equal = new CmpBool((Expr<BasicType>) left, (Expr<BasicType>) right,
+                    not ? CmpBool.Op.NEQ : CmpBool.Op.EQ);
             return equal;
         }
         if (leftType.isInteger()) {
             @SuppressWarnings("unchecked")
-            final CmpInt equal = new CmpInt((Expr<BasicType>) left, (Expr<BasicType>) right, CmpInt.Op.EQ);
+            final CmpInt equal = new CmpInt((Expr<BasicType>) left, (Expr<BasicType>) right,
+                    not ? CmpInt.Op.NEQ : CmpInt.Op.EQ);
             return equal;
         }
         if (leftType == BasicType.FLOAT64) {
             @SuppressWarnings("unchecked")
-            final CmpFloat64 equal = new CmpFloat64((Expr<BasicType>) left, (Expr<BasicType>) right, CmpFloat64.Op.EQ);
+            final CmpFloat64 equal = new CmpFloat64((Expr<BasicType>) left, (Expr<BasicType>) right,
+                    not ? CmpFloat64.Op.NEQ : CmpFloat64.Op.EQ);
             return equal;
         }
         if (leftType == BasicType.STRING) {
             @SuppressWarnings("unchecked")
-            final CmpString equal = new CmpString((Expr<BasicType>) left, (Expr<BasicType>) right, CmpString.Op.EQ);
+            final CmpString equal = new CmpString((Expr<BasicType>) left, (Expr<BasicType>) right,
+                    not ? CmpString.Op.NEQ : CmpString.Op.EQ);
             return equal;
         }
         if (leftType instanceof ArrayType) {
@@ -554,7 +569,7 @@ public class IrConverter extends AnalysisAdapter {
             final Indexing<?> leftComp = new Indexing<>((Expr<? extends IndexableType>) left, new Identifier<>(indexVar));
             @SuppressWarnings("unchecked")
             final Indexing<?> rightComp = new Indexing<>((Expr<? extends IndexableType>) right, new Identifier<>(indexVar));
-            final Expr<BasicType> compEqual = convertEqual(leftComp, rightComp);
+            final Expr<BasicType> compEqual = convertEqual(false, leftComp, rightComp);
             final Assignment updateEqual = new Assignment(new Identifier<>(equalVar), compEqual);
             // arrIdx++
             final BinArInt add1Idx = new BinArInt(new Identifier<>(indexVar), new IntLit(1), BinArInt.Op.ADD);
@@ -568,8 +583,14 @@ public class IrConverter extends AnalysisAdapter {
                     loopBack,
                     endLabel
             ));
-            // The result if in arrEq
-            return new Identifier<>(equalVar);
+            // Negate the result if needed
+            final Expr<BasicType> result;
+            if (not) {
+                result = new LogicNot(new Identifier<>(equalVar));
+            } else {
+                result = new Identifier<>(equalVar);
+            }
+            return result;
         }
         if (leftType instanceof StructType) {
             // Same idea with structs, except that we compare fields (but not _ fields)
@@ -594,7 +615,7 @@ public class IrConverter extends AnalysisAdapter {
                 final Select leftField = new Select((Expr<StructType>) left, fieldName);
                 @SuppressWarnings("unchecked")
                 final Select rightField = new Select((Expr<StructType>) right, fieldName);
-                final Expr<BasicType> compEqual = new LogicNot(convertEqual(leftField, rightField));
+                final Expr<BasicType> compEqual = new LogicNot(convertEqual(false, leftField, rightField));
                 // Jump to not equal if !equals(struct1.field, struct2.field)
                 final Jump notEqualJump = new Jump(notEqualLabel, compEqual);
                 // Add the statement to the list
@@ -611,8 +632,14 @@ public class IrConverter extends AnalysisAdapter {
                     updateNotEqual,
                     endLabel
             ));
-            // The result if in structEq
-            return new Identifier<>(equalVar);
+            // Negate the result if needed
+            final Expr<BasicType> result;
+            if (not) {
+                result = new LogicNot(new Identifier<>(equalVar));
+            } else {
+                result = new Identifier<>(equalVar);
+            }
+            return result;
         }
         throw new UnsupportedOperationException(leftType.toString());
     }

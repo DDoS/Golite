@@ -24,6 +24,6 @@ public class Label implements Stmt {
 
     @Override
     public void print(SourcePrinter printer) {
-        printer.dedent().print(name).print(":").indent();
+        printer.dedent().newLine().print(name).print(":").indent();
     }
 }
