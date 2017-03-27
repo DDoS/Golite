@@ -46,32 +46,71 @@ import golite.ir.node.StringLit;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
+import golite.node.AAddExpr;
 import golite.node.AAppendExpr;
+import golite.node.AAssignAddStmt;
+import golite.node.AAssignBitAndNotStmt;
+import golite.node.AAssignBitAndStmt;
+import golite.node.AAssignBitOrStmt;
+import golite.node.AAssignBitXorStmt;
+import golite.node.AAssignDivStmt;
+import golite.node.AAssignLshiftStmt;
+import golite.node.AAssignMulStmt;
+import golite.node.AAssignRemStmt;
+import golite.node.AAssignRshiftStmt;
 import golite.node.AAssignStmt;
+import golite.node.AAssignSubStmt;
+import golite.node.ABitAndExpr;
+import golite.node.ABitAndNotExpr;
+import golite.node.ABitNotExpr;
+import golite.node.ABitOrExpr;
+import golite.node.ABitXorExpr;
 import golite.node.ABlockStmt;
+import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
+import golite.node.AContinueStmt;
 import golite.node.ADeclStmt;
 import golite.node.ADeclVarShortStmt;
+import golite.node.ADecrStmt;
+import golite.node.ADivExpr;
 import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
 import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
+import golite.node.AForStmt;
 import golite.node.AFuncDecl;
+import golite.node.AGreatEqExpr;
+import golite.node.AGreatExpr;
 import golite.node.AIdentExpr;
+import golite.node.AIfStmt;
+import golite.node.AIncrStmt;
 import golite.node.AIndexExpr;
 import golite.node.AIntDecExpr;
 import golite.node.AIntHexExpr;
 import golite.node.AIntOctExpr;
+import golite.node.ALessEqExpr;
+import golite.node.ALessExpr;
+import golite.node.ALogicAndExpr;
+import golite.node.ALogicNotExpr;
+import golite.node.ALogicOrExpr;
+import golite.node.ALshiftExpr;
+import golite.node.AMulExpr;
+import golite.node.ANegateExpr;
 import golite.node.ANeqExpr;
 import golite.node.APkg;
 import golite.node.APrintStmt;
 import golite.node.APrintlnStmt;
 import golite.node.AProg;
+import golite.node.AReaffirmExpr;
+import golite.node.ARemExpr;
 import golite.node.AReturnStmt;
+import golite.node.ARshiftExpr;
 import golite.node.ARuneExpr;
 import golite.node.ASelectExpr;
 import golite.node.AStringIntrExpr;
 import golite.node.AStringRawExpr;
+import golite.node.ASubExpr;
+import golite.node.ASwitchStmt;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
@@ -263,13 +302,6 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
-    public void caseAExprStmt(AExprStmt node) {
-        node.getExpr().apply(this);
-        // The IR for expressions that are statements implement the Stmt interface
-        functionStmts.add((Stmt) convertedExprs.get(node.getExpr()));
-    }
-
-    @Override
     public void caseAAssignStmt(AAssignStmt node) {
         final List<PExpr> lefts = node.getLeft();
         lefts.forEach(left -> left.apply(this));
@@ -355,6 +387,19 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
+    public void caseABreakStmt(ABreakStmt node) {
+        // This should work by storing the end label of a "for" or "switch" statement in a stack
+        // The statement then gets converted to an unconditional jump to the label on the top of the stack (peek)
+        // This will be the end of the inner most "for" or "switch" statement
+        // For a stack collection use Deque (ArrayDeque)
+    }
+
+    @Override
+    public void caseAContinueStmt(AContinueStmt node) {
+        // Same idea as break, but with a different stack that stores the beginning label of "for" loops
+    }
+
+    @Override
     public void caseABlockStmt(ABlockStmt node) {
         for (PStmt stmt : node.getStmt()) {
             stmt.apply(this);
@@ -362,10 +407,142 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
+    public void caseAIfStmt(AIfStmt node) {
+        // First allocate the end label, and one label per if-block (including the "else" if not empty)
+        // Then all the block conditions should be converted (not the body yet)
+        //     The init stmt gets converted as is, and the expr becomes a jump to the label allocated for the block
+        //     If there's an else block (not empty) it is treated as "else if true"; i.e. the jump is unconditional
+        //     Otherwise if it's empty, the unconditional jump will go to the end label
+        // Then we convert the bodies of the if-blocks, which start with their allocated label
+        // An end with an unconditional jump to the end label (we don't want to fallthrough to the other blocks)
+        //     This isn't necessary for the "else" block, since it's the last anyways
+        //     Also we skip converting the "else" block if it is empty
+        // (BTW, converting the blocks inline will be easier than as in separate case method)
+    }
+
+    @Override
+    public void caseASwitchStmt(ASwitchStmt node) {
+        // A switch in the form
+        /*
+            switch init; expr {
+                case a1, a2, a3, ...:
+                    stmtsA
+                case b1, b2, ...:
+                    stmtsB
+                default:
+                    stmtsC
+            }
+        */
+        // Is the same as
+        /*
+            init
+            var e = expr
+            if e == a1 || e == a2 || e == a3 || ... {
+                stmtsA
+            } else if e == b1 || e == b2 || ... {
+                stmtsB
+            } else {
+                stmtsC
+            }
+        */
+        // Note the new variable to prevent the expression from being re-evaluated in each if-condition
+        // If there's no default case, then it's the same as no "else" block
+        // So just convert this the like the "if" stmt
+        // There's one difference: once the end label is created, it needs to be pushed in the stack described in the break stmt
+        //     It must also be popped of once conversion is done
+    }
+
+    @Override
+    public void caseAForStmt(AForStmt node) {
+        // Start by converting the init statement (if it's a clause condition)
+        // Then place a start label in the stmts, and allocate an end label (to be placed later)
+        // Next we create a jump to the end label if the condition isn't true
+        //     Convert the condition (if any), or use new BoolLit(true) for an empty condition
+        //     You can negate an expression with LogicalNot
+        // Push the labels in the stacks described in break and continue stmts
+        // Then we convert the body of the for loop
+        // If it's a clause condition then convert the post stmt here, at the end of the body
+        // Finally add the end label to the stmts
+        // Pop the labels from the stacks mentioned earlier
+    }
+
+    @Override
     public void caseADeclStmt(ADeclStmt node) {
         for (PDecl decl : node.getDecl()) {
             decl.apply(this);
         }
+    }
+
+    @Override
+    public void caseAExprStmt(AExprStmt node) {
+        node.getExpr().apply(this);
+        // The IR nodes for expressions that are statements all implement the Stmt interface
+        functionStmts.add((Stmt) convertedExprs.get(node.getExpr()));
+    }
+
+    @Override
+    public void caseAIncrStmt(AIncrStmt node) {
+        // Convert expr++ as expr = expr + IntLit(1)
+    }
+
+    @Override
+    public void caseADecrStmt(ADecrStmt node) {
+        // Convert expr-- as expr = expr - IntLit(1)
+    }
+
+    @Override
+    public void caseAAssignMulStmt(AAssignMulStmt node) {
+        // Convert left *= right as left = left * right
+    }
+
+    @Override
+    public void caseAAssignDivStmt(AAssignDivStmt node) {
+        // Convert left /= right as left = left / right
+    }
+
+    @Override
+    public void caseAAssignRemStmt(AAssignRemStmt node) {
+        // Convert left %= right as left = left % right
+    }
+
+    @Override
+    public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
+        // Convert left <<= right as left = left << right
+    }
+
+    @Override
+    public void caseAAssignRshiftStmt(AAssignRshiftStmt node) {
+        // Convert left >>= right as left = left >> right
+    }
+
+    @Override
+    public void caseAAssignBitAndStmt(AAssignBitAndStmt node) {
+        // Convert left &= right as left = left & right
+    }
+
+    @Override
+    public void caseAAssignBitAndNotStmt(AAssignBitAndNotStmt node) {
+        // Convert left &^= right as left = left &^ right
+    }
+
+    @Override
+    public void caseAAssignAddStmt(AAssignAddStmt node) {
+        // Convert left += right as left = left + right
+    }
+
+    @Override
+    public void caseAAssignSubStmt(AAssignSubStmt node) {
+        // Convert left -= right as left = left - right
+    }
+
+    @Override
+    public void caseAAssignBitOrStmt(AAssignBitOrStmt node) {
+        // Convert left |= right as left = left | right
+    }
+
+    @Override
+    public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
+        // Convert left ^= right as left = left ^ right
     }
 
     @Override
@@ -491,6 +668,81 @@ public class IrConverter extends AnalysisAdapter {
         node.getRight().apply(this);
         final Expr<?> right = convertedExprs.get(node.getRight());
         convertedExprs.put(node, new Append(left, right));
+    }
+
+    @Override
+    public void caseALogicNotExpr(ALogicNotExpr node) {
+        // Check out LogicalNot
+    }
+
+    @Override
+    public void caseAReaffirmExpr(AReaffirmExpr node) {
+        // Check out UnaArFloat64 and UnaArInt
+    }
+
+    @Override
+    public void caseANegateExpr(ANegateExpr node) {
+        // Check out UnaArFloat64 and UnaArInt
+    }
+
+    @Override
+    public void caseABitNotExpr(ABitNotExpr node) {
+        // Check out UnaArInt
+    }
+
+    @Override
+    public void caseAMulExpr(AMulExpr node) {
+        // Check out BinArFloat64 and BinArInt
+    }
+
+    @Override
+    public void caseADivExpr(ADivExpr node) {
+        // Check out BinArFloat64 and BinArInt
+    }
+
+    @Override
+    public void caseARemExpr(ARemExpr node) {
+        // Check out BinArInt
+    }
+
+    @Override
+    public void caseALshiftExpr(ALshiftExpr node) {
+        // Check out BinArInt
+    }
+
+    @Override
+    public void caseARshiftExpr(ARshiftExpr node) {
+        // Check out BinArInt
+    }
+
+    @Override
+    public void caseABitAndExpr(ABitAndExpr node) {
+        // Check out BinArInt
+    }
+
+    @Override
+    public void caseABitAndNotExpr(ABitAndNotExpr node) {
+        // Check out BinArInt
+    }
+
+    @Override
+    public void caseAAddExpr(AAddExpr node) {
+        // Check out BinArFloat64, BinArInt and ConcatString
+    }
+
+    @Override
+    public void caseASubExpr(ASubExpr node) {
+        // Check out BinArFloat64 and BinArInt
+    }
+
+    @Override
+    public void caseABitOrExpr(ABitOrExpr node) {
+        // Check out BinArInt
+    }
+
+    @Override
+    public void caseABitXorExpr(ABitXorExpr node) {
+        // Check out BinArInt
     }
 
     @Override
@@ -663,6 +915,36 @@ public class IrConverter extends AnalysisAdapter {
             return result;
         }
         throw new UnsupportedOperationException(leftType.toString());
+    }
+
+    @Override
+    public void caseALessExpr(ALessExpr node) {
+        // Check out CmpFloat64, CmpInt and CmpString
+    }
+
+    @Override
+    public void caseALessEqExpr(ALessEqExpr node) {
+        // Check out CmpFloat64, CmpInt and CmpString
+    }
+
+    @Override
+    public void caseAGreatExpr(AGreatExpr node) {
+        // Check out CmpFloat64, CmpInt and CmpString
+    }
+
+    @Override
+    public void caseAGreatEqExpr(AGreatEqExpr node) {
+        // Check out CmpFloat64, CmpInt and CmpString
+    }
+
+    @Override
+    public void caseALogicAndExpr(ALogicAndExpr node) {
+        // Check out LogicalAnd
+    }
+
+    @Override
+    public void caseALogicOrExpr(ALogicOrExpr node) {
+        // Check out LogicalOr
     }
 
     @Override
