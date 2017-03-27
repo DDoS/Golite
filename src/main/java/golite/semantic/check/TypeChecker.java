@@ -91,6 +91,7 @@ import golite.node.Node;
 import golite.node.PCase;
 import golite.node.PExpr;
 import golite.node.PForCondition;
+import golite.node.PIfBlock;
 import golite.node.PParam;
 import golite.node.PStmt;
 import golite.node.PStructField;
@@ -479,46 +480,45 @@ public class TypeChecker extends AnalysisAdapter {
     }
 
     @Override
-    public void caseAIfBlock(AIfBlock node) {
-        // Open a block to place the condition in a new context
-        context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
-        nextContextID++;
-        contextNodes.put(context, node);
-        // Type-check the init statement
-        if (node.getInit() != null) {
-            node.getInit().apply(this);
-        }
-        // Type-check the condition: it should be a bool
-        final PExpr condition = node.getCond();
-        condition.apply(this);
-        final Type conditionType = exprNodeTypes.get(condition).resolve();
-        if (conditionType != BasicType.BOOL) {
-            throw new TypeCheckerException(condition, "Not a bool: " + conditionType);
-        }
-        // Open a block to place the body in a new context
-        context = new CodeBlockContext(context, nextContextID, Kind.IF);
-        nextContextID++;
-        contextNodes.put(context, node);
-        // Type-check the body
-        node.getBlock().forEach(stmt -> stmt.apply(this));
-        // Close the body context
-        context = context.getParent();
-        // Close the condition context
-        context = context.getParent();
-    }
-
-    @Override
     public void caseAIfStmt(AIfStmt node) {
-        // Type-check the if blocks
-        node.getIfBlock().forEach(ifBlock -> ifBlock.apply(this));
-        // Open a block to place the else block in a new context
+        // Type-check the if-blocks
+        for (PIfBlock pIfBlock : node.getIfBlock()) {
+            final AIfBlock ifBlock = (AIfBlock) pIfBlock;
+            // Open a block to place the condition in a new context
+            context = new CodeBlockContext(context, nextContextID, Kind.BLOCK);
+            nextContextID++;
+            contextNodes.put(context, ifBlock);
+            // Type-check the init statement
+            if (ifBlock.getInit() != null) {
+                ifBlock.getInit().apply(this);
+            }
+            // Type-check the condition: it should be a bool
+            final PExpr condition = ifBlock.getCond();
+            condition.apply(this);
+            final Type conditionType = exprNodeTypes.get(condition).resolve();
+            if (conditionType != BasicType.BOOL) {
+                throw new TypeCheckerException(condition, "Not a bool: " + conditionType);
+            }
+            // Open a block to place the body in a new context
+            context = new CodeBlockContext(context, nextContextID, Kind.IF);
+            nextContextID++;
+            contextNodes.put(context, ifBlock);
+            // Type-check the body
+            ifBlock.getBlock().forEach(stmt -> stmt.apply(this));
+            // Close the body context
+            context = context.getParent();
+            // Don't close the condition context yet, since they nest successively
+        }
+        // Open a block to place the else-block in a new context
         context = new CodeBlockContext(context, nextContextID, Kind.ELSE);
         nextContextID++;
         contextNodes.put(context, node);
-        // Type-check the else block
+        // Type-check the else-block
         node.getElse().forEach(stmt -> stmt.apply(this));
-        // Close the context
+        // Close the else-block context
         context = context.getParent();
+        // Now we close all the nested condition contexts
+        node.getIfBlock().forEach(block -> context = context.getParent());
     }
 
     @Override
