@@ -1,8 +1,6 @@
 package golite.codegen;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,12 +75,13 @@ public class CodeGenerator implements IrVisitor {
     private LLVMValueRef printStringFunction;
     private LLVMValueRef checkBoundsFunction;
     private LLVMValueRef sliceAppendFunction;
-    private final Deque<LLVMBuilderRef> builders = new ArrayDeque<>();
     private final Map<StructType, LLVMTypeRef> structs = new HashMap<>();
     private final Map<Function, LLVMValueRef> functions = new HashMap<>();
+    private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
+    private LLVMValueRef currentFunction;
+    private LLVMBuilderRef builder;
     private final Map<Expr<?>, LLVMValueRef> exprValues = new HashMap<>();
     private final Map<Expr<?>, LLVMValueRef> exprPtrs = new HashMap<>();
-    private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
     private final Map<Variable<?>, LLVMValueRef> globalVariables = new HashMap<>();
     private final Map<Variable<?>, LLVMValueRef> functionVariables = new HashMap<>();
     private ByteBuffer machineCode;
@@ -125,6 +124,7 @@ public class CodeGenerator implements IrVisitor {
         LLVMAddGVNPass(pass);
         LLVMAddCFGSimplificationPass(pass);
         LLVMRunPassManager(pass, module);
+        LLVMDisposePassManager(pass);
         // TODO: remove debug printing
         final BytePointer moduleString = LLVMPrintModuleToString(module);
         System.out.println(moduleString.getString());
@@ -182,7 +182,6 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitFunctionDecl(FunctionDecl functionDecl) {
-        // Create the function symbol
         final Function symbol = functionDecl.getFunction();
         // The only external functions are the main and static initializer
         final boolean external = functionDecl.isMain() || functionDecl.isStaticInit();
@@ -205,9 +204,9 @@ public class CodeGenerator implements IrVisitor {
         // Create the LLVM function
         final LLVMValueRef function = createFunction(external, name, llvmReturn, llvmParams);
         functions.put(symbol, function);
+        currentFunction = function;
         // Create the builder for the function
-        final LLVMBuilderRef builder = LLVMCreateBuilder();
-        builders.push(builder);
+        builder = LLVMCreateBuilder();
         // Start the function body
         final LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
         LLVMPositionBuilderAtEnd(builder, entry);
@@ -225,7 +224,7 @@ public class CodeGenerator implements IrVisitor {
         functionDecl.getStatements().forEach(stmt -> stmt.visit(this));
         // Termination is handled implicitly by the last return statement
         // Dispose of the builder
-        LLVMDisposeBuilder(builders.pop());
+        LLVMDisposeBuilder(builder);
         // Clear the function's variables as we exit it
         functionVariables.clear();
     }
@@ -239,13 +238,13 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitVoidReturn(VoidReturn voidReturn) {
-        LLVMBuildRetVoid(builders.peek());
+        LLVMBuildRetVoid(builder);
     }
 
     @Override
     public void visitValueReturn(ValueReturn valueReturn) {
         valueReturn.getValue().visit(this);
-        LLVMBuildRet(builders.peek(), getExprValue(valueReturn.getValue()));
+        LLVMBuildRet(builder, getExprValue(valueReturn.getValue()));
     }
 
     @Override
@@ -278,10 +277,10 @@ public class CodeGenerator implements IrVisitor {
         LLVMValueRef arg = getExprValue(value);
         if (value.getType() == BasicType.BOOL) {
             // Must zero-extent bool (i1) to char (i8)
-            arg = LLVMBuildZExt(builders.peek(), arg, LLVMInt8Type(), "bool_to_char");
+            arg = LLVMBuildZExt(builder, arg, LLVMInt8Type(), "bool_to_char");
         }
         final LLVMValueRef[] args = {arg};
-        LLVMBuildCall(builders.peek(), printFunction, new PointerPointer<>(args), 1, "");
+        LLVMBuildCall(builder, printFunction, new PointerPointer<>(args), 1, "");
     }
 
     @Override
@@ -292,7 +291,6 @@ public class CodeGenerator implements IrVisitor {
         // (pointer to second element starting at null, then convert to int)
         final LLVMValueRef size = calculateSizeOfType(value.getType());
         // Call the memset intrinsic on a pointer to the value
-        final LLVMBuilderRef builder = builders.peek();
         final LLVMTypeRef i8Ptr = LLVMPointerType(LLVMInt8Type(), 0);
         final LLVMValueRef bytePtr = LLVMBuildPointerCast(builder, getExprPtr(value), i8Ptr, value + "Ptr");
         final LLVMValueRef[] memsetArgs = {
@@ -308,7 +306,7 @@ public class CodeGenerator implements IrVisitor {
         assignment.getRight().visit(this);
         final LLVMValueRef ptr = getExprPtr(assignment.getLeft());
         final LLVMValueRef value = getExprValue(assignment.getRight());
-        LLVMBuildStore(builders.peek(), value, ptr);
+        LLVMBuildStore(builder, value, ptr);
     }
 
     @Override
@@ -387,7 +385,6 @@ public class CodeGenerator implements IrVisitor {
         indexing.getIndex().visit(this);
         final LLVMValueRef index = getExprValue(indexing.getIndex());
         // Find the length of the slice or array
-        final LLVMBuilderRef builder = builders.peek();
         final Type componentType = value.getType().getComponent();
         final LLVMValueRef length;
         if (value.getType() instanceof SliceType) {
@@ -438,7 +435,7 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef[] argValues = args.stream().map(this::getExprValue).toArray(LLVMValueRef[]::new);
         // Build the call
         final String name = function.getType().getReturnType().isPresent() ? function.getName() : "";
-        final LLVMValueRef value = LLVMBuildCall(builders.peek(), llvmFunction,
+        final LLVMValueRef value = LLVMBuildCall(builder, llvmFunction,
                 new PointerPointer<>(argValues), argValues.length, name);
         exprValues.put(call, value);
     }
@@ -453,10 +450,10 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef value;
         if (argType.isInteger() && castType == BasicType.FLOAT64) {
             // Integer to float
-            value = LLVMBuildSIToFP(builders.peek(), argValue, LLVMDoubleType(), "int_to_float64");
+            value = LLVMBuildSIToFP(builder, argValue, LLVMDoubleType(), "int_to_float64");
         } else if (argType == BasicType.FLOAT64 && castType.isInteger()) {
             // Float to integer
-            value = LLVMBuildFPToSI(builders.peek(), argValue, LLVMInt32Type(), "float64_to_int");
+            value = LLVMBuildFPToSI(builder, argValue, LLVMInt32Type(), "float64_to_int");
         } else {
             // Anything else is an identity cast, so ignore it
             value = argValue;
@@ -468,7 +465,6 @@ public class CodeGenerator implements IrVisitor {
     public void visitAppend(Append append) {
         append.getLeft().visit(this);
         append.getRight().visit(this);
-        final LLVMBuilderRef builder = builders.peek();
         // First get the slice value
         final LLVMValueRef slice = getExprValue(append.getLeft());
         // Then get a pointer to the data to append, cast to int_t*
@@ -551,7 +547,26 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitLogicAnd(LogicAnd logicAnd) {
-
+        // Get the current basic block, and add two new ones: evaluating the right side, and merging the values
+        final LLVMBasicBlockRef andShort = LLVMGetLastBasicBlock(currentFunction);
+        final LLVMBasicBlockRef andFull = LLVMAppendBasicBlock(currentFunction, "andFull");
+        final LLVMBasicBlockRef andEnd = LLVMAppendBasicBlock(currentFunction, "andEnd");
+        // Evaluate the left side in the current block, if it's true, then jump to the block for the right side
+        logicAnd.getLeft().visit(this);
+        final LLVMValueRef left = getExprValue(logicAnd.getLeft());
+        LLVMBuildCondBr(builder, left, andFull, andEnd);
+        // Start a new block and evaluate the right side in it, then jump to the end to merge the values
+        LLVMPositionBuilderAtEnd(builder, andFull);
+        logicAnd.getRight().visit(this);
+        final LLVMValueRef fullValue = getExprValue(logicAnd.getRight());
+        LLVMBuildBr(builder, andEnd);
+        // Use a phi node to merge the values from the short-circuit and full evaluation
+        LLVMPositionBuilderAtEnd(builder, andEnd);
+        final LLVMValueRef andResult = LLVMBuildPhi(builder, LLVMInt1Type(), "andResult");
+        final LLVMValueRef[] phiValues = {LLVMConstInt(LLVMInt1Type(), 0, 0), fullValue};
+        final LLVMBasicBlockRef[] phiBlocks = {andShort, andFull};
+        LLVMAddIncoming(andResult, new PointerPointer<>(phiValues), new PointerPointer<>(phiBlocks), phiValues.length);
+        exprValues.put(logicAnd, andResult);
     }
 
     @Override
@@ -567,7 +582,7 @@ public class CodeGenerator implements IrVisitor {
         }
         // Otherwise we need to load the pointer
         final LLVMValueRef ptr = exprPtrs.get(expr);
-        return LLVMBuildLoad(builders.peek(), ptr, IrNode.toString(expr));
+        return LLVMBuildLoad(builder, ptr, IrNode.toString(expr));
     }
 
     private LLVMValueRef getExprPtr(Expr<?> expr) {
@@ -578,24 +593,24 @@ public class CodeGenerator implements IrVisitor {
         }
         // Otherwise we need to store the value and return a pointer to the memory
         final LLVMValueRef value = exprValues.get(expr);
-        final LLVMValueRef memory = LLVMBuildAlloca(builders.peek(), createType(expr.getType()), IrNode.toString(expr) + "Ptr");
-        LLVMBuildStore(builders.peek(), value, memory);
+        final LLVMValueRef memory = LLVMBuildAlloca(builder, createType(expr.getType()), IrNode.toString(expr) + "Ptr");
+        LLVMBuildStore(builder, value, memory);
         return memory;
     }
 
     private LLVMValueRef getAggregateMemberPtr(LLVMValueRef valuePtr, LLVMValueRef index, String memberName) {
         final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt64Type(), 0, 0), index};
-        return LLVMBuildInBoundsGEP(builders.peek(), valuePtr, new PointerPointer<>(indices), indices.length, memberName + "Ptr");
+        return LLVMBuildInBoundsGEP(builder, valuePtr, new PointerPointer<>(indices), indices.length,
+                memberName + "Ptr");
     }
 
     private LLVMValueRef allocateStackVariable(Variable<?> variable, String uniqueName) {
         final LLVMTypeRef type = createType(variable.getType());
-        return LLVMBuildAlloca(builders.peek(), type, uniqueName);
+        return LLVMBuildAlloca(builder, type, uniqueName);
     }
 
     private LLVMValueRef calculateSizeOfType(Type type) {
         // LLVM trick: get pointer to second element starting at null
-        final LLVMBuilderRef builder = builders.peek();
         final LLVMValueRef nullPtr = LLVMConstPointerNull(LLVMPointerType(createType(type), 0));
         final LLVMValueRef[] secondIndex = {LLVMConstInt(LLVMInt64Type(), 1, 0)};
         final LLVMValueRef secondElementPtr = LLVMBuildGEP(builder, nullPtr, new PointerPointer<>(secondIndex), secondIndex.length,

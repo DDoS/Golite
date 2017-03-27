@@ -31,6 +31,7 @@ import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.Jump;
 import golite.ir.node.Label;
+import golite.ir.node.LogicAnd;
 import golite.ir.node.LogicNot;
 import golite.ir.node.LogicOr;
 import golite.ir.node.MemsetZero;
@@ -939,7 +940,14 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseALogicAndExpr(ALogicAndExpr node) {
-        // Check out LogicalAnd
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> and = new LogicAnd(left, right);
+        convertedExprs.put(node, and);
     }
 
     @Override
