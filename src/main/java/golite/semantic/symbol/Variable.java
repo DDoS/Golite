@@ -1,5 +1,7 @@
 package golite.semantic.symbol;
 
+import golite.semantic.check.TypeCheckerException;
+import golite.semantic.type.FunctionType;
 import golite.semantic.type.Type;
 import golite.util.SourcePositioned;
 
@@ -22,6 +24,9 @@ public class Variable<T  extends Type> extends Symbol<T> {
         super(startLine, endLine, startPos, endPos, name);
         this.aliasedOriginal = aliasedOriginal;
         this.type = type;
+        if (type instanceof FunctionType) {
+            throw new TypeCheckerException(this, "Cannot have a variable with a function type");
+        }
     }
 
     @Override
