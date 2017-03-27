@@ -288,7 +288,8 @@ public class CodeGenerator implements IrVisitor {
     public void visitMemsetZero(MemsetZero memsetZero) {
         final Expr<?> value = memsetZero.getValue();
         value.visit(this);
-        // Get the size of the of the memory to clear using an LLVM trick (pointer to second element starting at null, then convert to int)
+        // Get the size of the of the memory to clear using an LLVM trick
+        // (pointer to second element starting at null, then convert to int)
         final LLVMValueRef size = calculateSizeOfType(value.getType());
         // Call the memset intrinsic on a pointer to the value
         final LLVMBuilderRef builder = builders.peek();
@@ -339,7 +340,8 @@ public class CodeGenerator implements IrVisitor {
     public void visitStringLit(StringLit stringLit) {
         // Declare the string constant, then get a pointer to the first character
         final LLVMValueRef value = declareStringConstant(stringLit);
-        final LLVMValueRef stringPtr = getAggregateMemberPtr(value, LLVMConstInt(LLVMInt64Type(), 0, 0), "strPtr");
+        final LLVMValueRef stringPtr = getAggregateMemberPtr(value, LLVMConstInt(LLVMInt64Type(), 0, 0),
+                "strPtr");
         // Create the string struct with the length and character array
         final LLVMValueRef[] stringData = {LLVMConstInt(LLVMInt32Type(), stringLit.getUtf8Data().limit(), 1), stringPtr};
         final LLVMValueRef stringStruct = LLVMConstNamedStruct(sliceRuntimeType, new PointerPointer<>(stringData), stringData.length);
@@ -436,7 +438,8 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef[] argValues = args.stream().map(this::getExprValue).toArray(LLVMValueRef[]::new);
         // Build the call
         final String name = function.getType().getReturnType().isPresent() ? function.getName() : "";
-        final LLVMValueRef value = LLVMBuildCall(builders.peek(), llvmFunction, new PointerPointer<>(argValues), argValues.length, name);
+        final LLVMValueRef value = LLVMBuildCall(builders.peek(), llvmFunction,
+                new PointerPointer<>(argValues), argValues.length, name);
         exprValues.put(call, value);
     }
 
@@ -483,52 +486,67 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitLogicNot(LogicNot logicNot) {
-
+        // LLVMBuildNot()
     }
 
     @Override
     public void visitUnaArInt(UnaArInt unaArInt) {
-
+        // LLVMBuildNeg()
+        // LLVMBuildNot()
     }
 
     @Override
     public void visitUnaArFloat64(UnaArFloat64 unaArFloat64) {
-
+        // LLVMBuildFNeg()
     }
 
     @Override
     public void visitBinArInt(BinArInt binArInt) {
-
+        // LLVMBuildAdd()
+        // LLVMBuildSub()
+        // LLVMBuildMul()
+        // LLVMBuildSDiv()
+        // LLVMBuildSRem()
+        // LLVMBuildOr()
+        // LLVMBuildAnd()
+        // LLVMBuildShl()
+        // LLVMBuildAShr()
+        // LLVMBuildAnd(, LLVMBuildNot())
+        // LLVMBuildXor()
     }
 
     @Override
     public void visitConcatString(ConcatString concatString) {
-
+        // Runtime call
     }
 
     @Override
     public void visitBinArFloat64(BinArFloat64 binArFloat64) {
-
+        // LLVMBuildFAdd()
+        // LLVMBuildFSub()
+        // LLVMBuildFMul()
+        // LLVMBuildFDiv()
     }
 
     @Override
     public void visitCmpBool(CmpBool cmpBool) {
-
+        // LLVMBuildICmp()
     }
 
     @Override
     public void visitCmpInt(CmpInt cmpInt) {
-
+        // LLVMBuildICmp()
     }
 
     @Override
     public void visitCmpFloat64(CmpFloat64 cmpFloat64) {
-
+        // LLVMBuildFCmp()
+        // Use ordered comparisons
     }
 
     @Override
     public void visitCmpString(CmpString cmpString) {
-
+        // Runtime call
     }
 
     @Override
