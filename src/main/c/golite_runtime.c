@@ -2,18 +2,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#define EQ 0
+#define NEQ 1
+#define LESS 2
+#define LESS_EQ 3
+#define GREAT 4
+#define GREAT_EQ 5
 
 typedef struct {
     int32_t length;
     int8_t* data;
 } goliteRtSlice;
-
-const int32_t EQ = 0;
-const int32_t NEQ = 1;
-const int32_t LESS = 2;
-const int32_t LESS_EQ = 3;
-const int32_t GREAT = 4;
-const int32_t GREAT_EQ = 5;
 
 void goliteRtPrintBool(int8_t c) {
     printf("%s", c ? "true" : "false");

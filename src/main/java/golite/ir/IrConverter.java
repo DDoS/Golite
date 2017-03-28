@@ -691,6 +691,8 @@ public class IrConverter extends AnalysisAdapter {
             convertedExprs.put(node, new UnaArFloat64(inner, UnaArFloat64.Op.NOP));
         } else if (inner.getType() == BasicType.INT) {
             convertedExprs.put(node, new UnaArInt(inner, UnaArInt.Op.NOP));
+        } else {
+            throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
     }
 
@@ -703,6 +705,8 @@ public class IrConverter extends AnalysisAdapter {
             convertedExprs.put(node, new UnaArFloat64(inner, UnaArFloat64.Op.NEG));
         } else if (inner.getType() == BasicType.INT) {
             convertedExprs.put(node, new UnaArInt(inner, UnaArInt.Op.NEG));
+        } else {
+            throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
     }
 
@@ -713,6 +717,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> inner = (Expr<BasicType>) convertedExprs.get(node.getInner());
         if (inner.getType() == BasicType.INT) {
             convertedExprs.put(node, new UnaArInt(inner, UnaArInt.Op.BIT_NEG));
+        } else {
+            throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
     }
 
@@ -724,10 +730,12 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
-        if (left.getType() == BasicType.FLOAT64) {
+        if (left.getType() == BasicType.INT) {
             convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.MUL));
-        } else {
+        } else if (left.getType() == BasicType.FLOAT64){
             convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.MUL));
+        } else {
+            throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
     }
 
@@ -741,9 +749,10 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.FLOAT64) {
             convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.DIV));
-        } else {
-            //Does else need a check?
+        } else if (left.getType() == BasicType.INT){
             convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.DIV));
+        } else {
+            throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
     }
 
@@ -757,6 +766,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.INT)
                 convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.REM));
+        else
+            throw new IllegalStateException("Expected integer-typed expressions");
     }
 
     @Override
@@ -769,6 +780,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.INT)
                 convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.LSHIFT));
+        else
+            throw new IllegalStateException("Expected integer-typed expressions");
     }
 
     @Override
@@ -781,6 +794,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.INT)
                 convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.RSHIFT));
+        else
+            throw new IllegalStateException("Expected integer-typed expressions");
     }
 
     @Override
@@ -793,6 +808,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.INT)
                 convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.BIT_AND));
+        else
+            throw new IllegalStateException("Expected integer-typed expressions");
     }
 
     @Override
@@ -805,6 +822,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.INT)
                 convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.BIT_AND_NOT));
+        else
+            throw new IllegalStateException("Expected integer-typed expressions");
     }
 
     @Override
@@ -821,8 +840,10 @@ public class IrConverter extends AnalysisAdapter {
         }
         if (left.getType() == BasicType.FLOAT64) {
             convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.ADD));
-        } else {
+        } else if (left.getType() == BasicType.INT) {
             convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.ADD));
+        } else {
+            throw new IllegalStateException("Expected integer, float64, or string-typed expressions");
         }
     }
 
@@ -836,9 +857,11 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.FLOAT64) {
             convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.SUB));
-        } else {
+        } else if (left.getType() == BasicType.INT) {
             convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.SUB));
-        }
+        } else {
+            throw new IllegalStateException("Expected integer or float64-typed expressions");
+        }  
     }
 
     @Override
@@ -851,6 +874,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.INT)
                 convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.BIT_OR));
+        else
+            throw new IllegalStateException("Expected integer-typed expressions");
     }
 
     @Override
@@ -863,6 +888,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         if (left.getType() == BasicType.INT)
                 convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.BIT_XOR));
+        else
+            throw new IllegalStateException("Expected integer-typed expressions");
     }
 
     @Override
@@ -1052,8 +1079,10 @@ public class IrConverter extends AnalysisAdapter {
         if (left.getType() == BasicType.FLOAT64) {
             convertedExprs.put(node,  new CmpFloat64(left, right, CmpFloat64.Op.LESS));
         }
-        else {
+        else if (left.getType() == BasicType.INT) {
             convertedExprs.put(node,  new CmpInt(left, right, CmpInt.Op.LESS));
+        } else {
+            throw new IllegalStateException("Expected integer, string or float64-typed expressions");
         }
     }
 
@@ -1072,8 +1101,10 @@ public class IrConverter extends AnalysisAdapter {
         if (left.getType() == BasicType.FLOAT64) {
             convertedExprs.put(node,  new CmpFloat64(left, right, CmpFloat64.Op.LESS_EQ));
         }
-        else {
+        else if (left.getType() == BasicType.INT) {
             convertedExprs.put(node,  new CmpInt(left, right, CmpInt.Op.LESS_EQ));
+        } else {
+            throw new IllegalStateException("Expected integer, string or float64-typed expressions");
         }
     }
 
@@ -1092,8 +1123,10 @@ public class IrConverter extends AnalysisAdapter {
         if (left.getType() == BasicType.FLOAT64) {
             convertedExprs.put(node,  new CmpFloat64(left, right, CmpFloat64.Op.GREAT));
         }
-        else {
+        else if (left.getType() == BasicType.INT) {
             convertedExprs.put(node,  new CmpInt(left, right, CmpInt.Op.GREAT));
+        } else {
+            throw new IllegalStateException("Expected integer, string or float64-typed expressions");
         }
     }
 
@@ -1112,8 +1145,10 @@ public class IrConverter extends AnalysisAdapter {
         if (left.getType() == BasicType.FLOAT64) {
             convertedExprs.put(node,  new CmpFloat64(left, right, CmpFloat64.Op.GREAT_EQ));
         }
-        else {
+        else if (left.getType() == BasicType.INT){
             convertedExprs.put(node,  new CmpInt(left, right, CmpInt.Op.GREAT_EQ));
+        } else {
+            throw new IllegalStateException("Expected integer, string or float64-typed expressions");
         }
     }
 
