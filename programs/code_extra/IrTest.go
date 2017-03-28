@@ -39,15 +39,22 @@ func staticInit() {
     println(sli[0])
 }
 
-func aBool() bool {
-    return true
+func getBool1() bool {
+    println("got bool 1")
+    return false
+}
+
+func getBool2() bool {
+    println("got bool 2")
+    return false
 }
 
 func testEquals() {
     //var arr1 [16]Person
     //var arr2 [16]Person
     //println(arr1 != arr2)
-    println(aBool() && aBool())
+    println(getBool1() && getBool2())
+    println(getBool1() || getBool2())
 }
 
 var str = "lol\\"

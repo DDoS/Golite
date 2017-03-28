@@ -571,7 +571,26 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitLogicOr(LogicOr logicOr) {
-
+        // Get the current basic block, and add two new ones: evaluating the right side, and merging the values
+        final LLVMBasicBlockRef orShort = LLVMGetLastBasicBlock(currentFunction);
+        final LLVMBasicBlockRef orFull = LLVMAppendBasicBlock(currentFunction, "orFull");
+        final LLVMBasicBlockRef orEnd = LLVMAppendBasicBlock(currentFunction, "orEnd");
+        // Evaluate the left side in the current block, if it's false, then jump to the block for the right side
+        logicOr.getLeft().visit(this);
+        final LLVMValueRef left = getExprValue(logicOr.getLeft());
+        LLVMBuildCondBr(builder, left, orEnd, orFull);
+        // Start a new block and evaluate the right side in it, then jump to the end to merge the values
+        LLVMPositionBuilderAtEnd(builder, orFull);
+        logicOr.getRight().visit(this);
+        final LLVMValueRef fullValue = getExprValue(logicOr.getRight());
+        LLVMBuildBr(builder, orEnd);
+        // Use a phi node to merge the values from the short-circuit and full evaluation
+        LLVMPositionBuilderAtEnd(builder, orEnd);
+        final LLVMValueRef orResult = LLVMBuildPhi(builder, LLVMInt1Type(), "orResult");
+        final LLVMValueRef[] phiValues = {LLVMConstInt(LLVMInt1Type(), 1, 0), fullValue};
+        final LLVMBasicBlockRef[] phiBlocks = {orShort, orFull};
+        LLVMAddIncoming(orResult, new PointerPointer<>(phiValues), new PointerPointer<>(phiBlocks), phiValues.length);
+        exprValues.put(logicOr, orResult);
     }
 
     private LLVMValueRef getExprValue(Expr<?> expr) {

@@ -952,7 +952,14 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseALogicOrExpr(ALogicOrExpr node) {
-        // Check out LogicalOr
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> and = new LogicOr(left, right);
+        convertedExprs.put(node, and);
     }
 
     @Override
