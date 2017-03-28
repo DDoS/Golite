@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import golite.analysis.AnalysisAdapter;
 import golite.ir.node.Append;
 import golite.ir.node.Assignment;
+import golite.ir.node.BinArFloat64;
 import golite.ir.node.BinArInt;
 import golite.ir.node.BoolLit;
 import golite.ir.node.Call;
@@ -717,37 +718,94 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAMulExpr(AMulExpr node) {
-        // Check out BinArFloat64 and BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.MUL));
+        } else {
+            convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.MUL));
+        }
     }
 
     @Override
     public void caseADivExpr(ADivExpr node) {
-        // Check out BinArFloat64 and BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.DIV));
+        } else {
+            //Does else need a check?
+            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.DIV));
+        }
     }
 
     @Override
     public void caseARemExpr(ARemExpr node) {
-        // Check out BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.INT)
+                convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.REM));
     }
 
     @Override
     public void caseALshiftExpr(ALshiftExpr node) {
-        // Check out BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.INT)
+                convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.LSHIFT));
     }
 
     @Override
     public void caseARshiftExpr(ARshiftExpr node) {
-        // Check out BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.INT)
+                convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.RSHIFT));
     }
 
     @Override
     public void caseABitAndExpr(ABitAndExpr node) {
         // Check out BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.INT)
+                convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.BIT_AND));
     }
 
     @Override
     public void caseABitAndNotExpr(ABitAndNotExpr node) {
-        // Check out BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.INT)
+                convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.BIT_AND_NOT));
     }
 
     @Override
@@ -762,7 +820,11 @@ public class IrConverter extends AnalysisAdapter {
             convertedExprs.put(node, new ConcatString(left, right));
             return;
         }
-        // Check out BinArFloat64, BinArInt
+        if (left.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.ADD));
+        } else {
+            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.ADD));
+        }
     }
 
     @Override
