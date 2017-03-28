@@ -40,12 +40,12 @@ func staticInit() {
 }
 
 func getBool1() bool {
-    println("got bool 1")
+    println("got bool " + "1")
     return false
 }
 
 func getBool2() bool {
-    println("got bool 2")
+    println("got " + "bool 2" + "")
     return false
 }
 

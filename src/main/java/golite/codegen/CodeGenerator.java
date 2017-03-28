@@ -75,6 +75,7 @@ public class CodeGenerator implements IrVisitor {
     private LLVMValueRef printStringFunction;
     private LLVMValueRef checkBoundsFunction;
     private LLVMValueRef sliceAppendFunction;
+    private LLVMValueRef sliceConcatFunction;
     private final Map<StructType, LLVMTypeRef> structs = new HashMap<>();
     private final Map<Function, LLVMValueRef> functions = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
@@ -342,7 +343,8 @@ public class CodeGenerator implements IrVisitor {
                 "strPtr");
         // Create the string struct with the length and character array
         final LLVMValueRef[] stringData = {LLVMConstInt(LLVMInt32Type(), stringLit.getUtf8Data().limit(), 1), stringPtr};
-        final LLVMValueRef stringStruct = LLVMConstNamedStruct(sliceRuntimeType, new PointerPointer<>(stringData), stringData.length);
+        final LLVMValueRef stringStruct = LLVMConstNamedStruct(sliceRuntimeType, new PointerPointer<>(stringData),
+                stringData.length);
         exprValues.put(stringLit, stringStruct);
     }
 
@@ -513,7 +515,12 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitConcatString(ConcatString concatString) {
-        // Runtime call
+        concatString.getLeft().visit(this);
+        concatString.getRight().visit(this);
+        final LLVMValueRef[] args = {getExprValue(concatString.getLeft()), getExprValue(concatString.getRight())};
+        final LLVMValueRef concat = LLVMBuildCall(builder, sliceConcatFunction, new PointerPointer<>(args), args.length,
+                "concat");
+        exprValues.put(concatString, concat);
     }
 
     @Override
@@ -720,6 +727,7 @@ public class CodeGenerator implements IrVisitor {
         checkBoundsFunction = createFunction(true, RUNTIME_CHECK_BOUNDS, LLVMVoidType(), LLVMInt32Type(), LLVMInt32Type());
         sliceAppendFunction = createFunction(true, RUNTIME_SLICE_APPEND, sliceRuntimeType,
                 sliceRuntimeType, i8Pointer, LLVMInt32Type());
+        sliceConcatFunction = createFunction(true, RUNTIME_SLICE_CONCAT, sliceRuntimeType, sliceRuntimeType, sliceRuntimeType);
     }
 
     private static final String RUNTIME_SLICE = "goliteRtSlice";
@@ -730,5 +738,6 @@ public class CodeGenerator implements IrVisitor {
     private static final String RUNTIME_PRINT_STRING = "goliteRtPrintString";
     private static final String RUNTIME_CHECK_BOUNDS = "goliteRtCheckBounds";
     private static final String RUNTIME_SLICE_APPEND = "goliteRtSliceAppend";
+    private static final String RUNTIME_SLICE_CONCAT = "goliteRtSliceConcat";
     private static final String STATIC_INIT_FUNCTION = "staticInit";
 }

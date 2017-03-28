@@ -23,6 +23,7 @@ import golite.ir.node.CmpFloat64;
 import golite.ir.node.CmpInt;
 import golite.ir.node.CmpInt.Op;
 import golite.ir.node.CmpString;
+import golite.ir.node.ConcatString;
 import golite.ir.node.Expr;
 import golite.ir.node.Float64Lit;
 import golite.ir.node.FunctionDecl;
@@ -727,7 +728,17 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAddExpr(AAddExpr node) {
-        // Check out BinArFloat64, BinArInt and ConcatString
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.STRING) {
+            convertedExprs.put(node, new ConcatString(left, right));
+            return;
+        }
+        // Check out BinArFloat64, BinArInt
     }
 
     @Override

@@ -48,6 +48,10 @@ goliteRtSlice goliteRtSliceAppend(goliteRtSlice slice, int8_t* appendData, int32
     return newSlice;
 }
 
+goliteRtSlice goliteRtSliceConcat(goliteRtSlice slice1, goliteRtSlice slice2) {
+    return goliteRtSliceAppend(slice1, slice2.data, slice2.length);
+}
+
 void staticInit();
 
 #pragma GCC diagnostic ignored "-Wmain-return-type"
