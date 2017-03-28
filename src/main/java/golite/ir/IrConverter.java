@@ -785,7 +785,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseABitAndExpr(ABitAndExpr node) {
-        // Check out BinArInt
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -829,17 +828,41 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseASubExpr(ASubExpr node) {
-        // Check out BinArFloat64 and BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.SUB));
+        } else {
+            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.SUB));
+        }
     }
 
     @Override
     public void caseABitOrExpr(ABitOrExpr node) {
-        // Check out BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.INT)
+                convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.BIT_OR));
     }
 
     @Override
     public void caseABitXorExpr(ABitXorExpr node) {
-        // Check out BinArInt
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.INT)
+                convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.BIT_XOR));
     }
 
     @Override
