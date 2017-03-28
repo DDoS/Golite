@@ -76,6 +76,7 @@ public class CodeGenerator implements IrVisitor {
     private LLVMValueRef checkBoundsFunction;
     private LLVMValueRef sliceAppendFunction;
     private LLVMValueRef sliceConcatFunction;
+    private LLVMValueRef compareStringFunction;
     private final Map<StructType, LLVMTypeRef> structs = new HashMap<>();
     private final Map<Function, LLVMValueRef> functions = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
@@ -549,7 +550,14 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitCmpString(CmpString cmpString) {
-        // Runtime call
+        cmpString.getLeft().visit(this);
+        cmpString.getRight().visit(this);
+        final LLVMValueRef kind = LLVMConstInt(LLVMInt32Type(), cmpString.getOp().getRuntimeID(), 0);
+        final LLVMValueRef[] args = {kind, getExprValue(cmpString.getLeft()), getExprValue(cmpString.getRight())};
+        final LLVMValueRef i8Compare = LLVMBuildCall(builder, compareStringFunction, new PointerPointer<>(args), args.length,
+                "i8Compare");
+        final LLVMValueRef compare = LLVMBuildTrunc(builder, i8Compare, LLVMInt1Type(), "compare");
+        exprValues.put(cmpString, compare);
     }
 
     @Override
@@ -646,7 +654,8 @@ public class CodeGenerator implements IrVisitor {
     }
 
     private LLVMValueRef createFunction(boolean external, String name, LLVMTypeRef returnType, LLVMTypeRef... parameters) {
-        final LLVMTypeRef functionType = LLVMFunctionType(returnType, new PointerPointer<>(parameters), parameters.length, 0);
+        final LLVMTypeRef functionType = LLVMFunctionType(returnType, new PointerPointer<>(parameters), parameters.length,
+                0);
         final LLVMValueRef function = LLVMAddFunction(module, name, functionType);
         LLVMSetFunctionCallConv(function, LLVMCCallConv);
         LLVMSetLinkage(function, external ? LLVMExternalLinkage : LLVMPrivateLinkage);
@@ -727,7 +736,10 @@ public class CodeGenerator implements IrVisitor {
         checkBoundsFunction = createFunction(true, RUNTIME_CHECK_BOUNDS, LLVMVoidType(), LLVMInt32Type(), LLVMInt32Type());
         sliceAppendFunction = createFunction(true, RUNTIME_SLICE_APPEND, sliceRuntimeType,
                 sliceRuntimeType, i8Pointer, LLVMInt32Type());
-        sliceConcatFunction = createFunction(true, RUNTIME_SLICE_CONCAT, sliceRuntimeType, sliceRuntimeType, sliceRuntimeType);
+        sliceConcatFunction = createFunction(true, RUNTIME_SLICE_CONCAT, sliceRuntimeType, sliceRuntimeType,
+                sliceRuntimeType);
+        compareStringFunction = createFunction(true, RUNTIME_COMPARE_STRING, LLVMInt8Type(), LLVMInt32Type(),
+                sliceRuntimeType, sliceRuntimeType);
     }
 
     private static final String RUNTIME_SLICE = "goliteRtSlice";
@@ -739,5 +751,6 @@ public class CodeGenerator implements IrVisitor {
     private static final String RUNTIME_CHECK_BOUNDS = "goliteRtCheckBounds";
     private static final String RUNTIME_SLICE_APPEND = "goliteRtSliceAppend";
     private static final String RUNTIME_SLICE_CONCAT = "goliteRtSliceConcat";
+    private static final String RUNTIME_COMPARE_STRING = "goliteRtCompareString";
     private static final String STATIC_INIT_FUNCTION = "staticInit";
 }

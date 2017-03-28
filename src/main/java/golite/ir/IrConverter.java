@@ -930,22 +930,62 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseALessExpr(ALessExpr node) {
-        // Check out CmpFloat64, CmpInt and CmpString
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.STRING) {
+            convertedExprs.put(node, new CmpString(left, right, CmpString.Op.LESS));
+            return;
+        }
+        // Check out CmpFloat64, CmpInt
     }
 
     @Override
     public void caseALessEqExpr(ALessEqExpr node) {
-        // Check out CmpFloat64, CmpInt and CmpString
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.STRING) {
+            convertedExprs.put(node, new CmpString(left, right, CmpString.Op.LESS_EQ));
+            return;
+        }
+        // Check out CmpFloat64, CmpInt
     }
 
     @Override
     public void caseAGreatExpr(AGreatExpr node) {
-        // Check out CmpFloat64, CmpInt and CmpString
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.STRING) {
+            convertedExprs.put(node, new CmpString(left, right, CmpString.Op.GREAT));
+            return;
+        }
+        // Check out CmpFloat64, CmpInt
     }
 
     @Override
     public void caseAGreatEqExpr(AGreatEqExpr node) {
-        // Check out CmpFloat64, CmpInt and CmpString
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        if (left.getType() == BasicType.STRING) {
+            convertedExprs.put(node, new CmpString(left, right, CmpString.Op.GREAT_EQ));
+            return;
+        }
+        // Check out CmpFloat64, CmpInt
     }
 
     @Override

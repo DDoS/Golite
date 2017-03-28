@@ -76,4 +76,5 @@ func main() {
     var _ = 1
     staticInit()
     testEquals()
+    println("h" < "ha")
 }

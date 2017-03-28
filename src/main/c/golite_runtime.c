@@ -8,6 +8,13 @@ typedef struct {
     int8_t* data;
 } goliteRtSlice;
 
+const int32_t EQ = 0;
+const int32_t NEQ = 1;
+const int32_t LESS = 2;
+const int32_t LESS_EQ = 3;
+const int32_t GREAT = 4;
+const int32_t GREAT_EQ = 5;
+
 void goliteRtPrintBool(int8_t c) {
     printf("%s", c ? "true" : "false");
 }
@@ -50,6 +57,27 @@ goliteRtSlice goliteRtSliceAppend(goliteRtSlice slice, int8_t* appendData, int32
 
 goliteRtSlice goliteRtSliceConcat(goliteRtSlice slice1, goliteRtSlice slice2) {
     return goliteRtSliceAppend(slice1, slice2.data, slice2.length);
+}
+
+int8_t goliteRtCompareString(int32_t kind, goliteRtSlice str1, goliteRtSlice str2) {
+    int minLength = str1.length < str2.length ? str1.length : str2.length;
+    int cmp = memcmp(str1.data, str2.data, minLength * sizeof(int8_t));
+    switch (kind) {
+        case EQ:
+            return cmp == 0 && str1.length == str2.length;
+        case NEQ:
+            return cmp != 0 || str1.length != str2.length;
+        case LESS:
+            return cmp < 0 || (cmp == 0 && str1.length < str2.length);
+        case LESS_EQ:
+            return cmp < 0 || (cmp == 0 && str1.length <= str2.length);
+        case GREAT:
+            return cmp > 0 || (cmp == 0 && str1.length > str2.length);
+        case GREAT_EQ:
+            return cmp > 0 || (cmp == 0 && str1.length >= str2.length);
+    }
+    printf("Bad comparison kind: %i\n", kind);
+    exit(1);
 }
 
 void staticInit();

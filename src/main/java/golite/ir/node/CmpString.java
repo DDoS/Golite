@@ -49,11 +49,17 @@ public class CmpString extends Expr<BasicType> {
     }
 
     public enum Op {
-        EQ("==$"), NEQ("!=$"), LESS("<$"), LESS_EQ("<=$"), GREAT(">$"), GREAT_EQ(">=$");
+        EQ("==$", 0), NEQ("!=$", 1), LESS("<$", 2), LESS_EQ("<=$", 3), GREAT(">$", 4), GREAT_EQ(">=$", 5);
         private final String string;
+        private final int runtimeID;
 
-        Op(String string) {
+        Op(String string, int runtimeID) {
             this.string = string;
+            this.runtimeID = runtimeID;
+        }
+
+        public int getRuntimeID() {
+            return runtimeID;
         }
 
         @Override
