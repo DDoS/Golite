@@ -139,7 +139,6 @@ import golite.semantic.type.Type;
 /**
  *
  */
-@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class IrConverter extends AnalysisAdapter {
     private final SemanticData semantics;
     private Program convertedProgram;
@@ -347,7 +346,7 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAPrintlnStmt(APrintlnStmt node) {
         convertPrintStmt(node.getExpr());
-        functionStmts.add(new PrintString(new StringLit("\n")));
+        functionStmts.add(new PrintString(new StringLit(System.lineSeparator())));
     }
 
     private void convertPrintStmt(LinkedList<PExpr> exprs) {
