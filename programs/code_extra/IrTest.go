@@ -57,6 +57,14 @@ func testEquals() {
     println(getBool1() || getBool2())
 }
 
+func goliteMain() {
+    testEquals()
+}
+
+func goliteMain1() {
+    println("h" < "ha")
+}
+
 var str = "lol\\"
 
 func main() {
@@ -75,6 +83,6 @@ func main() {
     j := boolean(true)
     var _ = 1
     staticInit()
-    testEquals()
-    println("h" < "ha")
+    goliteMain()
+    goliteMain1()
 }

@@ -185,8 +185,8 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitFunctionDecl(FunctionDecl functionDecl) {
         final Function symbol = functionDecl.getFunction();
-        // The only external functions are the main and static initializer
-        final boolean external = functionDecl.isMain() || functionDecl.isStaticInit();
+        // The only external functions are the static initializer and golite main
+        final boolean external = functionDecl.isStaticInit() || functionDecl.isMain();
         // Build the LLVM function type
         final FunctionType functionType = symbol.getType();
         final List<Parameter> params = functionType.getParameters();
@@ -195,13 +195,25 @@ public class CodeGenerator implements IrVisitor {
             llvmParams[i] = createType(params.get(i).getType());
         }
         final LLVMTypeRef llvmReturn = functionType.getReturnType().map(this::createType).orElse(LLVMVoidType());
-        // Prevent user defined functions from having the same name as the static initializer
+        // Prevent user defined functions from having the same name as the static initializer or golite main
         final String name;
         if (functionDecl.isStaticInit()) {
             name = STATIC_INIT_FUNCTION;
+        } else if (functionDecl.isMain()) {
+            name = GOLITE_MAIN_FUNCTION;
         } else {
             final String funcName = symbol.getName();
-            name = funcName.equals(STATIC_INIT_FUNCTION) ? STATIC_INIT_FUNCTION + "1" : funcName;
+            switch (funcName) {
+                case STATIC_INIT_FUNCTION:
+                    name = STATIC_INIT_FUNCTION + "1";
+                    break;
+                case GOLITE_MAIN_FUNCTION:
+                    name = GOLITE_MAIN_FUNCTION + "1";
+                    break;
+                default:
+                    name = funcName;
+                    break;
+            }
         }
         // Create the LLVM function
         final LLVMValueRef function = createFunction(external, name, llvmReturn, llvmParams);
@@ -753,4 +765,5 @@ public class CodeGenerator implements IrVisitor {
     private static final String RUNTIME_SLICE_CONCAT = "goliteRtSliceConcat";
     private static final String RUNTIME_COMPARE_STRING = "goliteRtCompareString";
     private static final String STATIC_INIT_FUNCTION = "staticInit";
+    private static final String GOLITE_MAIN_FUNCTION = "goliteMain";
 }

@@ -81,12 +81,10 @@ int8_t goliteRtCompareString(int32_t kind, goliteRtSlice str1, goliteRtSlice str
 }
 
 void staticInit();
+void goliteMain();
 
-#pragma GCC diagnostic ignored "-Wmain-return-type"
-void main();
-
-void start() {
+int main(int argc, char** argv) {
     staticInit();
-    main();
-    exit(0);
+    goliteMain();
+    return 0;
 }
