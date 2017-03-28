@@ -1049,7 +1049,12 @@ public class IrConverter extends AnalysisAdapter {
             convertedExprs.put(node, new CmpString(left, right, CmpString.Op.LESS));
             return;
         }
-        // Check out CmpFloat64, CmpInt
+        if (left.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node,  new CmpFloat64(left, right, CmpFloat64.Op.LESS));
+        }
+        else {
+            convertedExprs.put(node,  new CmpInt(left, right, CmpInt.Op.LESS));
+        }
     }
 
     @Override
@@ -1064,7 +1069,12 @@ public class IrConverter extends AnalysisAdapter {
             convertedExprs.put(node, new CmpString(left, right, CmpString.Op.LESS_EQ));
             return;
         }
-        // Check out CmpFloat64, CmpInt
+        if (left.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node,  new CmpFloat64(left, right, CmpFloat64.Op.LESS_EQ));
+        }
+        else {
+            convertedExprs.put(node,  new CmpInt(left, right, CmpInt.Op.LESS_EQ));
+        }
     }
 
     @Override
@@ -1079,7 +1089,12 @@ public class IrConverter extends AnalysisAdapter {
             convertedExprs.put(node, new CmpString(left, right, CmpString.Op.GREAT));
             return;
         }
-        // Check out CmpFloat64, CmpInt
+        if (left.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node,  new CmpFloat64(left, right, CmpFloat64.Op.GREAT));
+        }
+        else {
+            convertedExprs.put(node,  new CmpInt(left, right, CmpInt.Op.GREAT));
+        }
     }
 
     @Override
@@ -1094,7 +1109,12 @@ public class IrConverter extends AnalysisAdapter {
             convertedExprs.put(node, new CmpString(left, right, CmpString.Op.GREAT_EQ));
             return;
         }
-        // Check out CmpFloat64, CmpInt
+        if (left.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node,  new CmpFloat64(left, right, CmpFloat64.Op.GREAT_EQ));
+        }
+        else {
+            convertedExprs.put(node,  new CmpInt(left, right, CmpInt.Op.GREAT_EQ));
+        }
     }
 
     @Override
