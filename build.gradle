@@ -1,5 +1,5 @@
 // Default tasks
-defaultTasks 'clean', 'build'
+defaultTasks 'build'
 
 // Apply plugins
 apply plugin: 'application'
@@ -71,6 +71,10 @@ jar {
     }
 }
 
+distZip.enabled = false
+distTar.enabled = false
+startScripts.enabled = false
+
 run {
     standardInput = System.in
     if (project.hasProperty("appArgs")) {
@@ -99,9 +103,11 @@ task compileRuntime {
     inputs.files runtimeSource
     outputs.file outputObj
 
-    def outputDirFile = new File(outputDir)
-    if (!outputDirFile.exists()) {
-        outputDirFile.mkdirs()
+    doFirst {
+        def outputDirFile = new File(outputDir)
+        if (!outputDirFile.exists()) {
+            outputDirFile.mkdirs()
+        }
     }
 
     doLast {
@@ -111,8 +117,27 @@ task compileRuntime {
     }
 }
 
+task createRunScript {
+    def outputDir = "$projectDir/"
+    def outputScript = outputDir + 'run.sh'
+
+    outputs.file outputScript
+
+    doLast {
+        def script = new File(outputScript);
+        script.setText '#!/usr/bin/env bash\n'
+        script << 'java -classpath "'
+        script << sourceSets.main.runtimeClasspath.asPath
+        script << '" '
+        script << mainClassName
+        script << ' $*\n'
+        script.setExecutable(true)
+    }
+}
+
 build {
     dependsOn compileRuntime
+    dependsOn createRunScript
 }
 
 run {
