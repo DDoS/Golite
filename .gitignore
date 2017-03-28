@@ -98,5 +98,6 @@ config.yml
 
 # Exceptions #
 ##############
+run.sh
 !gradle-wrapper.jar
 !gradle/plugins/sablecc-gradle-plugin-0.0.1-SNAPSHOT.jar
