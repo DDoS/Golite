@@ -45,6 +45,8 @@ import golite.ir.node.Program;
 import golite.ir.node.Select;
 import golite.ir.node.Stmt;
 import golite.ir.node.StringLit;
+import golite.ir.node.UnaArFloat64;
+import golite.ir.node.UnaArInt;
 import golite.ir.node.ValueReturn;
 import golite.ir.node.VariableDecl;
 import golite.ir.node.VoidReturn;
@@ -673,22 +675,44 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseALogicNotExpr(ALogicNotExpr node) {
-        // Check out LogicalNot
+        node.getInner().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> inner = (Expr<BasicType>) convertedExprs.get(node.getInner());
+        convertedExprs.put(node, new LogicNot(inner));
     }
 
     @Override
     public void caseAReaffirmExpr(AReaffirmExpr node) {
-        // Check out UnaArFloat64 and UnaArInt
+        node.getInner().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> inner = (Expr<BasicType>) convertedExprs.get(node.getInner());
+        if (inner.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node, new UnaArFloat64(inner, UnaArFloat64.Op.NOP));
+        } else if (inner.getType() == BasicType.INT) {
+            convertedExprs.put(node, new UnaArInt(inner, UnaArInt.Op.NOP));
+        }
     }
 
     @Override
     public void caseANegateExpr(ANegateExpr node) {
-        // Check out UnaArFloat64 and UnaArInt
+        node.getInner().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> inner = (Expr<BasicType>) convertedExprs.get(node.getInner());
+        if (inner.getType() == BasicType.FLOAT64) {
+            convertedExprs.put(node, new UnaArFloat64(inner, UnaArFloat64.Op.NEG));
+        } else if (inner.getType() == BasicType.INT) {
+            convertedExprs.put(node, new UnaArInt(inner, UnaArInt.Op.NEG));
+        }
     }
 
     @Override
     public void caseABitNotExpr(ABitNotExpr node) {
-        // Check out UnaArInt
+        node.getInner().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> inner = (Expr<BasicType>) convertedExprs.get(node.getInner());
+        if (inner.getType() == BasicType.INT) {
+            convertedExprs.put(node, new UnaArInt(inner, UnaArInt.Op.BIT_NEG));
+        }
     }
 
     @Override
