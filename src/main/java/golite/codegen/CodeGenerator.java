@@ -515,6 +515,8 @@ public class CodeGenerator implements IrVisitor {
         } else if (unaArInt.getOp() == UnaArInt.Op.BIT_NEG) {
             inner = LLVMBuildNot(builder, exp, "uIntBitNeg");
             exprValues.put(unaArInt, inner);
+        } else {
+            exprValues.put(unaArInt, getExprValue(unaArInt.getInner()));
         }
     }
 
@@ -534,39 +536,52 @@ public class CodeGenerator implements IrVisitor {
         right.visit(this);
         final LLVMValueRef l = getExprValue(left);
         final LLVMValueRef r = getExprValue(right);
-        if (binArInt.getOp() == BinArInt.Op.ADD) {
-            final LLVMValueRef exp = LLVMBuildAdd(builder, l, r, "intAdd");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.SUB) {
-            final LLVMValueRef exp = LLVMBuildSub(builder, l, r, "intSub");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.MUL) {
-            final LLVMValueRef exp = LLVMBuildMul(builder, l, r, "intMul");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.DIV) {
-            final LLVMValueRef exp = LLVMBuildSDiv(builder, l, r, "intDiv");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.REM) {
-            final LLVMValueRef exp = LLVMBuildSRem(builder, l, r, "intRem");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.BIT_OR) {
-            final LLVMValueRef exp = LLVMBuildOr(builder, l, r, "intBOr");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.BIT_AND) {
-            final LLVMValueRef exp = LLVMBuildAnd(builder, l, r, "intBAnd");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.LSHIFT) {
-            final LLVMValueRef exp = LLVMBuildShl(builder, l, r, "intLsh");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.RSHIFT) {
-            final LLVMValueRef exp = LLVMBuildAShr(builder, l, r, "intRsh");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.BIT_XOR) {
-            final LLVMValueRef exp = LLVMBuildXor(builder, l, r, "intXor");
-            exprValues.put(binArInt, exp);
-        } else if (binArInt.getOp() == BinArInt.Op.BIT_AND_NOT) {
-            final LLVMValueRef exp = LLVMBuildAnd(builder, l, LLVMBuildNot(builder, r, "not"), "intAndNot");
-            exprValues.put(binArInt, exp);
+        final LLVMValueRef exp;
+        switch(binArInt.getOp()) {
+            case ADD:
+                exp = LLVMBuildAdd(builder, l, r, "intAdd");
+                exprValues.put(binArInt, exp);
+                break;
+            case SUB:
+                exp = LLVMBuildSub(builder, l, r, "intSub");
+                exprValues.put(binArInt, exp);
+                break;
+            case MUL:
+                exp = LLVMBuildMul(builder, l, r, "intMul");
+                exprValues.put(binArInt, exp);
+                break;
+            case DIV:
+                exp = LLVMBuildSDiv(builder, l, r, "intDiv");
+                exprValues.put(binArInt, exp);
+                break;
+            case REM:
+                exp = LLVMBuildSRem(builder, l, r, "intRem");
+                exprValues.put(binArInt, exp);
+                break;
+            case BIT_OR:
+                exp = LLVMBuildOr(builder, l, r, "intBOr");
+                exprValues.put(binArInt, exp);
+                break;
+            case BIT_AND:
+                exp = LLVMBuildAnd(builder, l, r, "intBAnd");
+                exprValues.put(binArInt, exp);
+                break;
+            case LSHIFT:
+                exp = LLVMBuildShl(builder, l, r, "intLsh");
+                exprValues.put(binArInt, exp);
+                break;
+            case RSHIFT:
+                exp = LLVMBuildAShr(builder, l, r, "intRsh");
+                exprValues.put(binArInt, exp);
+                break;
+            case BIT_XOR:
+                exp = LLVMBuildXor(builder, l, r, "intXor");
+                exprValues.put(binArInt, exp);
+                break;
+            case BIT_AND_NOT:
+                exp = LLVMBuildAnd(builder, l, LLVMBuildNot(builder, r, "not"), "intAndNot");
+                exprValues.put(binArInt, exp);
+                break;
         }
     }
 
@@ -588,18 +603,24 @@ public class CodeGenerator implements IrVisitor {
         right.visit(this);
         final LLVMValueRef l = getExprValue(left);
         final LLVMValueRef r = getExprValue(right);
-        if (binArFloat64.getOp() == BinArFloat64.Op.ADD) {
-            final LLVMValueRef exp = LLVMBuildFAdd(builder, l, r, "fAdd");
-            exprValues.put(binArFloat64, exp);
-        } else if (binArFloat64.getOp() == BinArFloat64.Op.SUB) {
-            final LLVMValueRef exp = LLVMBuildFSub(builder, l, r, "fSub");
-            exprValues.put(binArFloat64, exp);
-        } else if (binArFloat64.getOp() == BinArFloat64.Op.MUL) {
-            final LLVMValueRef exp = LLVMBuildFMul(builder, l, r, "fMul");
-            exprValues.put(binArFloat64, exp);
-        } else if (binArFloat64.getOp() == BinArFloat64.Op.DIV) {
-            final LLVMValueRef exp = LLVMBuildFDiv(builder, l, r, "fDiv");
-            exprValues.put(binArFloat64, exp);
+        final LLVMValueRef exp;
+        switch (binArFloat64.getOp()) {
+            case ADD:
+                exp = LLVMBuildFAdd(builder, l, r, "fAdd");
+                exprValues.put(binArFloat64, exp);
+                break;
+            case SUB:
+                exp = LLVMBuildFSub(builder, l, r, "fSub");
+                exprValues.put(binArFloat64, exp);
+                break;
+            case MUL:
+                exp = LLVMBuildFMul(builder, l, r, "fMul");
+                exprValues.put(binArFloat64, exp);
+                break;
+            case DIV:
+                exp = LLVMBuildFDiv(builder, l, r, "fDiv");
+                exprValues.put(binArFloat64, exp);
+                break;
         }
     }
 
