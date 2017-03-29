@@ -622,17 +622,93 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitCmpBool(CmpBool cmpBool) {
         // LLVMBuildICmp()
+        final Expr<BasicType> left = cmpBool.getLeft();
+        final Expr<BasicType> right = cmpBool.getRight();
+        left.visit(this);
+        right.visit(this);
+        final LLVMValueRef l = getExprValue(left);
+        final LLVMValueRef r = getExprValue(right);
+        final LLVMValueRef cmp;
+        switch (cmpBool.getOp()) {
+            case EQ:
+                cmp = LLVMBuildICmp(builder, LLVMIntEQ, l, r, "boolCmp");
+                break;
+            case NEQ:
+                cmp = LLVMBuildICmp(builder, LLVMIntNE, l, r, "boolCmp");
+                break;
+            default:
+                throw new UnsupportedOperationException(cmpBool.getOp().name());
+        }
+        exprValues.put(cmpBool, cmp);
+        
     }
 
     @Override
     public void visitCmpInt(CmpInt cmpInt) {
-        // LLVMBuildICmp()
+        final Expr<BasicType> left = cmpInt.getLeft();
+        final Expr<BasicType> right = cmpInt.getRight();
+        left.visit(this);
+        right.visit(this);
+        final LLVMValueRef l = getExprValue(left);
+        final LLVMValueRef r = getExprValue(right);
+        final LLVMValueRef cmp;
+        switch (cmpInt.getOp()) {
+            case EQ:
+                cmp = LLVMBuildICmp(builder, LLVMIntEQ, l, r, "intCmp");
+                break;
+            case NEQ:
+                cmp = LLVMBuildICmp(builder, LLVMIntNE, l, r, "intCmp");
+                break;
+            case LESS:
+                cmp = LLVMBuildICmp(builder, LLVMIntSLT, l, r, "intCmp");
+                break;
+            case LESS_EQ:
+                cmp = LLVMBuildICmp(builder, LLVMIntSLE, l, r, "intCmp");
+                break;
+            case GREAT:
+                cmp = LLVMBuildICmp(builder, LLVMIntSGT, l, r, "intCmp");
+                break;
+            case GREAT_EQ:
+                cmp = LLVMBuildICmp(builder, LLVMIntSGE, l, r, "intCmp");
+                break;
+            default:
+                throw new UnsupportedOperationException(cmpInt.getOp().name());
+        }
+        exprValues.put(cmpInt, cmp);
     }
 
     @Override
     public void visitCmpFloat64(CmpFloat64 cmpFloat64) {
-        // LLVMBuildFCmp()
-        // Use ordered comparisons
+        final Expr<BasicType> left = cmpFloat64.getLeft();
+        final Expr<BasicType> right = cmpFloat64.getRight();
+        left.visit(this);
+        right.visit(this);
+        final LLVMValueRef l = getExprValue(left);
+        final LLVMValueRef r = getExprValue(right);
+        final LLVMValueRef cmp;
+        switch (cmpFloat64.getOp()) {
+            case EQ:
+                cmp = LLVMBuildICmp(builder, LLVMRealOEQ, l, r, "flCmp");
+                break;
+            case NEQ:
+                cmp = LLVMBuildICmp(builder, LLVMRealONE, l, r, "flCmp");
+                break;
+            case LESS:
+                cmp = LLVMBuildICmp(builder, LLVMRealOLT, l, r, "flCmp");
+                break;
+            case LESS_EQ:
+                cmp = LLVMBuildICmp(builder, LLVMRealOLE, l, r, "flCmp");
+                break;
+            case GREAT:
+                cmp = LLVMBuildICmp(builder, LLVMRealOGT, l, r, "flCmp");
+                break;
+            case GREAT_EQ:
+                cmp = LLVMBuildICmp(builder, LLVMRealOGE, l, r, "flCmp");
+                break;
+            default:
+                throw new UnsupportedOperationException(cmpFloat64.getOp().name());
+        }
+        exprValues.put(cmpFloat64, cmp);
     }
 
     @Override
