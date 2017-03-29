@@ -497,18 +497,33 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitLogicNot(LogicNot logicNot) {
-        // LLVMBuildNot()
+        //LLVMBuildNot (LLVMBuilderRef, LLVMValueRef V, const char *Name)
+        logicNot.getInner().visit(this);
+        final LLVMValueRef inner = getExprValue(logicNot.getInner());
+        final LLVMValueRef lNot = LLVMBuildNot(builder, inner, "lNot");
+        exprValues.put(logicNot, lNot);
     }
 
     @Override
     public void visitUnaArInt(UnaArInt unaArInt) {
-        // LLVMBuildNeg()
-        // LLVMBuildNot()
+        unaArInt.getInner().visit(this);
+        final LLVMValueRef inner;
+        final LLVMValueRef exp = getExprValue(unaArInt.getInner());
+        if (unaArInt.getOp() == UnaArInt.Op.NEG) {
+            inner = LLVMBuildNeg(builder, exp, "uIntNeg");
+            exprValues.put(unaArInt, inner);
+        } else if (unaArInt.getOp() == UnaArInt.Op.BIT_NEG) {
+            inner = LLVMBuildNot(builder, exp, "uIntBitNeg");
+            exprValues.put(unaArInt, inner);
+        }
     }
 
     @Override
     public void visitUnaArFloat64(UnaArFloat64 unaArFloat64) {
-        // LLVMBuildFNeg()
+        unaArFloat64.getInner().visit(this);
+        final LLVMValueRef exp = getExprValue(unaArFloat64.getInner());
+        final LLVMValueRef negExp = LLVMBuildFNeg(builder, exp, "uFloatNeg");
+        exprValues.put(unaArFloat64, negExp);
     }
 
     @Override
