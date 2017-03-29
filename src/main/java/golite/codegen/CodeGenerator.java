@@ -528,12 +528,6 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitBinArInt(BinArInt binArInt) {
-        // LLVMBuildOr()
-        // LLVMBuildAnd()
-        // LLVMBuildShl()
-        // LLVMBuildAShr()
-        // LLVMBuildAnd(, LLVMBuildNot())
-        // LLVMBuildXor()
         final Expr<BasicType> left = binArInt.getLeft();
         final Expr<BasicType> right = binArInt.getRight();
         left.visit(this);
@@ -588,10 +582,25 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitBinArFloat64(BinArFloat64 binArFloat64) {
-        // LLVMBuildFAdd()
-        // LLVMBuildFSub()
-        // LLVMBuildFMul()
-        // LLVMBuildFDiv()
+        final Expr<BasicType> left = binArFloat64.getLeft();
+        final Expr<BasicType> right = binArFloat64.getRight();
+        left.visit(this);
+        right.visit(this);
+        final LLVMValueRef l = getExprValue(left);
+        final LLVMValueRef r = getExprValue(right);
+        if (binArFloat64.getOp() == BinArFloat64.Op.ADD) {
+            final LLVMValueRef exp = LLVMBuildFAdd(builder, l, r, "fAdd");
+            exprValues.put(binArFloat64, exp);
+        } else if (binArFloat64.getOp() == BinArFloat64.Op.SUB) {
+            final LLVMValueRef exp = LLVMBuildFSub(builder, l, r, "fSub");
+            exprValues.put(binArFloat64, exp);
+        } else if (binArFloat64.getOp() == BinArFloat64.Op.MUL) {
+            final LLVMValueRef exp = LLVMBuildFMul(builder, l, r, "fMul");
+            exprValues.put(binArFloat64, exp);
+        } else if (binArFloat64.getOp() == BinArFloat64.Op.DIV) {
+            final LLVMValueRef exp = LLVMBuildFDiv(builder, l, r, "fDiv");
+            exprValues.put(binArFloat64, exp);
+        }
     }
 
     @Override
