@@ -528,17 +528,52 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitBinArInt(BinArInt binArInt) {
-        // LLVMBuildAdd()
-        // LLVMBuildSub()
-        // LLVMBuildMul()
-        // LLVMBuildSDiv()
-        // LLVMBuildSRem()
         // LLVMBuildOr()
         // LLVMBuildAnd()
         // LLVMBuildShl()
         // LLVMBuildAShr()
         // LLVMBuildAnd(, LLVMBuildNot())
         // LLVMBuildXor()
+        final Expr<BasicType> left = binArInt.getLeft();
+        final Expr<BasicType> right = binArInt.getRight();
+        left.visit(this);
+        right.visit(this);
+        final LLVMValueRef l = getExprValue(left);
+        final LLVMValueRef r = getExprValue(right);
+        if (binArInt.getOp() == BinArInt.Op.ADD) {
+            final LLVMValueRef exp = LLVMBuildAdd(builder, l, r, "intAdd");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.SUB) {
+            final LLVMValueRef exp = LLVMBuildSub(builder, l, r, "intSub");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.MUL) {
+            final LLVMValueRef exp = LLVMBuildMul(builder, l, r, "intMul");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.DIV) {
+            final LLVMValueRef exp = LLVMBuildSDiv(builder, l, r, "intDiv");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.REM) {
+            final LLVMValueRef exp = LLVMBuildSRem(builder, l, r, "intRem");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.BIT_OR) {
+            final LLVMValueRef exp = LLVMBuildOr(builder, l, r, "intBOr");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.BIT_AND) {
+            final LLVMValueRef exp = LLVMBuildAnd(builder, l, r, "intBAnd");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.LSHIFT) {
+            final LLVMValueRef exp = LLVMBuildShl(builder, l, r, "intLsh");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.RSHIFT) {
+            final LLVMValueRef exp = LLVMBuildAShr(builder, l, r, "intRsh");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.BIT_XOR) {
+            final LLVMValueRef exp = LLVMBuildXor(builder, l, r, "intXor");
+            exprValues.put(binArInt, exp);
+        } else if (binArInt.getOp() == BinArInt.Op.BIT_AND_NOT) {
+            final LLVMValueRef exp = LLVMBuildAnd(builder, l, LLVMBuildNot(builder, r, "not"), "intAndNot");
+            exprValues.put(binArInt, exp);
+        }
     }
 
     @Override
