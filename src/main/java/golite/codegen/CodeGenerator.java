@@ -524,8 +524,12 @@ public class CodeGenerator implements IrVisitor {
     public void visitUnaArFloat64(UnaArFloat64 unaArFloat64) {
         unaArFloat64.getInner().visit(this);
         final LLVMValueRef exp = getExprValue(unaArFloat64.getInner());
-        final LLVMValueRef negExp = LLVMBuildFNeg(builder, exp, "uFloatNeg");
-        exprValues.put(unaArFloat64, negExp);
+        if (unaArFloat64.getOp() == UnaArFloat64.Op.NEG) {
+            final LLVMValueRef negExp = LLVMBuildFNeg(builder, exp, "uFloatNeg");
+            exprValues.put(unaArFloat64, negExp);
+        } else {
+            exprValues.put(unaArFloat64, getExprValue(unaArFloat64.getInner()));
+        }
     }
 
     @Override
@@ -540,49 +544,41 @@ public class CodeGenerator implements IrVisitor {
         switch(binArInt.getOp()) {
             case ADD:
                 exp = LLVMBuildAdd(builder, l, r, "intAdd");
-                exprValues.put(binArInt, exp);
                 break;
             case SUB:
                 exp = LLVMBuildSub(builder, l, r, "intSub");
-                exprValues.put(binArInt, exp);
                 break;
             case MUL:
                 exp = LLVMBuildMul(builder, l, r, "intMul");
-                exprValues.put(binArInt, exp);
                 break;
             case DIV:
                 exp = LLVMBuildSDiv(builder, l, r, "intDiv");
-                exprValues.put(binArInt, exp);
                 break;
             case REM:
                 exp = LLVMBuildSRem(builder, l, r, "intRem");
-                exprValues.put(binArInt, exp);
                 break;
             case BIT_OR:
                 exp = LLVMBuildOr(builder, l, r, "intBOr");
-                exprValues.put(binArInt, exp);
                 break;
             case BIT_AND:
                 exp = LLVMBuildAnd(builder, l, r, "intBAnd");
-                exprValues.put(binArInt, exp);
                 break;
             case LSHIFT:
                 exp = LLVMBuildShl(builder, l, r, "intLsh");
-                exprValues.put(binArInt, exp);
                 break;
             case RSHIFT:
                 exp = LLVMBuildAShr(builder, l, r, "intRsh");
-                exprValues.put(binArInt, exp);
                 break;
             case BIT_XOR:
                 exp = LLVMBuildXor(builder, l, r, "intXor");
-                exprValues.put(binArInt, exp);
                 break;
             case BIT_AND_NOT:
                 exp = LLVMBuildAnd(builder, l, LLVMBuildNot(builder, r, "not"), "intAndNot");
-                exprValues.put(binArInt, exp);
                 break;
+            default:
+                throw new UnsupportedOperationException(binArInt.getOp().name());
         }
+        exprValues.put(binArInt, exp);
     }
 
     @Override
@@ -607,21 +603,20 @@ public class CodeGenerator implements IrVisitor {
         switch (binArFloat64.getOp()) {
             case ADD:
                 exp = LLVMBuildFAdd(builder, l, r, "fAdd");
-                exprValues.put(binArFloat64, exp);
                 break;
             case SUB:
-                exp = LLVMBuildFSub(builder, l, r, "fSub");
-                exprValues.put(binArFloat64, exp);
+                exp = LLVMBuildFSub(builder, l, r, "fSub");  
                 break;
             case MUL:
-                exp = LLVMBuildFMul(builder, l, r, "fMul");
-                exprValues.put(binArFloat64, exp);
+                exp = LLVMBuildFMul(builder, l, r, "fMul");               
                 break;
             case DIV:
-                exp = LLVMBuildFDiv(builder, l, r, "fDiv");
-                exprValues.put(binArFloat64, exp);
+                exp = LLVMBuildFDiv(builder, l, r, "fDiv");                
                 break;
+            default:
+                throw new UnsupportedOperationException(binArFloat64.getOp().name());
         }
+        exprValues.put(binArFloat64, exp);
     }
 
     @Override
