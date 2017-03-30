@@ -36,9 +36,10 @@ public class CodeGenerateCommand extends Command {
 
     @Override
     public void addCommandLineOptions(Options options) {
-        options
-                .addOption(OUTPUT_BIT_CODE_OPTION, "Output as LLVM bit code instead of text")
-                .addOption(NO_OPTIMIZATION_OPTION, "Disable LLVM optimization passes");
+        if (isOutputEnabled()) {
+            options.addOption(OUTPUT_BIT_CODE_OPTION, "Output as LLVM bit code instead of text");
+        }
+        options.addOption(NO_OPTIMIZATION_OPTION, "Disable LLVM optimization passes");
     }
 
     @CommandOutput(extension = "ll")

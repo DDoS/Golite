@@ -33,6 +33,7 @@ public class Cli {
         registerCommand(new TypeCheckCommand());
         registerCommand(new IrGenerateCommand());
         registerCommand(new CodeGenerateCommand());
+        registerCommand(new CompileCommand());
     }
 
     private void registerCommand(Command command) {
