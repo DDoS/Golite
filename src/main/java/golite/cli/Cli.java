@@ -78,7 +78,7 @@ public class Cli {
         } catch (ParseException exception) {
             throw new CommandException("Invalid arguments: " + exception.getMessage());
         }
-        // Parse and set the input argument (if any), and throw an error if any unused arguments are left
+        // Parse and set the input file argument (if any), and throw an error if any unused arguments are left
         final ArrayList<String> remainingArgs = new ArrayList<>(commandLine.getArgList());
         final File inputFile = setInputs(command, remainingArgs, null);
         if (!remainingArgs.isEmpty()) {
