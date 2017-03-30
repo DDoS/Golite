@@ -1,15 +1,10 @@
 package golite.cli;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -96,8 +90,6 @@ public class Cli {
         outputSetters.forEach(setter -> setter.setOutput(inputFile, outputFile));
         // Almost done: produce the outputs, from the parent down
         output(command, commandLine);
-        // Finally we close the output files
-        outputSetters.forEach(OutputSetter::closeOutput);
     }
 
     private static List<OutputSetter> getOutputInfos(Command command, boolean parent) {
@@ -110,35 +102,16 @@ public class Cli {
                 }
                 // Parent functions are always auxiliary output
                 final boolean auxiliaryOutput = annotation.auxiliary() || parent;
-                // Check that the output setter has the proper parameters, and create a function from the file to the parameter
+                // Check that the output setter has the proper parameter
                 final Class<?>[] parameters = method.getParameterTypes();
                 if (parameters.length != 1) {
                     throw new IllegalStateException("Expected only one parameter for output setter");
                 }
-                final Class<?> paramType = parameters[0];
-                final Function<File, Closeable> outputMapper;
-                if (paramType == Writer.class) {
-                    outputMapper = file -> {
-                        try {
-                            return new FileWriter(file);
-                        } catch (IOException exception) {
-                            throw new CommandException("Cannot create output file: " + exception.getMessage());
-                        }
-                    };
-                } else if (paramType == FileOutputStream.class) {
-                    outputMapper = file -> {
-                        try {
-                            return new FileOutputStream(file, false);
-                        } catch (FileNotFoundException exception) {
-                            throw new CommandException("Cannot create output file: " + exception.getMessage());
-                        }
-                    };
-                } else {
-                    throw new IllegalStateException("Only " + Writer.class.getCanonicalName() + " and "
-                            + FileOutputStream.class.getCanonicalName() + " are supported as output");
+                if (parameters[0] != File.class) {
+                    throw new IllegalStateException("Only " + File.class.getCanonicalName() + " is supported as output");
                 }
                 // Create a closure for setting the output
-                final Consumer<Closeable> outputSetter = output -> {
+                final Consumer<File> outputSetter = output -> {
                     method.setAccessible(true);
                     try {
                         method.invoke(command, output);
@@ -146,7 +119,7 @@ public class Cli {
                         throw new RuntimeException(exception);
                     }
                 };
-                outputSetters.add(new OutputSetter(annotation.extension(), auxiliaryOutput, outputMapper, outputSetter));
+                outputSetters.add(new OutputSetter(annotation.extension(), auxiliaryOutput, outputSetter));
             }
         }
         if (command.getParent() != null) {
@@ -216,15 +189,11 @@ public class Cli {
     private static class OutputSetter {
         private final String extension;
         private final boolean auxiliary;
-        private final Function<File, Closeable> outputMapper;
-        private final Consumer<Closeable> outputSetter;
-        private Closeable output;
+        private final Consumer<File> outputSetter;
 
-        private OutputSetter(String extension, boolean auxiliary, Function<File, Closeable> outputMapper,
-                             Consumer<Closeable> outputSetter) {
+        private OutputSetter(String extension, boolean auxiliary, Consumer<File> outputSetter) {
             this.extension = extension;
             this.auxiliary = auxiliary;
-            this.outputMapper = outputMapper;
             this.outputSetter = outputSetter;
         }
 
@@ -237,16 +206,7 @@ public class Cli {
             } else if (auxiliary) {
                 outputFile = setFileExtension(outputFile, extension);
             }
-            output = outputMapper.apply(outputFile);
-            outputSetter.accept(output);
-        }
-
-        private void closeOutput() {
-            try {
-                output.close();
-            } catch (IOException exception) {
-                throw new CommandException("Error when closing output file: " + exception.getMessage());
-            }
+            outputSetter.accept(outputFile);
         }
 
         private static File setFileExtension(File file, String extension) {

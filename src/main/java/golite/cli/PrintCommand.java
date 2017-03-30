@@ -1,5 +1,9 @@
 package golite.cli;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Writer;
 
 import golite.Golite;
@@ -12,7 +16,7 @@ import org.apache.commons.cli.Options;
  */
 public class PrintCommand extends Command {
     private final ParseCommand parse = new ParseCommand();
-    private Writer output;
+    private File output;
 
     public PrintCommand() {
         super("print");
@@ -25,7 +29,7 @@ public class PrintCommand extends Command {
     }
 
     @CommandOutput(extension = "pretty.go")
-    public void setOutput(Writer output) {
+    public void setOutput(File output) {
         this.output = output;
     }
 
@@ -35,9 +39,9 @@ public class PrintCommand extends Command {
 
     @Override
     public void output(CommandLine commandLine) {
-        try {
-            Golite.prettyPrint(parse.getAst(), output);
-        } catch (PrinterException exception) {
+        try (Writer writer = new BufferedWriter(new FileWriter(output))) {
+            Golite.prettyPrint(parse.getAst(), writer);
+        } catch (PrinterException | IOException exception) {
             throw new CommandException("Error when printing: " + exception.getMessage());
         }
     }

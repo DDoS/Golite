@@ -1,6 +1,5 @@
 package golite.codegen;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,13 +85,12 @@ public class CodeGenerator implements IrVisitor {
     private final Map<Expr<?>, LLVMValueRef> exprPtrs = new HashMap<>();
     private final Map<Variable<?>, LLVMValueRef> globalVariables = new HashMap<>();
     private final Map<Variable<?>, LLVMValueRef> functionVariables = new HashMap<>();
-    private ByteBuffer machineCode;
 
-    public ByteBuffer getMachineCode() {
-        if (machineCode == null) {
-            throw new IllegalStateException("The generator hasn't been applied yet");
+    public ProgramCode getCode() {
+        if (module == null) {
+            throw new IllegalStateException("The visitor hasn't been applied to a program yet");
         }
-        return machineCode;
+        return new ProgramCode(module);
     }
 
     @Override
@@ -118,59 +116,6 @@ public class CodeGenerator implements IrVisitor {
             LLVMDisposeMessage(moduleString);
             throw new RuntimeException(detailedErrorMsg);
         }
-        // Apply some important optimization passes
-        LLVMPassManagerRef pass = LLVMCreatePassManager();
-        LLVMAddConstantPropagationPass(pass);
-        LLVMAddInstructionCombiningPass(pass);
-        LLVMAddPromoteMemoryToRegisterPass(pass);
-        LLVMAddGVNPass(pass);
-        LLVMAddCFGSimplificationPass(pass);
-        LLVMRunPassManager(pass, module);
-        LLVMDisposePassManager(pass);
-        // TODO: remove debug printing
-        final BytePointer moduleString = LLVMPrintModuleToString(module);
-        System.out.println(moduleString.getString());
-        LLVMDisposeMessage(moduleString);
-        // Generate the machine code: start by initializing the target machine for the current one
-        LLVMInitializeNativeTarget();
-        LLVMInitializeNativeAsmPrinter();
-        // Then get the target triple string
-        final BytePointer targetTriple = LLVMGetDefaultTargetTriple();
-        final String targetTripleString = targetTriple.getString();
-        LLVMDisposeMessage(targetTriple);
-        // Now get the target from the triple string
-        final PointerPointer<LLVMTargetRef> targetPtr = new PointerPointer<>(new LLVMTargetRef[1]);
-        if (LLVMGetTargetFromTriple(targetTripleString, targetPtr, errorMsgPtr) != 0) {
-            errorMsg = errorMsgPtr.getString();
-            LLVMDisposeMessage(errorMsgPtr);
-        }
-        if (errorMsg != null) {
-            throw new RuntimeException("Failed to get target machine: " + errorMsg);
-        }
-        final LLVMTargetRef target = targetPtr.get(LLVMTargetRef.class);
-        // Now we can create a machine for that target
-        final LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, targetTripleString, "generic", "",
-                LLVMRelocDefault, LLVMCodeModelDefault, LLVMCodeGenLevelDefault);
-        // It's recommended that we set the module data layout and target to the machine and triple
-        LLVMSetModuleDataLayout(module, LLVMCreateTargetDataLayout(machine));
-        LLVMSetTarget(module, targetTriple);
-        // Finally we can actually emit the machine code (as an object file)
-        final PointerPointer<LLVMMemoryBufferRef> memoryBufferPtr = new PointerPointer<>(new LLVMMemoryBufferRef[1]);
-        if (LLVMTargetMachineEmitToMemoryBuffer(machine, module, LLVMObjectFile, errorMsgPtr, memoryBufferPtr) != 0) {
-            errorMsg = errorMsgPtr.getString();
-            LLVMDisposeMessage(errorMsgPtr);
-            if (errorMsg != null) {
-                throw new RuntimeException("Failed emit the machine code: " + errorMsg);
-            }
-        }
-        // Now we just transfer that code to a Java byte buffer
-        final LLVMMemoryBufferRef memoryBuffer = memoryBufferPtr.get(LLVMMemoryBufferRef.class);
-        final BytePointer bufferStart = LLVMGetBufferStart(memoryBuffer);
-        final long bufferSize = LLVMGetBufferSize(memoryBuffer);
-        machineCode = bufferStart.limit(bufferSize).asByteBuffer();
-        // Delete the machine and module now that we have the code
-        LLVMDisposeTargetMachine(machine);
-        LLVMDisposeModule(module);
     }
 
     private void codeGenGlobal(VariableDecl<?> variableDecl) {
@@ -541,7 +486,7 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef l = getExprValue(left);
         final LLVMValueRef r = getExprValue(right);
         final LLVMValueRef exp;
-        switch(binArInt.getOp()) {
+        switch (binArInt.getOp()) {
             case ADD:
                 exp = LLVMBuildAdd(builder, l, r, "intAdd");
                 break;
@@ -605,13 +550,13 @@ public class CodeGenerator implements IrVisitor {
                 exp = LLVMBuildFAdd(builder, l, r, "fAdd");
                 break;
             case SUB:
-                exp = LLVMBuildFSub(builder, l, r, "fSub");  
+                exp = LLVMBuildFSub(builder, l, r, "fSub");
                 break;
             case MUL:
-                exp = LLVMBuildFMul(builder, l, r, "fMul");               
+                exp = LLVMBuildFMul(builder, l, r, "fMul");
                 break;
             case DIV:
-                exp = LLVMBuildFDiv(builder, l, r, "fDiv");                
+                exp = LLVMBuildFDiv(builder, l, r, "fDiv");
                 break;
             default:
                 throw new UnsupportedOperationException(binArFloat64.getOp().name());
@@ -640,7 +585,6 @@ public class CodeGenerator implements IrVisitor {
                 throw new UnsupportedOperationException(cmpBool.getOp().name());
         }
         exprValues.put(cmpBool, cmp);
-        
     }
 
     @Override

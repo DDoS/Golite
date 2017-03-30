@@ -1,11 +1,15 @@
 package golite.cli;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.Writer;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 
 import golite.codegen.CodeGenerator;
+import golite.codegen.ProgramCode;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
@@ -13,9 +17,12 @@ import org.apache.commons.cli.Options;
  *
  */
 public class CodeGenerateCommand extends Command {
+    private static final String NO_OPTIMIZATION_OPTION = "nopt";
+    private static final String OUTPUT_BIT_CODE_OPTION = "bc";
     private final IrGenerateCommand irGenerate = new IrGenerateCommand();
-    private ByteBuffer bitCode;
-    private FileOutputStream output;
+    private ProgramCode code;
+    private File textOutput;
+    private File bitCodeOutput;
 
     public CodeGenerateCommand() {
         super("codegen");
@@ -23,13 +30,25 @@ public class CodeGenerateCommand extends Command {
         irGenerate.setOutputEnabled(false);
     }
 
-    @Override
-    public void addCommandLineOptions(Options options) {
+    public ProgramCode getCode() {
+        return code;
     }
 
-    @CommandOutput(extension = "o")
-    public void setOutput(FileOutputStream output) {
-        this.output = output;
+    @Override
+    public void addCommandLineOptions(Options options) {
+        options
+                .addOption(OUTPUT_BIT_CODE_OPTION, "Output as LLVM bit code instead of text")
+                .addOption(NO_OPTIMIZATION_OPTION, "Disable LLVM optimization passes");
+    }
+
+    @CommandOutput(extension = "ll")
+    public void setOutputText(File output) {
+        this.textOutput = output;
+    }
+
+    @CommandOutput(extension = "bc")
+    public void setOutputBitCode(File output) {
+        this.bitCodeOutput = output;
     }
 
     @Override
@@ -40,17 +59,27 @@ public class CodeGenerateCommand extends Command {
         } catch (Exception exception) {
             throw new CommandException("Error when generating code", exception);
         }
-        bitCode = codeGenerator.getMachineCode();
+        code = codeGenerator.getCode();
+        if (!commandLine.hasOption(NO_OPTIMIZATION_OPTION)) {
+            code.optimize();
+        }
     }
 
     @Override
     public void output(CommandLine commandLine) {
-        try {
-            output.getChannel().write(bitCode);
-        } catch (FileNotFoundException exception) {
-            throw new CommandException("Error when creating bit code output file: " + exception.getMessage());
-        } catch (IOException exception) {
-            throw new CommandException("Error when writing bit code: " + exception.getMessage());
+        if (commandLine.hasOption(OUTPUT_BIT_CODE_OPTION)) {
+            try (FileChannel channel = FileChannel.open(bitCodeOutput.toPath(),
+                    StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+                channel.write(code.asBitCode());
+            } catch (IOException exception) {
+                throw new CommandException("Error when writing bit code: " + exception.getMessage());
+            }
+        } else {
+            try (Writer writer = new BufferedWriter(new FileWriter(textOutput))) {
+                writer.write(code.asText());
+            } catch (IOException exception) {
+                throw new CommandException("Error when writing text code: " + exception.getMessage());
+            }
         }
     }
 }

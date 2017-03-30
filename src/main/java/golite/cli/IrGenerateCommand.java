@@ -1,5 +1,9 @@
 package golite.cli;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Writer;
 
 import golite.ir.IrConverter;
@@ -15,7 +19,7 @@ import org.apache.commons.cli.Options;
 public class IrGenerateCommand extends Command {
     private final TypeCheckCommand typeCheck = new TypeCheckCommand();
     private Program program;
-    private Writer output;
+    private File output;
 
     public IrGenerateCommand() {
         super("irgen");
@@ -32,7 +36,7 @@ public class IrGenerateCommand extends Command {
     }
 
     @CommandOutput(extension = "ir")
-    public void setOutput(Writer output) {
+    public void setOutput(File output) {
         this.output = output;
     }
 
@@ -49,9 +53,9 @@ public class IrGenerateCommand extends Command {
 
     @Override
     public void output(CommandLine commandLine) {
-        try {
-            program.print(new SourcePrinter(output));
-        } catch (PrinterException exception) {
+        try (Writer writer = new BufferedWriter(new FileWriter(output))) {
+            program.print(new SourcePrinter(writer));
+        } catch (PrinterException | IOException exception) {
             throw new CommandException("Error when printing IR: " + exception.getMessage());
         }
     }
