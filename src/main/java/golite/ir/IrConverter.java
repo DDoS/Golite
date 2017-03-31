@@ -414,15 +414,12 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAIfStmt(AIfStmt node) {
-        // First allocate the end label, and one label per if-block (including the "else" if not empty)
+        // First allocate the end label, and one label per if-block (including the else-block, even if empty)
         // Then all the block conditions should be converted (not the body yet)
         //     The init stmt gets converted as is, and the expr becomes a jump to the label allocated for the block
-        //     If there's an else block (not empty) it is treated as "else if true"; i.e. the jump is unconditional
-        //     Otherwise if it's empty, the unconditional jump will go to the end label
-        // Then we convert the bodies of the if-blocks, which start with their allocated label
+        //     The else-block is treated as "else if true"; i.e. the jump is unconditional (even if empty)
+        // Then we convert the bodies of the if-blocks and else-block, which start with their allocated label
         // An end with an unconditional jump to the end label (we don't want to fallthrough to the other blocks)
-        //     This isn't necessary for the "else" block, since it's the last anyways
-        //     Also we skip converting the "else" block if it is empty
         // (BTW, converting the blocks inline will be easier than as in separate case method)
         Label endLabel = newLabel("endIf");
         Jump endJump = new Jump(endLabel, new BoolLit(true));
