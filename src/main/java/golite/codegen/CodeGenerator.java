@@ -25,6 +25,7 @@ import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.IrNode;
 import golite.ir.node.Jump;
+import golite.ir.node.JumpCond;
 import golite.ir.node.Label;
 import golite.ir.node.LogicAnd;
 import golite.ir.node.LogicNot;
@@ -77,14 +78,16 @@ public class CodeGenerator implements IrVisitor {
     private LLVMValueRef sliceConcatFunction;
     private LLVMValueRef compareStringFunction;
     private final Map<StructType, LLVMTypeRef> structs = new HashMap<>();
-    private final Map<Function, LLVMValueRef> functions = new HashMap<>();
     private final Map<String, LLVMValueRef> stringConstants = new HashMap<>();
+    private final Map<Function, LLVMValueRef> functions = new HashMap<>();
     private LLVMValueRef currentFunction;
     private LLVMBuilderRef builder;
     private final Map<Expr<?>, LLVMValueRef> exprValues = new HashMap<>();
     private final Map<Expr<?>, LLVMValueRef> exprPtrs = new HashMap<>();
     private final Map<Variable<?>, LLVMValueRef> globalVariables = new HashMap<>();
     private final Map<Variable<?>, LLVMValueRef> functionVariables = new HashMap<>();
+    private final Map<Label, LLVMBasicBlockRef> functionBlocks = new HashMap<>();
+    private LLVMBasicBlockRef currentBlock;
 
     public ProgramCode getCode() {
         if (module == null) {
@@ -169,6 +172,7 @@ public class CodeGenerator implements IrVisitor {
         // Start the function body
         final LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
         LLVMPositionBuilderAtEnd(builder, entry);
+        currentBlock = entry;
         // Place the variables values for the parameters on the stack
         final List<Variable<?>> paramVariables = symbol.getParameters();
         final List<String> paramUniqueNames = functionDecl.getParamUniqueNames();
@@ -179,6 +183,12 @@ public class CodeGenerator implements IrVisitor {
             // Store the parameter in the stack variable
             LLVMBuildStore(builder, LLVMGetParam(function, i), varPtr);
         }
+
+        functionDecl.getStatements().stream()
+                .filter(stmt -> stmt instanceof Label)
+                .map(stmt -> (Label) stmt)
+                .forEach(label -> functionBlocks.put(label, LLVMAppendBasicBlock(function, label.getName())));
+
         // Codegen the body
         functionDecl.getStatements().forEach(stmt -> stmt.visit(this));
         // Termination is handled implicitly by the last return statement
@@ -270,12 +280,31 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitJump(Jump jump) {
+        final LLVMBasicBlockRef target = functionBlocks.get(jump.getLabel());
+        LLVMBuildBr(builder, target);
+    }
 
+    @Override
+    public void visitJumpCond(JumpCond jumpCond) {
+        final Label label = jumpCond.getLabel();
+        final LLVMBasicBlockRef trueTarget = functionBlocks.get(label);
+
+        final LLVMBasicBlockRef falseTarget = LLVMAppendBasicBlock(currentFunction, label.getName() + "False");
+        LLVMMoveBasicBlockAfter(falseTarget, currentBlock);
+
+        jumpCond.getCondition().visit(this);
+        final LLVMValueRef condition = getExprValue(jumpCond.getCondition());
+        LLVMBuildCondBr(builder, condition, trueTarget, falseTarget);
+
+        LLVMPositionBuilderAtEnd(builder, falseTarget);
+        currentBlock = falseTarget;
     }
 
     @Override
     public void visitLabel(Label label) {
-
+        final LLVMBasicBlockRef block = functionBlocks.get(label);
+        LLVMPositionBuilderAtEnd(builder, block);
+        currentBlock = block;
     }
 
     @Override
@@ -300,7 +329,9 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef stringPtr = getAggregateMemberPtr(value, LLVMConstInt(LLVMInt64Type(), 0, 0),
                 "strPtr");
         // Create the string struct with the length and character array
-        final LLVMValueRef[] stringData = {LLVMConstInt(LLVMInt32Type(), stringLit.getUtf8Data().limit(), 1), stringPtr};
+        final LLVMValueRef[] stringData = {
+                LLVMConstInt(LLVMInt32Type(), stringLit.getUtf8Data().limit(), 1), stringPtr
+        };
         final LLVMValueRef stringStruct = LLVMConstNamedStruct(sliceRuntimeType, new PointerPointer<>(stringData),
                 stringData.length);
         exprValues.put(stringLit, stringStruct);
@@ -566,7 +597,6 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitCmpBool(CmpBool cmpBool) {
-        // LLVMBuildICmp()
         final Expr<BasicType> left = cmpBool.getLeft();
         final Expr<BasicType> right = cmpBool.getRight();
         left.visit(this);
@@ -670,20 +700,24 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitLogicAnd(LogicAnd logicAnd) {
         // Get the current basic block, and add two new ones: evaluating the right side, and merging the values
-        final LLVMBasicBlockRef andShort = LLVMGetLastBasicBlock(currentFunction);
+        final LLVMBasicBlockRef andShort = currentBlock;
         final LLVMBasicBlockRef andFull = LLVMAppendBasicBlock(currentFunction, "andFull");
+        LLVMMoveBasicBlockAfter(andFull, andShort);
         final LLVMBasicBlockRef andEnd = LLVMAppendBasicBlock(currentFunction, "andEnd");
+        LLVMMoveBasicBlockAfter(andEnd, andFull);
         // Evaluate the left side in the current block, if it's true, then jump to the block for the right side
         logicAnd.getLeft().visit(this);
         final LLVMValueRef left = getExprValue(logicAnd.getLeft());
         LLVMBuildCondBr(builder, left, andFull, andEnd);
         // Start a new block and evaluate the right side in it, then jump to the end to merge the values
         LLVMPositionBuilderAtEnd(builder, andFull);
+        currentBlock = andFull;
         logicAnd.getRight().visit(this);
         final LLVMValueRef fullValue = getExprValue(logicAnd.getRight());
         LLVMBuildBr(builder, andEnd);
         // Use a phi node to merge the values from the short-circuit and full evaluation
         LLVMPositionBuilderAtEnd(builder, andEnd);
+        currentBlock = andEnd;
         final LLVMValueRef andResult = LLVMBuildPhi(builder, LLVMInt1Type(), "andResult");
         final LLVMValueRef[] phiValues = {LLVMConstInt(LLVMInt1Type(), 0, 0), fullValue};
         final LLVMBasicBlockRef[] phiBlocks = {andShort, andFull};
@@ -694,20 +728,24 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitLogicOr(LogicOr logicOr) {
         // Get the current basic block, and add two new ones: evaluating the right side, and merging the values
-        final LLVMBasicBlockRef orShort = LLVMGetLastBasicBlock(currentFunction);
+        final LLVMBasicBlockRef orShort = currentBlock;
         final LLVMBasicBlockRef orFull = LLVMAppendBasicBlock(currentFunction, "orFull");
+        LLVMMoveBasicBlockAfter(orFull, orShort);
         final LLVMBasicBlockRef orEnd = LLVMAppendBasicBlock(currentFunction, "orEnd");
+        LLVMMoveBasicBlockAfter(orEnd, orFull);
         // Evaluate the left side in the current block, if it's false, then jump to the block for the right side
         logicOr.getLeft().visit(this);
         final LLVMValueRef left = getExprValue(logicOr.getLeft());
         LLVMBuildCondBr(builder, left, orEnd, orFull);
         // Start a new block and evaluate the right side in it, then jump to the end to merge the values
         LLVMPositionBuilderAtEnd(builder, orFull);
+        currentBlock = orFull;
         logicOr.getRight().visit(this);
         final LLVMValueRef fullValue = getExprValue(logicOr.getRight());
         LLVMBuildBr(builder, orEnd);
         // Use a phi node to merge the values from the short-circuit and full evaluation
         LLVMPositionBuilderAtEnd(builder, orEnd);
+        currentBlock = orEnd;
         final LLVMValueRef orResult = LLVMBuildPhi(builder, LLVMInt1Type(), "orResult");
         final LLVMValueRef[] phiValues = {LLVMConstInt(LLVMInt1Type(), 1, 0), fullValue};
         final LLVMBasicBlockRef[] phiBlocks = {orShort, orFull};
@@ -754,8 +792,8 @@ public class CodeGenerator implements IrVisitor {
         // LLVM trick: get pointer to second element starting at null
         final LLVMValueRef nullPtr = LLVMConstPointerNull(LLVMPointerType(createType(type), 0));
         final LLVMValueRef[] secondIndex = {LLVMConstInt(LLVMInt64Type(), 1, 0)};
-        final LLVMValueRef secondElementPtr = LLVMBuildGEP(builder, nullPtr, new PointerPointer<>(secondIndex), secondIndex.length,
-                "secondElementPtr");
+        final LLVMValueRef secondElementPtr = LLVMBuildGEP(builder, nullPtr, new PointerPointer<>(secondIndex),
+                secondIndex.length, "secondElementPtr");
         // Then convert it to int, which will be the size of the first element of the array (also the size of the type)
         return LLVMBuildPtrToInt(builder, secondElementPtr, LLVMInt32Type(), "size");
     }
@@ -840,7 +878,8 @@ public class CodeGenerator implements IrVisitor {
         printRuneFunction = createFunction(true, RUNTIME_PRINT_RUNE, LLVMVoidType(), LLVMInt32Type());
         printFloat64Function = createFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
         printStringFunction = createFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), sliceRuntimeType);
-        checkBoundsFunction = createFunction(true, RUNTIME_CHECK_BOUNDS, LLVMVoidType(), LLVMInt32Type(), LLVMInt32Type());
+        checkBoundsFunction = createFunction(true, RUNTIME_CHECK_BOUNDS, LLVMVoidType(), LLVMInt32Type(),
+                LLVMInt32Type());
         sliceAppendFunction = createFunction(true, RUNTIME_SLICE_APPEND, sliceRuntimeType,
                 sliceRuntimeType, i8Pointer, LLVMInt32Type());
         sliceConcatFunction = createFunction(true, RUNTIME_SLICE_CONCAT, sliceRuntimeType, sliceRuntimeType,
