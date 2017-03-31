@@ -37,8 +37,6 @@ public class IrFlowSanitizer {
         // Finally we can re-collapse the blocks in to the stmt list
         stmts.clear();
         blocks.forEach(block -> block.addToStmts(stmts));
-
-        //blocks.forEach(block -> System.out.println(block.toString()));
     }
 
     private static List<Block> createBlocks(List<Stmt> stmts) {
