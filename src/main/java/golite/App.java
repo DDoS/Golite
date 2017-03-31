@@ -15,6 +15,9 @@ public final class App {
             System.exit(0);
         } catch (CommandException exception) {
             System.err.println(exception.getMessage());
+            if (exception.getCause() != null) {
+                exception.getCause().printStackTrace(System.err);
+            }
             System.exit(1);
         }
     }

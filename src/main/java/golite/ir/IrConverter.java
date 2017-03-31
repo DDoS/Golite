@@ -32,6 +32,7 @@ import golite.ir.node.Identifier;
 import golite.ir.node.Indexing;
 import golite.ir.node.IntLit;
 import golite.ir.node.Jump;
+import golite.ir.node.JumpCond;
 import golite.ir.node.Label;
 import golite.ir.node.LogicAnd;
 import golite.ir.node.LogicNot;
@@ -422,7 +423,7 @@ public class IrConverter extends AnalysisAdapter {
         // An end with an unconditional jump to the end label (we don't want to fallthrough to the other blocks)
         // (BTW, converting the blocks inline will be easier than as in separate case method)
         Label endLabel = newLabel("endIf");
-        Jump endJump = new Jump(endLabel, new BoolLit(true));
+        Jump endJump = new Jump(endLabel);
 
         ArrayList<Label> labels = new ArrayList<Label>();
         for (PIfBlock block : node.getIfBlock()) {
@@ -436,14 +437,14 @@ public class IrConverter extends AnalysisAdapter {
             b.getCond().apply(this);
             @SuppressWarnings("unchecked")
             Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(b.getCond());
-            Jump jump = new Jump(ifLabel, cond);
+            JumpCond jump = new JumpCond(ifLabel, cond);
             functionStmts.add(jump);
         }
         if (!node.getElse().isEmpty()) {
             //Create unconditional jump for else label
             Label elseLabel = newLabel("elseLabel");
             labels.add(elseLabel);
-            Jump elseJump = new Jump(elseLabel, new BoolLit(true));
+            Jump elseJump = new Jump(elseLabel);
             functionStmts.add(elseJump);
             //Now convert the bodies of if-blocks?
             int i = 0;
@@ -1027,7 +1028,7 @@ public class IrConverter extends AnalysisAdapter {
             // Jump to end label if arrIdx >= arrayLength || !arrEq
             final CmpInt cmpIndex = new CmpInt(new Identifier<>(indexVar), new IntLit(arrayType.getLength()), Op.GREAT_EQ);
             final LogicOr loopCondition = new LogicOr(cmpIndex, new LogicNot(new Identifier<>(equalVar)));
-            final Jump loopEntry = new Jump(endLabel, loopCondition);
+            final JumpCond loopEntry = new JumpCond(endLabel, loopCondition);
             // Add all the statements so far to the list
             functionStmts.addAll(Arrays.asList(
                     arrLeft, arrLeftInit,
@@ -1048,7 +1049,7 @@ public class IrConverter extends AnalysisAdapter {
             final BinArInt add1Idx = new BinArInt(new Identifier<>(indexVar), new IntLit(1), BinArInt.Op.ADD);
             final Assignment incrIdx = new Assignment(new Identifier<>(indexVar), add1Idx);
             // Jump to start of loop
-            final Jump loopBack = new Jump(startLabel, new BoolLit(true));
+            final Jump loopBack = new Jump(startLabel);
             // Add all the statements so far to the list
             functionStmts.addAll(Arrays.asList(
                     updateEqual,
@@ -1101,12 +1102,12 @@ public class IrConverter extends AnalysisAdapter {
                 final Select rightField = new Select(new Identifier<>(structRightVar), fieldName);
                 final Expr<BasicType> compEqual = new LogicNot(convertEqual(false, leftField, rightField));
                 // Jump to not equal if !equals(struct1.field, struct2.field)
-                final Jump notEqualJump = new Jump(notEqualLabel, compEqual);
+                final JumpCond notEqualJump = new JumpCond(notEqualLabel, compEqual);
                 // Add the statement to the list
                 functionStmts.add(notEqualJump);
             }
             // Jump to end
-            final Jump equalJump = new Jump(endLabel, new BoolLit(true));
+            final Jump equalJump = new Jump(endLabel);
             // structEq := false
             final Assignment updateNotEqual = new Assignment(new Identifier<>(equalVar), new BoolLit(false));
             // Add all the statements so far to the list
