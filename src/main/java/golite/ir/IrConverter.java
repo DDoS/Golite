@@ -441,11 +441,7 @@ public class IrConverter extends AnalysisAdapter {
             Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(b.getCond());
             Jump jump = new Jump(ifLabel, cond);
             functionStmts.add(jump);
-            //functionStmts.add(ifLabel);
-            //b.getBlock().forEach(stmt -> stmt.apply(this));
         }
-        functionStmts.add(endJump);
-        
         if (!node.getElse().isEmpty()) {
             //Create unconditional jump for else label
             Label elseLabel = newLabel("elseLabel");
@@ -463,6 +459,7 @@ public class IrConverter extends AnalysisAdapter {
             functionStmts.add(endJump);
             functionStmts.add(labels.get(i));
             node.getElse().forEach(stmt -> stmt.apply(this));
+            functionStmts.add(endLabel);
         } else {
             int i = 0;
             for (PIfBlock block : node.getIfBlock()) {
