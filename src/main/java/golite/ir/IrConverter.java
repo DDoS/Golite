@@ -810,8 +810,12 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        convertedExprs.put(node, convertRem(left, right));
+    }
+
+    private Expr<BasicType> convertRem(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
-            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.REM));
+            return new BinArInt(left, right, BinArInt.Op.REM);
         } else {
             throw new IllegalStateException("Expected integer-typed expressions");
         }
