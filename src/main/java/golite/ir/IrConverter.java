@@ -217,6 +217,7 @@ public class IrConverter extends AnalysisAdapter {
                 .map(this::findUniqueName).collect(Collectors.toList());
         // Type check the statements
         functionStmts.clear();
+        uniqueLabelNames.clear();
         node.getStmt().forEach(stmt -> stmt.apply(this));
         // If the function has no return value and does not have a final return statement, then add one
         if (!symbol.getType().getReturnType().isPresent()
