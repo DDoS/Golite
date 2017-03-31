@@ -87,6 +87,7 @@ import golite.node.AFuncDecl;
 import golite.node.AGreatEqExpr;
 import golite.node.AGreatExpr;
 import golite.node.AIdentExpr;
+import golite.node.AIfBlock;
 import golite.node.AIfStmt;
 import golite.node.AIncrStmt;
 import golite.node.AIndexExpr;
@@ -121,6 +122,7 @@ import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.PDecl;
 import golite.node.PExpr;
+import golite.node.PIfBlock;
 import golite.node.PStmt;
 import golite.node.Start;
 import golite.node.TIdenf;
@@ -422,6 +424,56 @@ public class IrConverter extends AnalysisAdapter {
         //     This isn't necessary for the "else" block, since it's the last anyways
         //     Also we skip converting the "else" block if it is empty
         // (BTW, converting the blocks inline will be easier than as in separate case method)
+        Label endLabel = newLabel("endIf");
+        Jump endJump = new Jump(endLabel, new BoolLit(true));
+        
+        ArrayList<Label> labels = new ArrayList<Label>();
+        for (PIfBlock block : node.getIfBlock()) {
+            //Convert init, allocate labels for each ifBlock
+            Label ifLabel = newLabel("ifBlock");
+            labels.add(ifLabel);
+            AIfBlock b = (AIfBlock) block;
+            if (b.getInit() != null) {
+                b.getInit().apply(this);
+            }
+            b.getCond().apply(this);
+            @SuppressWarnings("unchecked")
+            Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(b.getCond());
+            Jump jump = new Jump(ifLabel, cond);
+            functionStmts.add(jump);
+            //functionStmts.add(ifLabel);
+            //b.getBlock().forEach(stmt -> stmt.apply(this));
+        }
+        functionStmts.add(endJump);
+        
+        if (!node.getElse().isEmpty()) {
+            //Create unconditional jump for else label
+            Label elseLabel = newLabel("elseLabel");
+            labels.add(elseLabel);
+            Jump elseJump = new Jump(elseLabel, new BoolLit(true));
+            functionStmts.add(elseJump);
+            //Now convert the bodies of if-blocks?
+            int i = 0;
+            for (PIfBlock block : node.getIfBlock()) {
+                functionStmts.add(labels.get(i));
+                AIfBlock b = (AIfBlock) block;
+                b.getBlock().forEach(stmt -> stmt.apply(this));
+                i++;
+            }
+            functionStmts.add(endJump);
+            functionStmts.add(labels.get(i));
+            node.getElse().forEach(stmt -> stmt.apply(this));
+        } else {
+            int i = 0;
+            for (PIfBlock block : node.getIfBlock()) {
+                functionStmts.add(labels.get(i));
+                AIfBlock b = (AIfBlock) block;
+                b.getBlock().forEach(stmt -> stmt.apply(this));
+                i++;
+                functionStmts.add(endJump);
+            }
+            functionStmts.add(endLabel);
+        }
     }
 
     @Override
