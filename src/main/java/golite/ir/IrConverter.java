@@ -552,7 +552,14 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignRemStmt(AAssignRemStmt node) {
-        // Convert left %= right as left = left % right
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> rem = convertRem(left, right);
+        functionStmts.add(new Assignment(left, rem));
     }
 
     @Override
