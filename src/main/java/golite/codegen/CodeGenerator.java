@@ -38,6 +38,7 @@ import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Select;
+import golite.ir.node.Stmt;
 import golite.ir.node.StringLit;
 import golite.ir.node.UnaArFloat64;
 import golite.ir.node.UnaArInt;
@@ -183,15 +184,15 @@ public class CodeGenerator implements IrVisitor {
             // Store the parameter in the stack variable
             LLVMBuildStore(builder, LLVMGetParam(function, i), varPtr);
         }
-
-        functionDecl.getStatements().stream()
+        // Generate all the basic blocks the the labels in advance
+        final List<Stmt> statements = functionDecl.getStatements();
+        statements.stream()
                 .filter(stmt -> stmt instanceof Label)
                 .map(stmt -> (Label) stmt)
                 .forEach(label -> functionBlocks.put(label, LLVMAppendBasicBlock(function, label.getName())));
-
         // Codegen the body
-        functionDecl.getStatements().forEach(stmt -> stmt.visit(this));
         // Termination is handled implicitly by the last return statement
+        statements.forEach(stmt -> stmt.visit(this));
         // Dispose of the builder
         LLVMDisposeBuilder(builder);
         // Clear the function's variables as we exit it
@@ -288,14 +289,14 @@ public class CodeGenerator implements IrVisitor {
     public void visitJumpCond(JumpCond jumpCond) {
         final Label label = jumpCond.getLabel();
         final LLVMBasicBlockRef trueTarget = functionBlocks.get(label);
-
+        // Add a new basic block after the current one, which is where flow will resume if the condition is false
         final LLVMBasicBlockRef falseTarget = LLVMAppendBasicBlock(currentFunction, label.getName() + "False");
         LLVMMoveBasicBlockAfter(falseTarget, currentBlock);
-
+        // The build the conditional break instruction, to the true label, or to the block just after the jump
         jumpCond.getCondition().visit(this);
         final LLVMValueRef condition = getExprValue(jumpCond.getCondition());
         LLVMBuildCondBr(builder, condition, trueTarget, falseTarget);
-
+        // Move to build to the new false block
         LLVMPositionBuilderAtEnd(builder, falseTarget);
         currentBlock = falseTarget;
     }
