@@ -10,8 +10,17 @@ func _() {
 func abs(i int) int {
     if i < 0 {
         return -i
+    } else {
+        return i
     }
-    return i
+}
+
+func printAbs(i int) {
+    if i < 0 {
+        println(-i)
+    } else {
+        println(i)
+    }
 }
 
 type Person struct {
@@ -23,18 +32,19 @@ var person Person
 
 func agePerson(person Person) Person {
     //person.age += 40
-    //person.name = "Uncle " + person.name
-    person.name = "Test"
+    person.name = "Uncle " + person.name
     println(person.name, ' ', person.age)
     return person
 }
 
 func staticInit() {
+    person.name = "Bob"
     agePerson(person)
     var arr [16]string
     var sli []int
     arr[1] = "lol"
-    sli = append(sli, 3)
+    sli = append(sli, 36)
+    sli[0] %= 8
     println(arr[1])
     println(sli[0])
 }
@@ -50,9 +60,9 @@ func getBool2() bool {
 }
 
 func testEquals() {
-    //var arr1 [16]Person
-    //var arr2 [16]Person
-    //println(arr1 != arr2)
+    var arr1 [16]Person
+    var arr2 [16]Person
+    println(arr1 != arr2)
     println(getBool1() && getBool2())
     println(getBool1() || getBool2())
 }
@@ -79,7 +89,7 @@ func main() {
         var k int = abs(3)
         println(float64(2), k)
     }
-    println(abs(int(4.5)))
+    printAbs(int(-4.5))
     j := boolean(true)
     var _ = 1
     staticInit()
