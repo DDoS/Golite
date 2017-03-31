@@ -449,6 +449,7 @@ public class IrConverter extends AnalysisAdapter {
             labels.add(elseLabel);
             Jump elseJump = new Jump(elseLabel);
             functionStmts.add(elseJump);
+            functionStmts.add(endJump);
             //Now convert the bodies of if-blocks?
             int i = 0;
             for (PIfBlock block : node.getIfBlock()) {
@@ -462,6 +463,7 @@ public class IrConverter extends AnalysisAdapter {
             node.getElse().forEach(stmt -> stmt.apply(this));
             functionStmts.add(endLabel);
         } else {
+            functionStmts.add(endJump);
             int i = 0;
             for (PIfBlock block : node.getIfBlock()) {
                 functionStmts.add(labels.get(i));
