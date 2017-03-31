@@ -511,7 +511,7 @@ public class IrConverter extends AnalysisAdapter {
         // Start by converting the init statement (if it's a clause condition)
         // Then place a start label in the stmts, and allocate an end label (to be placed later)
         // Next we create a jump to the end label if the condition isn't true
-        //     Convert the condition (if any), or use new BoolLit(true) for an empty condition
+        //     Convert the condition (if any), or use an unconditional jump for an empty condition
         //     You can negate an expression with LogicalNot
         // Push the labels in the stacks described in break and continue stmts
         // Then we convert the body of the for loop
