@@ -191,7 +191,6 @@ public class CodeGenerator implements IrVisitor {
                 .map(stmt -> (Label) stmt)
                 .forEach(label -> functionBlocks.put(label, LLVMAppendBasicBlock(function, label.getName())));
         // Codegen the body
-        // Termination is handled implicitly by the last return statement
         statements.forEach(stmt -> stmt.visit(this));
         // Dispose of the builder
         LLVMDisposeBuilder(builder);

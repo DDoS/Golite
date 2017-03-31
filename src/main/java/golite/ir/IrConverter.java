@@ -223,7 +223,10 @@ public class IrConverter extends AnalysisAdapter {
                 && (functionStmts.isEmpty() || !(functionStmts.get(functionStmts.size() - 1) instanceof VoidReturn))) {
             functionStmts.add(new VoidReturn());
         }
-        convertedFunctions.put(node, Optional.of(new FunctionDecl(symbol, uniqueParamNames, new ArrayList<>(functionStmts))));
+        // Create the function and apply the flow sanitizer to help with codegen later on
+        final FunctionDecl functionDecl = new FunctionDecl(symbol, uniqueParamNames, new ArrayList<>(functionStmts));
+        IrFlowSanitizer.sanitize(functionDecl);
+        convertedFunctions.put(node, Optional.of(functionDecl));
     }
 
     @Override
