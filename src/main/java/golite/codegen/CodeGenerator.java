@@ -186,6 +186,7 @@ public class CodeGenerator implements IrVisitor {
         }
         // Generate all the basic blocks the the labels in advance
         final List<Stmt> statements = functionDecl.getStatements();
+        functionBlocks.clear();
         statements.stream()
                 .filter(stmt -> stmt instanceof Label)
                 .map(stmt -> (Label) stmt)
@@ -246,7 +247,7 @@ public class CodeGenerator implements IrVisitor {
         LLVMValueRef arg = getExprValue(value);
         if (value.getType() == BasicType.BOOL) {
             // Must zero-extent bool (i1) to char (i8)
-            arg = LLVMBuildZExt(builder, arg, LLVMInt8Type(), "bool_to_char");
+            arg = LLVMBuildZExt(builder, arg, LLVMInt8Type(), "boolToChar");
         }
         final LLVMValueRef[] args = {arg};
         LLVMBuildCall(builder, printFunction, new PointerPointer<>(args), 1, "");
@@ -441,10 +442,10 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef value;
         if (argType.isInteger() && castType == BasicType.FLOAT64) {
             // Integer to float
-            value = LLVMBuildSIToFP(builder, argValue, LLVMDoubleType(), "int_to_float64");
+            value = LLVMBuildSIToFP(builder, argValue, LLVMDoubleType(), "intToFloat64");
         } else if (argType == BasicType.FLOAT64 && castType.isInteger()) {
             // Float to integer
-            value = LLVMBuildFPToSI(builder, argValue, LLVMInt32Type(), "float64_to_int");
+            value = LLVMBuildFPToSI(builder, argValue, LLVMInt32Type(), "float64ToInt");
         } else {
             // Anything else is an identity cast, so ignore it
             value = argValue;
@@ -473,24 +474,23 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitLogicNot(LogicNot logicNot) {
-        //LLVMBuildNot (LLVMBuilderRef, LLVMValueRef V, const char *Name)
         logicNot.getInner().visit(this);
         final LLVMValueRef inner = getExprValue(logicNot.getInner());
-        final LLVMValueRef lNot = LLVMBuildNot(builder, inner, "lNot");
-        exprValues.put(logicNot, lNot);
+        final LLVMValueRef result = LLVMBuildNot(builder, inner, "logicNot");
+        exprValues.put(logicNot, result);
     }
 
     @Override
     public void visitUnaArInt(UnaArInt unaArInt) {
         unaArInt.getInner().visit(this);
-        final LLVMValueRef inner;
-        final LLVMValueRef exp = getExprValue(unaArInt.getInner());
+        final LLVMValueRef result;
+        final LLVMValueRef inner = getExprValue(unaArInt.getInner());
         if (unaArInt.getOp() == UnaArInt.Op.NEG) {
-            inner = LLVMBuildNeg(builder, exp, "uIntNeg");
-            exprValues.put(unaArInt, inner);
+            result = LLVMBuildNeg(builder, inner, "intNeg");
+            exprValues.put(unaArInt, result);
         } else if (unaArInt.getOp() == UnaArInt.Op.BIT_NEG) {
-            inner = LLVMBuildNot(builder, exp, "uIntBitNeg");
-            exprValues.put(unaArInt, inner);
+            result = LLVMBuildNot(builder, inner, "intBitNeg");
+            exprValues.put(unaArInt, result);
         } else {
             exprValues.put(unaArInt, getExprValue(unaArInt.getInner()));
         }
@@ -501,7 +501,7 @@ public class CodeGenerator implements IrVisitor {
         unaArFloat64.getInner().visit(this);
         final LLVMValueRef exp = getExprValue(unaArFloat64.getInner());
         if (unaArFloat64.getOp() == UnaArFloat64.Op.NEG) {
-            final LLVMValueRef negExp = LLVMBuildFNeg(builder, exp, "uFloatNeg");
+            final LLVMValueRef negExp = LLVMBuildFNeg(builder, exp, "float64Neg");
             exprValues.put(unaArFloat64, negExp);
         } else {
             exprValues.put(unaArFloat64, getExprValue(unaArFloat64.getInner()));
@@ -514,47 +514,48 @@ public class CodeGenerator implements IrVisitor {
         final Expr<BasicType> right = binArInt.getRight();
         left.visit(this);
         right.visit(this);
-        final LLVMValueRef l = getExprValue(left);
-        final LLVMValueRef r = getExprValue(right);
-        final LLVMValueRef exp;
+        final LLVMValueRef leftValue = getExprValue(left);
+        final LLVMValueRef rightValue = getExprValue(right);
+        final LLVMValueRef result;
         switch (binArInt.getOp()) {
             case ADD:
-                exp = LLVMBuildAdd(builder, l, r, "intAdd");
+                result = LLVMBuildAdd(builder, leftValue, rightValue, "intAdd");
                 break;
             case SUB:
-                exp = LLVMBuildSub(builder, l, r, "intSub");
+                result = LLVMBuildSub(builder, leftValue, rightValue, "intSub");
                 break;
             case MUL:
-                exp = LLVMBuildMul(builder, l, r, "intMul");
+                result = LLVMBuildMul(builder, leftValue, rightValue, "intMul");
                 break;
             case DIV:
-                exp = LLVMBuildSDiv(builder, l, r, "intDiv");
+                result = LLVMBuildSDiv(builder, leftValue, rightValue, "intDiv");
                 break;
             case REM:
-                exp = LLVMBuildSRem(builder, l, r, "intRem");
+                result = LLVMBuildSRem(builder, leftValue, rightValue, "intRem");
                 break;
             case BIT_OR:
-                exp = LLVMBuildOr(builder, l, r, "intBOr");
+                result = LLVMBuildOr(builder, leftValue, rightValue, "intBitOr");
                 break;
             case BIT_AND:
-                exp = LLVMBuildAnd(builder, l, r, "intBAnd");
+                result = LLVMBuildAnd(builder, leftValue, rightValue, "intBitAnd");
                 break;
             case LSHIFT:
-                exp = LLVMBuildShl(builder, l, r, "intLsh");
+                result = LLVMBuildShl(builder, leftValue, rightValue, "intLshift");
                 break;
             case RSHIFT:
-                exp = LLVMBuildAShr(builder, l, r, "intRsh");
+                result = LLVMBuildAShr(builder, leftValue, rightValue, "intRshift");
                 break;
             case BIT_XOR:
-                exp = LLVMBuildXor(builder, l, r, "intXor");
+                result = LLVMBuildXor(builder, leftValue, rightValue, "intXor");
                 break;
             case BIT_AND_NOT:
-                exp = LLVMBuildAnd(builder, l, LLVMBuildNot(builder, r, "not"), "intAndNot");
+                final LLVMValueRef intBitNot = LLVMBuildNot(builder, rightValue, "intBitNot");
+                result = LLVMBuildAnd(builder, leftValue, intBitNot, "intAndNot");
                 break;
             default:
                 throw new UnsupportedOperationException(binArInt.getOp().name());
         }
-        exprValues.put(binArInt, exp);
+        exprValues.put(binArInt, result);
     }
 
     @Override
@@ -573,21 +574,21 @@ public class CodeGenerator implements IrVisitor {
         final Expr<BasicType> right = binArFloat64.getRight();
         left.visit(this);
         right.visit(this);
-        final LLVMValueRef l = getExprValue(left);
-        final LLVMValueRef r = getExprValue(right);
+        final LLVMValueRef leftValue = getExprValue(left);
+        final LLVMValueRef rightValue = getExprValue(right);
         final LLVMValueRef exp;
         switch (binArFloat64.getOp()) {
             case ADD:
-                exp = LLVMBuildFAdd(builder, l, r, "fAdd");
+                exp = LLVMBuildFAdd(builder, leftValue, rightValue, "float64Add");
                 break;
             case SUB:
-                exp = LLVMBuildFSub(builder, l, r, "fSub");
+                exp = LLVMBuildFSub(builder, leftValue, rightValue, "float64Sub");
                 break;
             case MUL:
-                exp = LLVMBuildFMul(builder, l, r, "fMul");
+                exp = LLVMBuildFMul(builder, leftValue, rightValue, "float64Mul");
                 break;
             case DIV:
-                exp = LLVMBuildFDiv(builder, l, r, "fDiv");
+                exp = LLVMBuildFDiv(builder, leftValue, rightValue, "float64Div");
                 break;
             default:
                 throw new UnsupportedOperationException(binArFloat64.getOp().name());
@@ -601,20 +602,20 @@ public class CodeGenerator implements IrVisitor {
         final Expr<BasicType> right = cmpBool.getRight();
         left.visit(this);
         right.visit(this);
-        final LLVMValueRef l = getExprValue(left);
-        final LLVMValueRef r = getExprValue(right);
-        final LLVMValueRef cmp;
+        final LLVMValueRef leftValue = getExprValue(left);
+        final LLVMValueRef rightValue = getExprValue(right);
+        final LLVMValueRef result;
         switch (cmpBool.getOp()) {
             case EQ:
-                cmp = LLVMBuildICmp(builder, LLVMIntEQ, l, r, "boolCmp");
+                result = LLVMBuildICmp(builder, LLVMIntEQ, leftValue, rightValue, "boolEq");
                 break;
             case NEQ:
-                cmp = LLVMBuildICmp(builder, LLVMIntNE, l, r, "boolCmp");
+                result = LLVMBuildICmp(builder, LLVMIntNE, leftValue, rightValue, "boolNeq");
                 break;
             default:
                 throw new UnsupportedOperationException(cmpBool.getOp().name());
         }
-        exprValues.put(cmpBool, cmp);
+        exprValues.put(cmpBool, result);
     }
 
     @Override
@@ -623,32 +624,32 @@ public class CodeGenerator implements IrVisitor {
         final Expr<BasicType> right = cmpInt.getRight();
         left.visit(this);
         right.visit(this);
-        final LLVMValueRef l = getExprValue(left);
-        final LLVMValueRef r = getExprValue(right);
-        final LLVMValueRef cmp;
+        final LLVMValueRef leftValue = getExprValue(left);
+        final LLVMValueRef rightValue = getExprValue(right);
+        final LLVMValueRef result;
         switch (cmpInt.getOp()) {
             case EQ:
-                cmp = LLVMBuildICmp(builder, LLVMIntEQ, l, r, "intCmp");
+                result = LLVMBuildICmp(builder, LLVMIntEQ, leftValue, rightValue, "intEq");
                 break;
             case NEQ:
-                cmp = LLVMBuildICmp(builder, LLVMIntNE, l, r, "intCmp");
+                result = LLVMBuildICmp(builder, LLVMIntNE, leftValue, rightValue, "intNeq");
                 break;
             case LESS:
-                cmp = LLVMBuildICmp(builder, LLVMIntSLT, l, r, "intCmp");
+                result = LLVMBuildICmp(builder, LLVMIntSLT, leftValue, rightValue, "intLess");
                 break;
             case LESS_EQ:
-                cmp = LLVMBuildICmp(builder, LLVMIntSLE, l, r, "intCmp");
+                result = LLVMBuildICmp(builder, LLVMIntSLE, leftValue, rightValue, "intLessEq");
                 break;
             case GREAT:
-                cmp = LLVMBuildICmp(builder, LLVMIntSGT, l, r, "intCmp");
+                result = LLVMBuildICmp(builder, LLVMIntSGT, leftValue, rightValue, "intGreat");
                 break;
             case GREAT_EQ:
-                cmp = LLVMBuildICmp(builder, LLVMIntSGE, l, r, "intCmp");
+                result = LLVMBuildICmp(builder, LLVMIntSGE, leftValue, rightValue, "intGreatEq");
                 break;
             default:
                 throw new UnsupportedOperationException(cmpInt.getOp().name());
         }
-        exprValues.put(cmpInt, cmp);
+        exprValues.put(cmpInt, result);
     }
 
     @Override
@@ -657,32 +658,32 @@ public class CodeGenerator implements IrVisitor {
         final Expr<BasicType> right = cmpFloat64.getRight();
         left.visit(this);
         right.visit(this);
-        final LLVMValueRef l = getExprValue(left);
-        final LLVMValueRef r = getExprValue(right);
-        final LLVMValueRef cmp;
+        final LLVMValueRef leftValue = getExprValue(left);
+        final LLVMValueRef rightValue = getExprValue(right);
+        final LLVMValueRef result;
         switch (cmpFloat64.getOp()) {
             case EQ:
-                cmp = LLVMBuildICmp(builder, LLVMRealOEQ, l, r, "flCmp");
+                result = LLVMBuildICmp(builder, LLVMRealOEQ, leftValue, rightValue, "float64Eq");
                 break;
             case NEQ:
-                cmp = LLVMBuildICmp(builder, LLVMRealONE, l, r, "flCmp");
+                result = LLVMBuildICmp(builder, LLVMRealONE, leftValue, rightValue, "float64Neq");
                 break;
             case LESS:
-                cmp = LLVMBuildICmp(builder, LLVMRealOLT, l, r, "flCmp");
+                result = LLVMBuildICmp(builder, LLVMRealOLT, leftValue, rightValue, "float64Less");
                 break;
             case LESS_EQ:
-                cmp = LLVMBuildICmp(builder, LLVMRealOLE, l, r, "flCmp");
+                result = LLVMBuildICmp(builder, LLVMRealOLE, leftValue, rightValue, "float64LessEq");
                 break;
             case GREAT:
-                cmp = LLVMBuildICmp(builder, LLVMRealOGT, l, r, "flCmp");
+                result = LLVMBuildICmp(builder, LLVMRealOGT, leftValue, rightValue, "float64Great");
                 break;
             case GREAT_EQ:
-                cmp = LLVMBuildICmp(builder, LLVMRealOGE, l, r, "flCmp");
+                result = LLVMBuildICmp(builder, LLVMRealOGE, leftValue, rightValue, "float64GreatEq");
                 break;
             default:
                 throw new UnsupportedOperationException(cmpFloat64.getOp().name());
         }
-        exprValues.put(cmpFloat64, cmp);
+        exprValues.put(cmpFloat64, result);
     }
 
     @Override
@@ -692,8 +693,9 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef kind = LLVMConstInt(LLVMInt32Type(), cmpString.getOp().getRuntimeID(), 0);
         final LLVMValueRef[] args = {kind, getExprValue(cmpString.getLeft()), getExprValue(cmpString.getRight())};
         final LLVMValueRef i8Compare = LLVMBuildCall(builder, compareStringFunction, new PointerPointer<>(args), args.length,
-                "i8Compare");
-        final LLVMValueRef compare = LLVMBuildTrunc(builder, i8Compare, LLVMInt1Type(), "compare");
+                "i8String" + cmpString.getOp().getCamelCase());
+        final LLVMValueRef compare = LLVMBuildTrunc(builder, i8Compare, LLVMInt1Type(),
+                "string" + cmpString.getOp().getCamelCase());
         exprValues.put(cmpString, compare);
     }
 
@@ -772,7 +774,8 @@ public class CodeGenerator implements IrVisitor {
         }
         // Otherwise we need to store the value and return a pointer to the memory
         final LLVMValueRef value = exprValues.get(expr);
-        final LLVMValueRef memory = LLVMBuildAlloca(builder, createType(expr.getType()), IrNode.toString(expr) + "Ptr");
+        final LLVMValueRef memory = LLVMBuildAlloca(builder, createType(expr.getType()),
+                IrNode.toString(expr) + "Ptr");
         LLVMBuildStore(builder, value, memory);
         return memory;
     }
@@ -855,7 +858,7 @@ public class CodeGenerator implements IrVisitor {
         // Otherwise create it and add it to the pool
         final BytePointer data = new BytePointer(stringLit.getUtf8Data());
         final int stringLength = (int) data.limit();
-        constant = LLVMAddGlobal(module, LLVMArrayType(LLVMInt8Type(), stringLength), "str_lit");
+        constant = LLVMAddGlobal(module, LLVMArrayType(LLVMInt8Type(), stringLength), "strLit");
         LLVMSetLinkage(constant, LLVMInternalLinkage);
         LLVMSetGlobalConstant(constant, 1);
         LLVMSetInitializer(constant, LLVMConstString(data, stringLength, 1));
@@ -868,10 +871,11 @@ public class CodeGenerator implements IrVisitor {
         // Structure types
         sliceRuntimeType = LLVMStructCreateNamed(LLVMGetGlobalContext(), RUNTIME_SLICE);
         final LLVMTypeRef[] stringStructElements = {LLVMInt32Type(), i8Pointer};
-        LLVMStructSetBody(sliceRuntimeType, new PointerPointer<>(stringStructElements), stringStructElements.length, 0);
+        LLVMStructSetBody(sliceRuntimeType, new PointerPointer<>(stringStructElements), stringStructElements.length,
+                0);
         // Intrinsics
-        memsetFunction = createFunction(true, "llvm.memset.p0i8.i32", LLVMVoidType(), i8Pointer, LLVMInt8Type(),
-                LLVMInt32Type(), LLVMInt32Type(), LLVMInt1Type());
+        memsetFunction = createFunction(true, "llvm.memset.p0i8.i32", LLVMVoidType(), i8Pointer,
+                LLVMInt8Type(), LLVMInt32Type(), LLVMInt32Type(), LLVMInt1Type());
         // Runtime functions
         printBoolFunction = createFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
         printIntFunction = createFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
