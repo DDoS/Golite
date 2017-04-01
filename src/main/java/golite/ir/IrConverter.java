@@ -515,12 +515,18 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAIncrStmt(AIncrStmt node) {
-        // Convert expr++ as expr = expr + IntLit(1)
+        node.getExpr().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> expr = (Expr<BasicType>) convertedExprs.get(node.getExpr());
+        functionStmts.add(new Assignment(expr, new BinArInt(expr, new IntLit(1), BinArInt.Op.ADD)));
     }
 
     @Override
     public void caseADecrStmt(ADecrStmt node) {
-        // Convert expr-- as expr = expr - IntLit(1)
+    	node.getExpr().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> expr = (Expr<BasicType>) convertedExprs.get(node.getExpr());
+        functionStmts.add(new Assignment(expr, new BinArInt(expr, new IntLit(1), BinArInt.Op.SUB)));		
     }
 
     @Override
