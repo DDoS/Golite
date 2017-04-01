@@ -525,7 +525,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignMulStmt(AAssignMulStmt node) {
-        // Convert left *= right as left = left * right
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -538,7 +537,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignDivStmt(AAssignDivStmt node) {
-        // Convert left /= right as left = left / right
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -563,7 +561,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
-        // Convert left <<= right as left = left << right
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -576,7 +573,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignRshiftStmt(AAssignRshiftStmt node) {
-        // Convert left >>= right as left = left >> right
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -589,7 +585,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignBitAndStmt(AAssignBitAndStmt node) {
-        // Convert left &= right as left = left & right
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -602,7 +597,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignBitAndNotStmt(AAssignBitAndNotStmt node) {
-        // Convert left &^= right as left = left &^ right
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -615,7 +609,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignAddStmt(AAssignAddStmt node) {
-        // Convert left += right as left = left + right
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -628,8 +621,6 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignSubStmt(AAssignSubStmt node) {
-        // Convert left -= right as left = left - right
-        // Convert left >>= right as left = left >> right
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -642,12 +633,26 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAAssignBitOrStmt(AAssignBitOrStmt node) {
-        // Convert left |= right as left = left | right
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> bitOr = convertBitOr(left, right);
+        functionStmts.add(new Assignment(left, bitOr));
     }
 
     @Override
     public void caseAAssignBitXorStmt(AAssignBitXorStmt node) {
-        // Convert left ^= right as left = left ^ right
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> bitXor = convertBitXor(left, right);
+        functionStmts.add(new Assignment(left, bitXor));
     }
 
     @Override
