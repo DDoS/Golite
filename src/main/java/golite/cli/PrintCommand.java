@@ -25,6 +25,11 @@ public class PrintCommand extends Command {
     }
 
     @Override
+    public String getHelp() {
+        return "Pretty-prints the Golite program";
+    }
+
+    @Override
     public void addCommandLineOptions(Options options) {
     }
 

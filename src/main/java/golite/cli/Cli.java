@@ -13,9 +13,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
@@ -24,6 +27,7 @@ import org.apache.commons.cli.ParseException;
  *
  */
 public class Cli {
+    private static final String HELP_OPTION = "h";
     private final Map<String, Command> commands = new HashMap<>();
 
     public Cli() {
@@ -61,10 +65,14 @@ public class Cli {
             parent.addCommandLineOptions(options);
             parent = parent.getParent();
         } while (parent != null);
+        // Add the help option
+        options.addOption(HELP_OPTION, "Print the help information");
         // Get the output information for the command and its parents
         final List<OutputSetter> outputSetters = getOutputInfos(command, false);
         if (!outputSetters.isEmpty()) {
-            options.addOption(Option.builder("o").hasArg().argName("file").desc("The output file").type(File.class).build());
+            // Add the output option if any command has an output
+            options.addOption(Option.builder("o").hasArg().argName("file")
+                    .desc("The output file").type(File.class).build());
         }
         // Parse the command line
         final CommandLine commandLine;
@@ -72,6 +80,11 @@ public class Cli {
             commandLine = new DefaultParser().parse(options, args);
         } catch (ParseException exception) {
             throw new CommandException("Invalid arguments: " + exception.getMessage());
+        }
+        // If the help option is specified, then reject and other options and print the help
+        if (commandLine.hasOption(HELP_OPTION)) {
+            printHelp(command, options, commandLine);
+            return;
         }
         // Parse and set the input file argument (if any), and throw an error if any unused arguments are left
         final ArrayList<String> remainingArgs = new ArrayList<>(commandLine.getArgList());
@@ -160,6 +173,21 @@ public class Cli {
             }
         }
         return command.getParent() != null ? setInputs(command.getParent(), args, inputFile) : inputFile;
+    }
+
+    private static void printHelp(Command command, Options options, CommandLine commandLine) {
+        final Option[] allOptions = commandLine.getOptions();
+        if (allOptions.length > 1) {
+            final List<String> optionsStrings = Stream.of(allOptions)
+                    .map(option -> '-' + option.getOpt()).collect(Collectors.toList());
+            throw new CommandException("Unexpected option(s): " + optionsStrings);
+        }
+        if (commandLine.getArgList().size() > 0) {
+            throw new CommandException("Unexpected argument(s): " + commandLine.getArgList());
+        }
+        final HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(100, "./run.sh", command.getHelp() + '\n',
+                options, "", true);
     }
 
     private static void execute(Command command, CommandLine commandLine) {

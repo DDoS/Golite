@@ -32,6 +32,11 @@ public class IrGenerateCommand extends Command {
     }
 
     @Override
+    public String getHelp() {
+        return "Generates a custom IR used for code generation";
+    }
+
+    @Override
     public void addCommandLineOptions(Options options) {
     }
 

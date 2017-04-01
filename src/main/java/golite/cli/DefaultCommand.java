@@ -2,14 +2,12 @@ package golite.cli;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 
 /**
  *
  */
 public class DefaultCommand extends Command {
-    private static final String HELP_OPTION = "h";
     private static final String VERSION_OPTION = "v";
 
     public DefaultCommand() {
@@ -17,22 +15,22 @@ public class DefaultCommand extends Command {
     }
 
     @Override
+    public String getHelp() {
+        return "Commands: \"\" | \"parse\" | \"print\" | \"typecheck\" | \"irgen\" | \"codegen\" | \"compile\"\n" +
+                "Use \"-h\" with any of these commands for further information";
+    }
+
+    @Override
     public void addCommandLineOptions(Options options) {
-        final OptionGroup group = new OptionGroup()
-                .addOption(new Option(HELP_OPTION, "print the help dialog"))
-                .addOption(new Option(VERSION_OPTION, "print the version number"));
-        group.setRequired(true);
-        options.addOptionGroup(group);
+        options.addOption(new Option(VERSION_OPTION, "Print the version number"));
     }
 
     @Override
     public void execute(CommandLine commandLine) {
-        if (commandLine.hasOption(HELP_OPTION)) {
-            // TODO: print help
-            System.out.println("HELP");
-        } else if (commandLine.hasOption(VERSION_OPTION)) {
-            // TODO: print version
-            System.out.println("VERSION");
+        System.out.println("Team 9 Golite compiler");
+        System.out.println("v1.0.0-rc");
+        if (!commandLine.hasOption(VERSION_OPTION)) {
+            System.out.println(getHelp());
         }
     }
 

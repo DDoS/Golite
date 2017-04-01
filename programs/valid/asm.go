@@ -222,8 +222,7 @@ label("end")
 }
 
 func main() {
-    code()
-    if assemble() == 0 {
+    if code(); assemble() == 0 {
         println("rpc := 0")
         for i := 0; i < lInstCount; i++ {
             println("rom[rpc] =", lInsts[i].inst, "; rpc++")

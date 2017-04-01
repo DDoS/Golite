@@ -35,6 +35,11 @@ public class CodeGenerateCommand extends Command {
     }
 
     @Override
+    public String getHelp() {
+        return "Generates textual LLVM IR";
+    }
+
+    @Override
     public void addCommandLineOptions(Options options) {
         if (isOutputEnabled()) {
             options.addOption(OUTPUT_BIT_CODE_OPTION, "Output as LLVM bit code instead of text");

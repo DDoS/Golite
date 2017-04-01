@@ -43,9 +43,14 @@ public class TypeCheckCommand extends Command {
     }
 
     @Override
+    public String getHelp() {
+        return "Checks that the input is semantically valid";
+    }
+
+    @Override
     public void addCommandLineOptions(Options options) {
         options
-                .addOption(PRINT_TYPES_OPTION, "Add type annotations to the pretty-printed output")
+                .addOption(PRINT_TYPES_OPTION, "Pretty-print the program with type annotations")
                 .addOption(DUMP_SYMBOL_TABLE_OPTION, "Write the top of the symbol table at the end of each scope")
                 .addOption(DUMP_ALL_SYMBOL_TABLES_OPTION, "Write the full symbol table at the end of each scope");
     }

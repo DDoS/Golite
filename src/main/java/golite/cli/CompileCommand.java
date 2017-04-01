@@ -17,7 +17,7 @@ import org.apache.commons.cli.ParseException;
  */
 public class CompileCommand extends Command {
     private static final String NO_LINK_OPTION = "c";
-    private static final String RUNTIME_PATH = "r";
+    private static final String RUNTIME_PATH = "l";
     private static final File DEFAULT_RUNTIME_PATH = new File("build/objs/golite_runtime.o");
     private final CodeGenerateCommand codeGenerate = new CodeGenerateCommand();
     private File runtimePath;
@@ -39,6 +39,11 @@ public class CompileCommand extends Command {
     @CommandOutput(extension = "out")
     public void setOutputExecutable(File output) {
         executableOutput = output;
+    }
+
+    @Override
+    public String getHelp() {
+        return "Compile the program into an object or executable binary";
     }
 
     @Override
@@ -94,7 +99,8 @@ public class CompileCommand extends Command {
         writeNativeCode(programObjectFile);
         // Now use CC to link it with the runtime
         final String[] command = {
-                "cc", runtimePath.getAbsolutePath(), programObjectFile.getAbsolutePath(), "-o", executableOutput.getAbsolutePath()
+                "cc", runtimePath.getAbsolutePath(), programObjectFile.getAbsolutePath(),
+                "-o", executableOutput.getAbsolutePath()
         };
         final ProcessBuilder processBuilder = new ProcessBuilder(command)
                 .redirectOutput(Redirect.INHERIT).redirectError(Redirect.INHERIT);

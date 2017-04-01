@@ -1,5 +1,8 @@
 package golite.ir.node;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import golite.ir.IrVisitor;
 import golite.semantic.type.BasicType;
 import golite.util.SourcePrinter;
@@ -51,10 +54,12 @@ public class CmpString extends Expr<BasicType> {
     public enum Op {
         EQ("==$", 0), NEQ("!=$", 1), LESS("<$", 2), LESS_EQ("<=$", 3), GREAT(">$", 4), GREAT_EQ(">=$", 5);
         private final String string;
+        private final String camelCase;
         private final int runtimeID;
 
         Op(String string, int runtimeID) {
             this.string = string;
+            camelCase = toCamelCase(name());
             this.runtimeID = runtimeID;
         }
 
@@ -62,9 +67,25 @@ public class CmpString extends Expr<BasicType> {
             return runtimeID;
         }
 
+        public String getCamelCase() {
+            return camelCase;
+        }
+
         @Override
         public String toString() {
             return string;
+        }
+
+        private static String toCamelCase(String string) {
+            final StringBuilder converted = new StringBuilder();
+            final Matcher matcher = Pattern.compile("([A-Z])([A-Z]*)(_*)").matcher(string);
+            while (matcher.find()) {
+                final String firstUpper = matcher.group(1);
+                final String trailingUppers = matcher.group(2);
+                converted.append(firstUpper);
+                converted.append(trailingUppers.toLowerCase());
+            }
+            return converted.toString();
         }
     }
 }
