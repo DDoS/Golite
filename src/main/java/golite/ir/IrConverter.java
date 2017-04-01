@@ -419,62 +419,38 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAIfStmt(AIfStmt node) {
-        // First allocate the end label, and one label per if-block (including the else-block, even if empty)
-        // Then all the block conditions should be converted (not the body yet)
-        //     The init stmt gets converted as is, and the expr becomes a jump to the label allocated for the block
-        //     The else-block is treated as "else if true"; i.e. the jump is unconditional (even if empty)
-        // Then we convert the bodies of the if-blocks and else-block, which start with their allocated label
-        // An end with an unconditional jump to the end label (we don't want to fallthrough to the other blocks)
-        // (BTW, converting the blocks inline will be easier than as in separate case method)
-        Label endLabel = newLabel("endIf");
-        Jump endJump = new Jump(endLabel);
-
-        ArrayList<Label> labels = new ArrayList<Label>();
-        for (PIfBlock block : node.getIfBlock()) {
-            //Convert init, allocate labels for each ifBlock
-            Label ifLabel = newLabel("ifBlock");
-            labels.add(ifLabel);
-            AIfBlock b = (AIfBlock) block;
-            if (b.getInit() != null) {
-                b.getInit().apply(this);
+        final Label endLabel = newLabel("endIf");
+        // Create one label per if-block
+        final List<Label> ifLabels = new ArrayList<>();
+        for (PIfBlock pIfBlock : node.getIfBlock()) {
+            final AIfBlock ifBlock = (AIfBlock) pIfBlock;
+            final Label ifLabel = newLabel("ifCase");
+            ifLabels.add(ifLabel);
+            // Convert the init, and create a jump to the label using the condition
+            if (ifBlock.getInit() != null) {
+                ifBlock.getInit().apply(this);
             }
-            b.getCond().apply(this);
+            ifBlock.getCond().apply(this);
             @SuppressWarnings("unchecked")
-            Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(b.getCond());
-            JumpCond jump = new JumpCond(ifLabel, cond);
-            functionStmts.add(jump);
+            final Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(ifBlock.getCond());
+            functionStmts.add(new JumpCond(ifLabel, cond));
         }
-        if (!node.getElse().isEmpty()) {
-            //Create unconditional jump for else label
-            Label elseLabel = newLabel("elseLabel");
-            labels.add(elseLabel);
-            Jump elseJump = new Jump(elseLabel);
-            functionStmts.add(elseJump);
-            functionStmts.add(endJump);
-            //Now convert the bodies of if-blocks?
-            int i = 0;
-            for (PIfBlock block : node.getIfBlock()) {
-                functionStmts.add(labels.get(i));
-                AIfBlock b = (AIfBlock) block;
-                b.getBlock().forEach(stmt -> stmt.apply(this));
-                i++;
-            }
-            functionStmts.add(endJump);
-            functionStmts.add(labels.get(i));
-            node.getElse().forEach(stmt -> stmt.apply(this));
-            functionStmts.add(endLabel);
-        } else {
-            functionStmts.add(endJump);
-            int i = 0;
-            for (PIfBlock block : node.getIfBlock()) {
-                functionStmts.add(labels.get(i));
-                AIfBlock b = (AIfBlock) block;
-                b.getBlock().forEach(stmt -> stmt.apply(this));
-                i++;
-                functionStmts.add(endJump);
-            }
-            functionStmts.add(endLabel);
+        // Do the same for the else-block, but use an unconditional jump
+        final Label elseLabel = newLabel("elseCase");
+        functionStmts.add(new Jump(elseLabel));
+        // Convert the body of each if-block, adding its label before, and a jump to the end after
+        final List<PIfBlock> ifBlock = node.getIfBlock();
+        for (int i = 0; i < ifBlock.size(); i++) {
+            functionStmts.add(ifLabels.get(i));
+            ((AIfBlock) ifBlock.get(i)).getBlock().forEach(stmt -> stmt.apply(this));
+            functionStmts.add(new Jump(endLabel));
         }
+        // Do the same for the else-block
+        functionStmts.add(elseLabel);
+        node.getElse().forEach(stmt -> stmt.apply(this));
+        functionStmts.add(new Jump(endLabel));
+        // End the if-stmt with the end label
+        functionStmts.add(endLabel);
     }
 
     @Override

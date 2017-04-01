@@ -402,13 +402,11 @@ func statusStop(inst int) {
 
 func execute(inst int) {
     // Check that the condition is valid
-    cond := (inst >> 28) & 0xF
-    if !checkCondition(cond) {
+    if cond := (inst >> 28) & 0xF; !checkCondition(cond) {
         return
     }
     // Dispatch to the proper instruction executor
-    op := (inst >> 20) & 0xFF
-    switch op {
+    switch op := (inst >> 20) & 0xFF; op {
     case 0x0: aluMovReg(inst)
     case 0x1: aluMovImm(inst)
     case 0x2: aluAnd(inst)

@@ -85,7 +85,7 @@ func main() {
         var k boolean
         println(1.3, k)
     }
-    {
+    if k := getBool2(); k {
         var k int = abs(3)
         println(float64(2), k)
     }
