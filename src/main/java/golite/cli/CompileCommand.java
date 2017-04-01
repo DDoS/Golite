@@ -9,6 +9,7 @@ import java.nio.file.StandardOpenOption;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
@@ -18,6 +19,7 @@ import org.apache.commons.cli.ParseException;
 public class CompileCommand extends Command {
     private static final String NO_LINK_OPTION = "c";
     private static final String RUNTIME_PATH = "l";
+    private static final String RUN_OPTION = "r";
     private static final File DEFAULT_RUNTIME_PATH = new File("build/objs/golite_runtime.o");
     private final CodeGenerateCommand codeGenerate = new CodeGenerateCommand();
     private File runtimePath;
@@ -48,7 +50,10 @@ public class CompileCommand extends Command {
 
     @Override
     public void addCommandLineOptions(Options options) {
-        options.addOption(NO_LINK_OPTION, "Don't link; just output the object file");
+        final OptionGroup group = new OptionGroup();
+        group.addOption(new Option(NO_LINK_OPTION, "Don't link; just output the object file"));
+        group.addOption(new Option(RUN_OPTION, "Run the executable after linking"));
+        options.addOptionGroup(group);
         options.addOption(Option.builder(RUNTIME_PATH).hasArg().argName("runtime")
                 .desc("The runtime object").type(File.class).build());
     }
@@ -83,6 +88,9 @@ public class CompileCommand extends Command {
             writeNativeCode(objectOutput);
         } else {
             compileAndLink();
+            if (commandLine.hasOption(RUN_OPTION)) {
+                execute(executableOutput.getAbsolutePath());
+            }
         }
     }
 
@@ -98,25 +106,8 @@ public class CompileCommand extends Command {
         // Write the native code to it
         writeNativeCode(programObjectFile);
         // Now use CC to link it with the runtime
-        final String[] command = {
-                "cc", runtimePath.getAbsolutePath(), programObjectFile.getAbsolutePath(),
-                "-o", executableOutput.getAbsolutePath()
-        };
-        final ProcessBuilder processBuilder = new ProcessBuilder(command)
-                .redirectOutput(Redirect.INHERIT).redirectError(Redirect.INHERIT);
-        final Process process;
-        try {
-            process = processBuilder.start();
-        } catch (IOException exception) {
-            throw new CommandException("Error when trying to execute CC: " + exception.getMessage());
-        }
-        try {
-            if (process.waitFor() != 0) {
-                throw new CommandException("CC terminated with non-zero exit code");
-            }
-        } catch (InterruptedException exception) {
-            throw new RuntimeException(exception);
-        }
+        execute("cc", runtimePath.getAbsolutePath(), programObjectFile.getAbsolutePath(),
+                "-o", executableOutput.getAbsolutePath());
     }
 
     private void writeNativeCode(File file) {
@@ -125,6 +116,24 @@ public class CompileCommand extends Command {
             channel.write(nativeCode);
         } catch (IOException exception) {
             throw new CommandException("Error when writing native code: " + exception.getMessage());
+        }
+    }
+
+    private static void execute(String... command) {
+        final ProcessBuilder processBuilder = new ProcessBuilder(command)
+                .redirectOutput(Redirect.INHERIT).redirectError(Redirect.INHERIT);
+        final Process process;
+        try {
+            process = processBuilder.start();
+        } catch (IOException exception) {
+            throw new CommandException("Error when trying to execute " + command[0] + ": " + exception.getMessage());
+        }
+        try {
+            if (process.waitFor() != 0) {
+                throw new CommandException(command[0] + " terminated with a non-zero exit code");
+            }
+        } catch (InterruptedException exception) {
+            throw new RuntimeException(exception);
         }
     }
 }
