@@ -608,7 +608,7 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
-    public void caseAAssignAddStmt(AAssignAddStmt node) {
+    public void caseAAssignAddStmt(AAssignAddStmt node) { 
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
