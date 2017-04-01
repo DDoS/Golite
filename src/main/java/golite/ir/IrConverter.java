@@ -550,11 +550,27 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAAssignMulStmt(AAssignMulStmt node) {
         // Convert left *= right as left = left * right
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> rem = convertMul(left, right);
+        functionStmts.add(new Assignment(left, rem));
     }
 
     @Override
     public void caseAAssignDivStmt(AAssignDivStmt node) {
         // Convert left /= right as left = left / right
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> rem = convertDiv(left, right);
+        functionStmts.add(new Assignment(left, rem));
     }
 
     @Override
@@ -572,11 +588,27 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAAssignLshiftStmt(AAssignLshiftStmt node) {
         // Convert left <<= right as left = left << right
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> rem = convertLshift(left, right);
+        functionStmts.add(new Assignment(left, rem));
     }
 
     @Override
     public void caseAAssignRshiftStmt(AAssignRshiftStmt node) {
         // Convert left >>= right as left = left >> right
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> rem = convertRshift(left, right);
+        functionStmts.add(new Assignment(left, rem));
     }
 
     @Override
@@ -597,6 +629,15 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAAssignSubStmt(AAssignSubStmt node) {
         // Convert left -= right as left = left - right
+        // Convert left >>= right as left = left >> right
+        node.getLeft().apply(this);
+        node.getRight().apply(this);
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        @SuppressWarnings("unchecked")
+        final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        final Expr<BasicType> rem = convertSub(left, right);
+        functionStmts.add(new Assignment(left, rem));
     }
 
     @Override
@@ -790,10 +831,15 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        convertedExprs.put(node, convertMul(left, right));
+    }
+    
+    
+    private Expr<BasicType> convertMul(Expr<BasicType> left, Expr<BasicType> right) {        
         if (left.getType() == BasicType.INT) {
-            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.MUL));
+        	return new BinArInt(left, right, BinArInt.Op.MUL);
         } else if (left.getType() == BasicType.FLOAT64) {
-            convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.MUL));
+        	return new BinArFloat64(left, right, BinArFloat64.Op.MUL);
         } else {
             throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
@@ -807,10 +853,14 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        convertedExprs.put(node, convertDiv(left, right));
+    }
+        
+    private Expr<BasicType> convertDiv(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.FLOAT64) {
-            convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.DIV));
+        	return new BinArFloat64(left, right, BinArFloat64.Op.DIV);
         } else if (left.getType() == BasicType.INT) {
-            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.DIV));
+        	return new BinArInt(left, right, BinArInt.Op.DIV);
         } else {
             throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
@@ -843,8 +893,12 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        convertedExprs.put(node, convertLshift(left, right));
+    }
+        
+    private Expr<BasicType> convertLshift(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
-            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.LSHIFT));
+        	return new BinArInt(left, right, BinArInt.Op.LSHIFT);
         } else {
             throw new IllegalStateException("Expected integer-typed expressions");
         }
@@ -858,8 +912,12 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        convertedExprs.put(node, convertRshift(left, right));
+    }
+        
+    private Expr<BasicType> convertRshift(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
-            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.RSHIFT));
+        	return new BinArInt(left, right, BinArInt.Op.RSHIFT);
         } else {
             throw new IllegalStateException("Expected integer-typed expressions");
         }
@@ -924,10 +982,14 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
+        convertedExprs.put(node, convertSub(left, right));
+    }
+        
+    private Expr<BasicType> convertSub(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.FLOAT64) {
-            convertedExprs.put(node, new BinArFloat64(left, right, BinArFloat64.Op.SUB));
+        	return new BinArFloat64(left, right, BinArFloat64.Op.SUB);
         } else if (left.getType() == BasicType.INT) {
-            convertedExprs.put(node, new BinArInt(left, right, BinArInt.Op.SUB));
+        	return new BinArInt(left, right, BinArInt.Op.SUB);
         } else {
             throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
