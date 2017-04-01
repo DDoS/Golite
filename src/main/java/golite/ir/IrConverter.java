@@ -528,7 +528,7 @@ public class IrConverter extends AnalysisAdapter {
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
-        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft()); 
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         final Expr<BasicType> mul = convertMul(left, right);
@@ -608,7 +608,7 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
-    public void caseAAssignAddStmt(AAssignAddStmt node) { 
+    public void caseAAssignAddStmt(AAssignAddStmt node) {  
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
