@@ -2,10 +2,16 @@
 
 package main
 
-var f float64 = 1.0
+var f int = 1
 
 func main() {
-	f := 2
+	f = 2%1
+f = 2/1
+f = 2*1
+f = 2-1
+f = 2+1
 
-	print("Value of f is", f)
+f = f << 1
+f = f >> 1
+	
 }

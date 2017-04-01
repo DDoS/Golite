@@ -426,7 +426,7 @@ public class TypeChecker extends AnalysisAdapter {
                 throw new TypeCheckerException(node, "Cannot use a cast expression as a statement");
             }
         } else {
-            node.getExpr().apply(this);
+            node.getExpr().apply(this); 
         }
     }
 
