@@ -35,6 +35,8 @@ public abstract class Command {
         this.outputEnabled = outputEnabled;
     }
 
+    public abstract String getHelp();
+
     public abstract void addCommandLineOptions(Options options);
 
     public abstract void execute(CommandLine commandLine);

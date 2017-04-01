@@ -25,6 +25,11 @@ public class ParseCommand extends Command {
     }
 
     @Override
+    public String getHelp() {
+        return "Checks that the input is syntactically valid";
+    }
+
+    @Override
     public void addCommandLineOptions(Options options) {
     }
 
