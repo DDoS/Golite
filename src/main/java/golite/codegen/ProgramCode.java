@@ -1,8 +1,13 @@
 package golite.codegen;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 
 import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.LLVM;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 
@@ -21,6 +26,47 @@ public class ProgramCode {
 
     public ProgramCode(LLVMModuleRef program) {
         this.program = program;
+    }
+
+    public ProgramCode(File irFile) {
+        // This is to ensure that the native libraries get loaded (sort of a bug fix)
+        try {
+            Class.forName(LLVM.class.getCanonicalName());
+        } catch (ClassNotFoundException exception) {
+            throw new RuntimeException(exception);
+        }
+        // Read the contents of the file to a byte buffer
+        final ByteBuffer buffer;
+        try (FileChannel channel = FileChannel.open(irFile.toPath(), StandardOpenOption.READ)) {
+            buffer = ByteBuffer.allocateDirect((int) channel.size());
+            channel.read(buffer);
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to read module file: " + exception.getMessage());
+        }
+        buffer.flip();
+        // Convert this to an LLVM buffer via copying (to prevent issues with the garbage collector)
+        final BytePointer range = new BytePointer(buffer);
+        final LLVMMemoryBufferRef llvmBuffer =
+                LLVMCreateMemoryBufferWithMemoryRangeCopy(range, range.limit(), new BytePointer("module"));
+        // Now parse the the IR: check for "BC" in ASCII as the first two bytes for bitcode, otherwise it's text IR
+        final PointerPointer<LLVMModuleRef> modulePtr = new PointerPointer<>(new LLVMModuleRef[1]);
+        final BytePointer errorMsgPtr = new BytePointer((Pointer) null);
+        final int success;
+        buffer.rewind();
+        if (buffer.get() == 0x42 && buffer.get() == 0x43) {
+            success = LLVMParseBitcodeInContext(LLVMGetGlobalContext(), llvmBuffer, modulePtr, errorMsgPtr);
+        } else {
+            success = LLVMParseIRInContext(LLVMGetGlobalContext(), llvmBuffer, modulePtr, errorMsgPtr);
+        }
+        String errorMsg = null;
+        if (success != 0) {
+            errorMsg = errorMsgPtr.getString();
+            LLVMDisposeMessage(errorMsgPtr);
+        }
+        if (errorMsg != null) {
+            throw new RuntimeException("Failed to decode module code: " + errorMsg);
+        }
+        program = modulePtr.get(LLVMModuleRef.class);
     }
 
     public void optimize() {

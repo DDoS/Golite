@@ -20,7 +20,7 @@ public class CompileCommand extends Command {
     private static final String NO_LINK_OPTION = "c";
     private static final String RUNTIME_PATH = "l";
     private static final String RUN_OPTION = "r";
-    private static final File DEFAULT_RUNTIME_PATH = new File("build/objs/golite_runtime.o");
+    public static final File DEFAULT_RUNTIME_PATH = new File("build/objs/golite_runtime.o");
     private final CodeGenerateCommand codeGenerate = new CodeGenerateCommand();
     private File runtimePath;
     private ByteBuffer nativeCode;
@@ -85,16 +85,16 @@ public class CompileCommand extends Command {
     @Override
     public void output(CommandLine commandLine) {
         if (commandLine.hasOption(NO_LINK_OPTION)) {
-            writeNativeCode(objectOutput);
+            writeNativeCode(nativeCode, objectOutput);
         } else {
-            compileAndLink();
+            compileAndLink(nativeCode, runtimePath, executableOutput);
             if (commandLine.hasOption(RUN_OPTION)) {
                 execute(executableOutput.getAbsolutePath());
             }
         }
     }
 
-    private void compileAndLink() {
+    public static void compileAndLink(ByteBuffer nativeCode, File runtimePath, File ouputFile) {
         // Create a temporary file for the program object
         final File programObjectFile;
         try {
@@ -104,14 +104,14 @@ public class CompileCommand extends Command {
         }
         programObjectFile.deleteOnExit();
         // Write the native code to it
-        writeNativeCode(programObjectFile);
+        writeNativeCode(nativeCode, programObjectFile);
         // Now use CC to link it with the runtime
         execute("cc", runtimePath.getAbsolutePath(), programObjectFile.getAbsolutePath(),
-                "-o", executableOutput.getAbsolutePath());
+                "-o", ouputFile.getAbsolutePath());
     }
 
-    private void writeNativeCode(File file) {
-        try (FileChannel channel = FileChannel.open(file.toPath(),
+    private static void writeNativeCode(ByteBuffer nativeCode, File outputFile) {
+        try (FileChannel channel = FileChannel.open(outputFile.toPath(),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.write(nativeCode);
         } catch (IOException exception) {

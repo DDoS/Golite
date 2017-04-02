@@ -117,32 +117,38 @@ task compileRuntime {
     }
 }
 
-task createRunScript {
+task createRunScripts {
     def outputDir = "$projectDir/"
-    def outputScript = outputDir + 'run.sh'
+    def outputRunScript = outputDir + 'run.sh'
+    def outputCompileScript = outputDir + 'compile.sh'
 
-    outputs.file outputScript
+    outputs.files outputRunScript, outputCompileScript
 
-    doLast {
-        def script = new File(outputScript);
+    def createScript = { String outputPath, mainClassName, goliteCommand ->
+        def script = new File(outputPath)
         script.setText '#!/usr/bin/env bash\n\n'
         script << 'if [[ $1 == "-v" ]]; then\n' +
                 '    echo "Team 9 Golite compiler"\n' +
                 '    echo "v1.0.0-rc"\n' +
                 '    exit 0\n' +
                 'fi\n\n'
+        script << "MAIN_CLASS=\"$mainClassName\"\n"
+        script << "GOLITE_CMD=\"$goliteCommand\"\n\n"
         script << 'java -classpath "'
         script << sourceSets.main.runtimeClasspath.asPath
-        script << '" '
-        script << mainClassName
-        script << ' $*\n'
+        script << '" $MAIN_CLASS $GOLITE_CMD $*\n'
         script.setExecutable(true)
+    }
+
+    doLast {
+        createScript(outputRunScript, mainClassName, "codegen")
+        createScript(outputCompileScript, "golite.Compile", "")
     }
 }
 
 build {
     dependsOn compileRuntime
-    dependsOn createRunScript
+    dependsOn createRunScripts
 }
 
 run {

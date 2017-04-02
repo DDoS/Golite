@@ -7,6 +7,10 @@ var k = 0
 func _() {
 }
 
+func goliteRtPrintInt(i int) {
+    println(i)
+}
+
 func abs(i int) int {
     if i < 0 {
         return -i
@@ -17,9 +21,9 @@ func abs(i int) int {
 
 func printAbs(i int) {
     if i < 0 {
-        println(-i)
+        goliteRtPrintInt(-i)
     } else {
-        println(i)
+        goliteRtPrintInt(i)
     }
 }
 

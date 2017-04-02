@@ -206,6 +206,18 @@ public class Cli {
         }
     }
 
+    public static File setFileExtension(File file, String extension) {
+        final String inputName = file.getName();
+        final int index = inputName.lastIndexOf('.');
+        final String outputName;
+        if (index < 0) {
+            outputName = inputName + '.' + extension;
+        } else {
+            outputName = inputName.substring(0, index + 1) + extension;
+        }
+        return new File(file.getParent(), outputName);
+    }
+
     private static <T> T[] subArray(T[] array, int start) {
         int length = Array.getLength(array);
         final int newLength = length - start;
@@ -236,18 +248,6 @@ public class Cli {
                 outputFile = setFileExtension(outputFile, extension);
             }
             outputSetter.accept(outputFile);
-        }
-
-        private static File setFileExtension(File file, String extension) {
-            final String inputName = file.getName();
-            final int index = inputName.lastIndexOf('.');
-            final String outputName;
-            if (index < 0) {
-                outputName = inputName + '.' + extension;
-            } else {
-                outputName = inputName.substring(0, index + 1) + extension;
-            }
-            return new File(file.getParent(), outputName);
         }
     }
 }
