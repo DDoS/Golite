@@ -1,6 +1,5 @@
 package golite.cli;
 
-import java.io.IOException;
 import java.io.Reader;
 
 import golite.Golite;
@@ -44,8 +43,8 @@ public class ParseCommand extends Command {
             ast = Golite.parse(input);
         } catch (SyntaxException exception) {
             throw new CommandException(exception.getMessage());
-        } catch (IOException exception) {
-            throw new CommandException("Error when reading source: " + exception.getMessage());
+        } catch (Exception exception) {
+            throw new CommandException("Error when parsing", exception);
         }
     }
 

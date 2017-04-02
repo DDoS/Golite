@@ -3,7 +3,6 @@ package golite.cli;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.Writer;
 
 import golite.Golite;
@@ -11,7 +10,6 @@ import golite.node.Start;
 import golite.semantic.SemanticData;
 import golite.semantic.check.TypeChecker;
 import golite.semantic.check.TypeCheckerException;
-import golite.syntax.print.PrinterException;
 import golite.util.SourcePrinter;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -88,16 +86,16 @@ public class TypeCheckCommand extends Command {
         if (printAllContexts || commandLine.hasOption(DUMP_SYMBOL_TABLE_OPTION)) {
             try (Writer writer = new BufferedWriter(new FileWriter(symbolOutput))) {
                 semantics.printContexts(new SourcePrinter(writer), printAllContexts);
-            } catch (PrinterException | IOException exception) {
-                throw new CommandException("Error when printing: " + exception.getMessage());
+            } catch (Exception exception) {
+                throw new CommandException("Error when dumping symbols", exception);
             }
         }
         // Finally print the type-annotated program if necessary
         if (commandLine.hasOption(PRINT_TYPES_OPTION)) {
             try (Writer writer = new BufferedWriter(new FileWriter(typeOutput))) {
                 Golite.prettyPrint(parse.getAst(), semantics, writer);
-            } catch (PrinterException | IOException exception) {
-                throw new CommandException("Error when printing: " + exception.getMessage());
+            } catch (Exception exception) {
+                throw new CommandException("Error when printing types", exception);
             }
         }
     }

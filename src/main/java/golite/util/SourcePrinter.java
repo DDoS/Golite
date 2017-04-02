@@ -3,8 +3,6 @@ package golite.util;
 import java.io.IOException;
 import java.io.Writer;
 
-import golite.syntax.print.PrinterException;
-
 /**
  * Prints source code to an writer stream.
  */
@@ -28,7 +26,7 @@ public class SourcePrinter {
             }
             writer.append(str);
         } catch (IOException exception) {
-            throw new PrinterException(exception);
+            throw new RuntimeException(exception);
         }
         return this;
     }
@@ -50,7 +48,7 @@ public class SourcePrinter {
         try {
             writer.append(System.lineSeparator());
         } catch (IOException exception) {
-            throw new PrinterException(exception);
+            throw new RuntimeException(exception);
         }
         indentNext = true;
         return this;

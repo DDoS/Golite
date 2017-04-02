@@ -5,6 +5,11 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.Writer;
 
+import golite.lexer.Lexer;
+import golite.lexer.LexerException;
+import golite.node.Start;
+import golite.parser.Parser;
+import golite.parser.ParserException;
 import golite.semantic.SemanticData;
 import golite.semantic.SemanticException;
 import golite.semantic.check.TypeChecker;
@@ -12,14 +17,8 @@ import golite.semantic.check.TypeCheckerException;
 import golite.syntax.GoliteLexer;
 import golite.syntax.SyntaxException;
 import golite.syntax.print.PrettyPrinter;
-import golite.syntax.print.PrinterException;
 import golite.syntax.weed.Weeder;
 import golite.syntax.weed.WeederException;
-import golite.lexer.Lexer;
-import golite.lexer.LexerException;
-import golite.node.Start;
-import golite.parser.Parser;
-import golite.parser.ParserException;
 
 /**
  * Methods for processing Golite code.
@@ -45,15 +44,15 @@ public final class Golite {
         }
     }
 
-    public static void prettyPrint(Reader source, Writer pretty) throws IOException, SyntaxException, PrinterException {
+    public static void prettyPrint(Reader source, Writer pretty) throws IOException, SyntaxException {
         prettyPrint(parse(source), pretty);
     }
 
-    public static void prettyPrint(Start ast, Writer pretty) throws PrinterException {
+    public static void prettyPrint(Start ast, Writer pretty) {
         prettyPrint(ast, null, pretty);
     }
 
-    public static void prettyPrint(Start ast, SemanticData semantics, Writer pretty) throws PrinterException {
+    public static void prettyPrint(Start ast, SemanticData semantics, Writer pretty) {
         ast.apply(new PrettyPrinter(semantics, pretty));
     }
 

@@ -1,7 +1,6 @@
 package golite.cli;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -20,7 +19,7 @@ public class CompileCommand extends Command {
     private static final String NO_LINK_OPTION = "c";
     private static final String RUNTIME_PATH = "l";
     private static final String RUN_OPTION = "r";
-    private static final File DEFAULT_RUNTIME_PATH = new File("build/objs/golite_runtime.o");
+    public static final File DEFAULT_RUNTIME_PATH = new File("build/objs/golite_runtime.o");
     private final CodeGenerateCommand codeGenerate = new CodeGenerateCommand();
     private File runtimePath;
     private ByteBuffer nativeCode;
@@ -85,37 +84,37 @@ public class CompileCommand extends Command {
     @Override
     public void output(CommandLine commandLine) {
         if (commandLine.hasOption(NO_LINK_OPTION)) {
-            writeNativeCode(objectOutput);
+            writeNativeCode(nativeCode, objectOutput);
         } else {
-            compileAndLink();
+            compileAndLink(nativeCode, runtimePath, executableOutput);
             if (commandLine.hasOption(RUN_OPTION)) {
                 execute(executableOutput.getAbsolutePath());
             }
         }
     }
 
-    private void compileAndLink() {
+    public static void compileAndLink(ByteBuffer nativeCode, File runtimePath, File ouputFile) {
         // Create a temporary file for the program object
         final File programObjectFile;
         try {
             programObjectFile = File.createTempFile("golite", ".o");
-        } catch (IOException exception) {
-            throw new CommandException("Error when creating the temporary object file: " + exception.getMessage());
+        } catch (Exception exception) {
+            throw new CommandException("Error when creating the temporary object file", exception);
         }
         programObjectFile.deleteOnExit();
         // Write the native code to it
-        writeNativeCode(programObjectFile);
+        writeNativeCode(nativeCode, programObjectFile);
         // Now use CC to link it with the runtime
         execute("cc", runtimePath.getAbsolutePath(), programObjectFile.getAbsolutePath(),
-                "-o", executableOutput.getAbsolutePath());
+                "-o", ouputFile.getAbsolutePath());
     }
 
-    private void writeNativeCode(File file) {
-        try (FileChannel channel = FileChannel.open(file.toPath(),
+    private static void writeNativeCode(ByteBuffer nativeCode, File outputFile) {
+        try (FileChannel channel = FileChannel.open(outputFile.toPath(),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.write(nativeCode);
-        } catch (IOException exception) {
-            throw new CommandException("Error when writing native code: " + exception.getMessage());
+        } catch (Exception exception) {
+            throw new CommandException("Error when writing native code", exception);
         }
     }
 
@@ -125,15 +124,15 @@ public class CompileCommand extends Command {
         final Process process;
         try {
             process = processBuilder.start();
-        } catch (IOException exception) {
-            throw new CommandException("Error when trying to execute " + command[0] + ": " + exception.getMessage());
+        } catch (Exception exception) {
+            throw new CommandException("Error when trying to execute " + command[0], exception);
         }
         try {
             if (process.waitFor() != 0) {
                 throw new CommandException(command[0] + " terminated with a non-zero exit code");
             }
         } catch (InterruptedException exception) {
-            throw new RuntimeException(exception);
+            throw new CommandException("Interrupted while waiting for " + command[0] + " to terminate", exception);
         }
     }
 }
