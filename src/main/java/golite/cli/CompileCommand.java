@@ -1,7 +1,6 @@
 package golite.cli;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -99,8 +98,8 @@ public class CompileCommand extends Command {
         final File programObjectFile;
         try {
             programObjectFile = File.createTempFile("golite", ".o");
-        } catch (IOException exception) {
-            throw new CommandException("Error when creating the temporary object file: " + exception.getMessage());
+        } catch (Exception exception) {
+            throw new CommandException("Error when creating the temporary object file", exception);
         }
         programObjectFile.deleteOnExit();
         // Write the native code to it
@@ -114,8 +113,8 @@ public class CompileCommand extends Command {
         try (FileChannel channel = FileChannel.open(outputFile.toPath(),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.write(nativeCode);
-        } catch (IOException exception) {
-            throw new CommandException("Error when writing native code: " + exception.getMessage());
+        } catch (Exception exception) {
+            throw new CommandException("Error when writing native code", exception);
         }
     }
 
@@ -125,15 +124,15 @@ public class CompileCommand extends Command {
         final Process process;
         try {
             process = processBuilder.start();
-        } catch (IOException exception) {
-            throw new CommandException("Error when trying to execute " + command[0] + ": " + exception.getMessage());
+        } catch (Exception exception) {
+            throw new CommandException("Error when trying to execute " + command[0], exception);
         }
         try {
             if (process.waitFor() != 0) {
                 throw new CommandException(command[0] + " terminated with a non-zero exit code");
             }
         } catch (InterruptedException exception) {
-            throw new RuntimeException(exception);
+            throw new CommandException("Interrupted while waiting for " + command[0] + " to terminate", exception);
         }
     }
 }

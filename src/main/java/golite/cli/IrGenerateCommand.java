@@ -3,12 +3,10 @@ package golite.cli;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.Writer;
 
 import golite.ir.IrConverter;
 import golite.ir.node.Program;
-import golite.syntax.print.PrinterException;
 import golite.util.SourcePrinter;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -60,8 +58,8 @@ public class IrGenerateCommand extends Command {
     public void output(CommandLine commandLine) {
         try (Writer writer = new BufferedWriter(new FileWriter(output))) {
             program.print(new SourcePrinter(writer));
-        } catch (PrinterException | IOException exception) {
-            throw new CommandException("Error when printing IR: " + exception.getMessage());
+        } catch (Exception exception) {
+            throw new CommandException("Error when printing IR", exception);
         }
     }
 }

@@ -3,7 +3,6 @@ package golite.cli;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
@@ -77,14 +76,14 @@ public class CodeGenerateCommand extends Command {
             try (FileChannel channel = FileChannel.open(bitCodeOutput.toPath(),
                     StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
                 channel.write(code.asBitCode());
-            } catch (IOException exception) {
-                throw new CommandException("Error when writing bit code: " + exception.getMessage());
+            } catch (Exception exception) {
+                throw new CommandException("Error when writing bit code", exception);
             }
         } else {
             try (Writer writer = new BufferedWriter(new FileWriter(textOutput))) {
                 writer.write(code.asText());
-            } catch (IOException exception) {
-                throw new CommandException("Error when writing text code: " + exception.getMessage());
+            } catch (Exception exception) {
+                throw new CommandException("Error when writing text code", exception);
             }
         }
     }
