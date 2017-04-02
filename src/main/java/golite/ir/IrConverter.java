@@ -74,6 +74,7 @@ import golite.node.ABitXorExpr;
 import golite.node.ABlockStmt;
 import golite.node.ABreakStmt;
 import golite.node.ACallExpr;
+import golite.node.AClauseForCondition;
 import golite.node.AContinueStmt;
 import golite.node.ADeclStmt;
 import golite.node.ADeclVarShortStmt;
@@ -123,6 +124,7 @@ import golite.node.AVarDecl;
 import golite.node.Node;
 import golite.node.PDecl;
 import golite.node.PExpr;
+import golite.node.PForCondition;
 import golite.node.PIfBlock;
 import golite.node.PStmt;
 import golite.node.Start;
@@ -487,17 +489,49 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAForStmt(AForStmt node) {
-        // Start by converting the init statement (if it's a clause condition)
-        // Then place a start label in the stmts, and allocate an end label (to be placed later)
-        // Next we create a jump to the end label if the condition isn't true
-        //     Convert the condition (if any), or use an unconditional jump for an empty condition
-        //     You can negate an expression with LogicalNot
-        // Push the labels in the stacks described in break and continue stmts
-        // Then we convert the body of the for loop
-        // If it's a clause condition then convert the post stmt here, at the end of the body
-        // Finally add the end label to the stmts
-        // Pop the labels from the stacks mentioned earlier
+
+    	AClauseForCondition forCondition =  (AClauseForCondition) node.getForCondition();
+
+    	// Start by converting the init statement
+    	if (forCondition.getInit() != null) {
+    		forCondition.getInit().apply(this);
+    	}
+
+    	// Place a start label in Statements and allocate an end label
+    	// Labels
+    	final List<Label> forLabels = new ArrayList<>();
+    	//Start Label
+    	final Label forStartLabel = newLabel("forCase");
+    	//EndLabel
+    	final Label endLabel = newLabel("endFor");
+    	
+    	functionStmts.add(forStartLabel);
+
+    	// Next we create a jump to the end label if the condition isn't true
+    	if (forCondition.getCond() != null) {
+    		forCondition.getCond().apply(this);
+    		@SuppressWarnings("unchecked")
+    		final Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(forCondition.getCond());
+    		if (cond != null) {
+    			functionStmts.add(new JumpCond(endLabel, new LogicNot(cond)));
+    		} 
+    	}
+
+    	//Body of the loop
+    	final List<PStmt> forBlock = node.getStmt();
+    	for (int i = 0; i < forBlock.size(); i++) {
+    		
+    		forBlock.forEach(stmt -> stmt.apply(this));
+    		// Post Stmt i++
+    		forCondition.getPost().apply(this);
+
+    		// Back to start Label
+    		functionStmts.add(new Jump(forStartLabel));
+    	}
+    	// Finally add the end label to the stmts
+    	functionStmts.add(endLabel);
     }
+       
 
     @Override
     public void caseADeclStmt(ADeclStmt node) {
