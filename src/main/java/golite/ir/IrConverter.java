@@ -492,7 +492,7 @@ public class IrConverter extends AnalysisAdapter {
 
     	AClauseForCondition forCondition =  (AClauseForCondition) node.getForCondition();
 
-    	// Start by converting the init statement
+    	// Start by converting the init statement 
     	if (forCondition.getInit() != null) {
     		forCondition.getInit().apply(this);
     	}
