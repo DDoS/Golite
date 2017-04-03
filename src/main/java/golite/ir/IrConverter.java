@@ -1,9 +1,11 @@
 package golite.ir;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -79,9 +81,11 @@ import golite.node.AContinueStmt;
 import golite.node.ADeclStmt;
 import golite.node.ADeclVarShortStmt;
 import golite.node.ADecrStmt;
+import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
 import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
+import golite.node.AExprCase;
 import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AForStmt;
@@ -122,6 +126,7 @@ import golite.node.ASwitchStmt;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
+import golite.node.PCase;
 import golite.node.PDecl;
 import golite.node.PExpr;
 import golite.node.PForCondition;
@@ -156,7 +161,9 @@ public class IrConverter extends AnalysisAdapter {
     private final Map<PExpr, Expr<?>> convertedExprs = new HashMap<>();
     private final Map<Variable<?>, String> uniqueVarNames = new HashMap<>();
     private final Map<Label, String> uniqueLabelNames = new HashMap<>();
-
+    private final Deque<Label> loopEndLabels = new ArrayDeque<>();
+    private final Deque<Label> loopStartLabels = new ArrayDeque<>();
+    
     public IrConverter(SemanticData semantics) {
         this.semantics = semantics;
     }
@@ -405,11 +412,13 @@ public class IrConverter extends AnalysisAdapter {
         // The statement then gets converted to an unconditional jump to the label on the top of the stack (peek)
         // This will be the end of the inner most "for" or "switch" statement
         // For a stack collection use Deque (ArrayDeque)
+        functionStmts.add(new Jump(loopEndLabels.peek()));
     }
 
     @Override
     public void caseAContinueStmt(AContinueStmt node) {
         // Same idea as break, but with a different stack that stores the beginning label of "for" loops
+        functionStmts.add(new Jump(loopStartLabels.peek()));
     }
 
     @Override
@@ -457,34 +466,57 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseASwitchStmt(ASwitchStmt node) {
-        // A switch in the form
-        /*
-            switch init; expr {
-                case a1, a2, a3, ...:
-                    stmtsA
-                case b1, b2, ...:
-                    stmtsB
-                default:
-                    stmtsC
-            }
-        */
-        // Is the same as
-        /*
-            init
-            var e = expr
-            if e == a1 || e == a2 || e == a3 || ... {
-                stmtsA
-            } else if e == b1 || e == b2 || ... {
-                stmtsB
+        final List<Label> caseLabels = new ArrayList<>();
+        boolean hasDefault = false;
+        if (node.getInit() != null) {
+            node.getInit().apply(this);
+        }
+        node.getValue().apply(this);
+        @SuppressWarnings("unchecked")
+        Expr<BasicType> switchExp = (Expr<BasicType>) convertedExprs.get(node.getValue());
+        BasicType expType = switchExp.getType();
+        for (PCase swc : node.getCase()) {
+            //For each (non-default) case, create conditional jumps for each equality check
+            if (swc instanceof AExprCase) {
+                final AExprCase c = (AExprCase) swc;
+                //Add one label per case
+                final Label caseLabel = newLabel("case");
+                caseLabels.add(caseLabel);
+                for (PExpr e : c.getExpr()) {
+                    //Add a jump to the same label for each expr in a case
+                    e.apply(this);
+                    @SuppressWarnings("unchecked")
+                    Expr<BasicType> caseExp = (Expr<BasicType>) convertedExprs.get(e);
+                    Expr<BasicType> cmp = convertEqual(false, switchExp, caseExp);
+                    functionStmts.add(new JumpCond(caseLabel, cmp));
+                } 
             } else {
-                stmtsC
+                hasDefault = true;
             }
-        */
-        // Note the new variable to prevent the expression from being re-evaluated in each if-condition
-        // If there's no default case, then it's the same as no "else" block
-        // So just convert this the like the "if" stmt
-        // There's one difference: once the end label is created, it needs to be pushed in the stack described in the break stmt
-        //     It must also be popped of once conversion is done
+        }
+        final Label defaultLabel = newLabel("defaultCase");
+        if (hasDefault) {
+            functionStmts.add(new Jump(defaultLabel));
+        }
+        Label endLabel = newLabel("endLabel");
+        functionStmts.add(new Jump(endLabel));
+        loopEndLabels.push(endLabel);
+        int i = 0; //Use this to keep track of labels
+        for (PCase swc : node.getCase()) {
+            if (swc instanceof AExprCase) {
+                functionStmts.add(caseLabels.get(i));
+                final AExprCase c = (AExprCase) swc;
+                c.getStmt().forEach(stmt -> stmt.apply(this));
+                functionStmts.add(new Jump(endLabel));
+                i++;
+            } else {
+                final ADefaultCase c = (ADefaultCase) swc;
+                functionStmts.add(defaultLabel);
+                c.getStmt().forEach(stmt -> stmt.apply(this));
+            }
+        }
+        functionStmts.add(endLabel);
+        loopEndLabels.pop();
     }
 
     @Override
@@ -506,6 +538,8 @@ public class IrConverter extends AnalysisAdapter {
     	final Label endLabel = newLabel("endFor");
     	
     	functionStmts.add(forStartLabel);
+    	loopStartLabels.push(forStartLabel);
+    	loopEndLabels.push(endLabel);
 
     	// Next we create a jump to the end label if the condition isn't true
     	if (forCondition.getCond() != null) {
@@ -530,6 +564,8 @@ public class IrConverter extends AnalysisAdapter {
     	}
     	// Finally add the end label to the stmts
     	functionStmts.add(endLabel);
+    	loopStartLabels.pop();
+    	loopEndLabels.pop();
     }
        
 
