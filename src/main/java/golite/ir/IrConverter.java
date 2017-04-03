@@ -470,8 +470,7 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> switchValue = (Expr<BasicType>) convertedExprs.get(node.getValue());
         // For each (non-default) case, create conditional jumps for each equality check
         final List<Label> caseLabels = new ArrayList<>();
-        final List<PCase> cases = node.getCase();
-        for (PCase pCase : cases) {
+        for (PCase pCase : node.getCase()) {
             if (pCase instanceof ADefaultCase) {
                 continue;
             }
@@ -496,12 +495,12 @@ public class IrConverter extends AnalysisAdapter {
         loopEndLabels.push(endLabel);
         // Convert the body of each case
         boolean implicitDefault = true;
-        for (int i = 0; i < cases.size(); i++) {
-            final PCase pCase = cases.get(i);
+        int labelIndex = 0;
+        for (PCase pCase : node.getCase()) {
             // Start by placing the label
             final List<PStmt> stmts;
             if (pCase instanceof AExprCase) {
-                functionStmts.add(caseLabels.get(i));
+                functionStmts.add(caseLabels.get(labelIndex++));
                 stmts = ((AExprCase) pCase).getStmt();
             } else {
                 implicitDefault = false;

@@ -8,5 +8,11 @@ func main() {
     switch boolvar {
     case intvar > 1:
         println("> 1")
+    case intvar > 2:
+        println("> 2")
+    default:
+        println("other")
+    case intvar > 3:
+        println("> 3")
     }
 }
