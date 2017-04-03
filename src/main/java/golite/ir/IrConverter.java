@@ -461,7 +461,6 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseASwitchStmt(ASwitchStmt node) {
         // Convert the init statement, which is the first one
-        boolean hasDefault = false;
         if (node.getInit() != null) {
             node.getInit().apply(this);
         }
@@ -474,7 +473,6 @@ public class IrConverter extends AnalysisAdapter {
         final List<PCase> cases = node.getCase();
         for (PCase pCase : cases) {
             if (pCase instanceof ADefaultCase) {
-                hasDefault = true;
                 continue;
             }
             final AExprCase case_ = (AExprCase) pCase;
@@ -492,13 +490,12 @@ public class IrConverter extends AnalysisAdapter {
         }
         // Use an unconditional jump for the default case
         final Label defaultLabel = newLabel("elseCase");
-        if (hasDefault) {
-            functionStmts.add(new Jump(defaultLabel));
-        }
+        functionStmts.add(new Jump(defaultLabel));
         // Create the end label, and add it to then end labels for using in conversion of break statements
         final Label endLabel = newLabel("endIf");
         loopEndLabels.push(endLabel);
         // Convert the body of each case
+        boolean implicitDefault = true;
         for (int i = 0; i < cases.size(); i++) {
             final PCase pCase = cases.get(i);
             // Start by placing the label
@@ -507,12 +504,18 @@ public class IrConverter extends AnalysisAdapter {
                 functionStmts.add(caseLabels.get(i));
                 stmts = ((AExprCase) pCase).getStmt();
             } else {
+                implicitDefault = false;
                 functionStmts.add(defaultLabel);
                 stmts = ((ADefaultCase) pCase).getStmt();
             }
             // Then convert the body of the case
             stmts.forEach(stmt -> stmt.apply(this));
             // Finally end with the end label
+            functionStmts.add(new Jump(endLabel));
+        }
+        // If the default case is implicit (missing), then make it explicit and empty (makes codegen easier)
+        if (implicitDefault) {
+            functionStmts.add(defaultLabel);
             functionStmts.add(new Jump(endLabel));
         }
         // The last statement is the end label

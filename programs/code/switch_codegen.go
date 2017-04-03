@@ -6,8 +6,7 @@ func main() {
     var intvar int = 2
     
     switch boolvar {
-        case intvar > 1 : { 
-        print("Case 1")
-        } 
+    case intvar > 1:
+        println("> 1")
     }
 }
