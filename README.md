@@ -29,6 +29,21 @@ They will be downloaded for the first build.
 Use `build.sh` for the first build. Afterwards it's better to
 use `gradlew` for incremental builds.
 
+## Runtime
+
+The Golite built-ins are implemented as a few simple C functions,
+which are linked in during the last phase of compilation. The
+build system has a task to compile the runtime into an object,
+which can be found at `build/objs/golite_runtime.o`. It must
+be linked into the object file resulting from the code generation
+phase to create the final executable.
+
+We provide a script to do all of this automatically. It is detailed
+bellow.
+
+The runtime source can be found along side the Java code, under
+`src/main/c`.
+
 ## Running
 
 After building, a `run.sh` file will be created. It can be used to
@@ -51,10 +66,14 @@ instead of using the system ones.
 
 The problem is with compiling the LLVM IR that the `codegen` command outputs.
 It is not compatible between the two versions. Fortunately, since we provide
-the 3.9.1 binaries, we can use those instead. We provide an `compile.sh`
-script, which can input LLVM IR in text or bitcode form, and output an executable.
-It takes care of linking with the runtime.
+the 3.9.1 binaries, we can use those instead.
+
+We provide an `compile.sh` script, which can input LLVM IR in text or bitcode
+form, and output an executable. It takes care of linking with the runtime.
+The script is rather simple, it only takes one argument (the file path) and
+output the executable in the same directory, but with the `.out` extension.
 
 Alternatively, you can use the `compile` command to go from a Golite source file
 straight to an executable. But since the `run.sh` script uses the codegen command,
 you will have to modify it. All that needs to be changed is the `GOLITE_CMD` variable.
+Since the script is automatically generated, modifications will be lost on rebuild.
