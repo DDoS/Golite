@@ -465,15 +465,21 @@ public class IrConverter extends AnalysisAdapter {
             node.getInit().apply(this);
         }
         // Convert the condition, or use "true" if missing
-        final Expr<BasicType> switchValue;
+        final Expr<BasicType> condition;
         if (node.getValue() != null) {
             node.getValue().apply(this);
             @SuppressWarnings("unchecked")
             final Expr<BasicType> basicExpr = (Expr<BasicType>) convertedExprs.get(node.getValue());
-            switchValue = basicExpr;
+            condition = basicExpr;
         } else {
-            switchValue = new BoolLit(true);
+            condition = new BoolLit(true);
         }
+        // Assign the condition to a temporary variable to prevent re-evaluation on each case
+        final Variable<BasicType> switchVar = newVariable(condition.getType(), "switchVar");
+        final VariableDecl<BasicType> switchValue = new VariableDecl<>(switchVar);
+        final Assignment switchValueInit = new Assignment(new Identifier<>(switchVar), condition);
+        functionStmts.add(switchValue);
+        functionStmts.add(switchValueInit);
         // For each (non-default) case, create conditional jumps for each equality check
         final List<Label> caseLabels = new ArrayList<>();
         for (PCase pCase : node.getCase()) {
@@ -489,7 +495,7 @@ public class IrConverter extends AnalysisAdapter {
                 expr.apply(this);
                 @SuppressWarnings("unchecked")
                 final Expr<BasicType> caseValue = (Expr<BasicType>) convertedExprs.get(expr);
-                final Expr<BasicType> equal = convertEqual(false, switchValue, caseValue);
+                final Expr<BasicType> equal = convertEqual(false, new Identifier<>(switchVar), caseValue);
                 functionStmts.add(new JumpCond(caseLabel, equal));
             }
         }
