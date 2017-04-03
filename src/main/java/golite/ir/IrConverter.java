@@ -408,16 +408,11 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseABreakStmt(ABreakStmt node) {
-        // This should work by storing the end label of a "for" or "switch" statement in a stack
-        // The statement then gets converted to an unconditional jump to the label on the top of the stack (peek)
-        // This will be the end of the inner most "for" or "switch" statement
-        // For a stack collection use Deque (ArrayDeque)
         functionStmts.add(new Jump(loopEndLabels.peek()));
     }
 
     @Override
     public void caseAContinueStmt(AContinueStmt node) {
-        // Same idea as break, but with a different stack that stores the beginning label of "for" loops
         functionStmts.add(new Jump(loopStartLabels.peek()));
     }
 
@@ -507,13 +502,13 @@ public class IrConverter extends AnalysisAdapter {
                 functionStmts.add(caseLabels.get(i));
                 final AExprCase c = (AExprCase) swc;
                 c.getStmt().forEach(stmt -> stmt.apply(this));
-                functionStmts.add(new Jump(endLabel));
                 i++;
             } else {
                 final ADefaultCase c = (ADefaultCase) swc;
                 functionStmts.add(defaultLabel);
                 c.getStmt().forEach(stmt -> stmt.apply(this));
             }
+            functionStmts.add(new Jump(endLabel));
         }
         functionStmts.add(endLabel);
         loopEndLabels.pop();
