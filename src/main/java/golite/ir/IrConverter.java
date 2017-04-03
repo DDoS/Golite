@@ -517,50 +517,74 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAForStmt(AForStmt node) {
 
-    	AClauseForCondition forCondition =  (AClauseForCondition) node.getForCondition();
+        if (!(node.getForCondition() instanceof golite.node.AEmptyForCondition)) {
+            AClauseForCondition forCondition = (AClauseForCondition) node.getForCondition();
 
-    	// Start by converting the init statement 
-    	if (forCondition.getInit() != null) {
-    		forCondition.getInit().apply(this);
-    	}
+            // Start by converting the init statement 
+            if (forCondition.getInit() != null) {
+                forCondition.getInit().apply(this);
+            } 
 
-    	// Place a start label in Statements and allocate an end label
-    	// Labels
-    	final List<Label> forLabels = new ArrayList<>();
-    	//Start Label
-    	final Label forStartLabel = newLabel("forCase");
-    	//EndLabel
-    	final Label endLabel = newLabel("endFor");
-    	
-    	functionStmts.add(forStartLabel);
-    	loopStartLabels.push(forStartLabel);
-    	loopEndLabels.push(endLabel);
+            //Start Label
+            final Label forStartLabel = newLabel("forCase");
+            //EndLabel
+            final Label endLabel = newLabel("endFor");
+            // Place a start label in Statements and allocate an end label
+            // Labels
+            final List<Label> forLabels = new ArrayList<>();
 
-    	// Next we create a jump to the end label if the condition isn't true
-    	if (forCondition.getCond() != null) {
-    		forCondition.getCond().apply(this);
-    		@SuppressWarnings("unchecked")
-    		final Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(forCondition.getCond());
-    		if (cond != null) {
-    			functionStmts.add(new JumpCond(endLabel, new LogicNot(cond)));
-    		} 
-    	}
+            functionStmts.add(forStartLabel);
+            loopStartLabels.push(forStartLabel);
+            loopEndLabels.push(endLabel);
 
-    	//Body of the loop
-    	final List<PStmt> forBlock = node.getStmt();
-    	for (int i = 0; i < forBlock.size(); i++) {
-    		
-    		forBlock.forEach(stmt -> stmt.apply(this));
-    		// Post Stmt i++
-    		forCondition.getPost().apply(this);
 
-    		// Back to start Label
-    		functionStmts.add(new Jump(forStartLabel));
-    	}
-    	// Finally add the end label to the stmts
-    	functionStmts.add(endLabel);
-    	loopStartLabels.pop();
-    	loopEndLabels.pop();
+            // Next we create a jump to the end label if the condition isn't true
+            if (forCondition.getCond() != null) {
+                forCondition.getCond().apply(this);
+                @SuppressWarnings("unchecked")
+                final Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(forCondition.getCond());
+
+                functionStmts.add(new JumpCond(endLabel, new LogicNot(cond)));
+
+            } 
+            //Body of the loop
+            final List<PStmt> forBlock = node.getStmt();
+            for (int i = 0; i < forBlock.size(); i++) {
+
+                forBlock.forEach(stmt -> stmt.apply(this));
+                // Post stmt i++
+                forCondition.getPost().apply(this);
+
+                // Back to start Label
+                functionStmts.add(new Jump(forStartLabel));
+            }
+            // Finally add the end label to the stmts
+            functionStmts.add(endLabel);
+            loopStartLabels.pop();
+            loopEndLabels.pop();
+
+        } else {
+
+            // Labels
+            final Label forStartLabel = newLabel("forCase");
+            final Label endLabel = newLabel("endFor");
+
+            //Jump to start label
+            functionStmts.add(forStartLabel);
+            loopStartLabels.push(forStartLabel);
+            loopEndLabels.push(endLabel);
+
+            final List<PStmt> forBlock = node.getStmt();
+            for (int i = 0; i < forBlock.size(); i++) {
+                forBlock.forEach(stmt -> stmt.apply(this));
+
+                functionStmts.add(new Jump(forStartLabel));
+            }
+            functionStmts.add(endLabel);
+            loopStartLabels.pop();
+            loopEndLabels.pop();
+        }
+
     }
        
 
