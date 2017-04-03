@@ -79,6 +79,52 @@ func goliteMain1() {
     println("h" < "ha")
 }
 
+var b2 bool
+
+func test2(j int) string {
+    if i := 0; j == 2 {
+        /*for i := 0; i < 10; i++ {
+            var r = 'l'
+            continue
+        }*/
+        return "2"
+	} else if i := 0; b2 {
+        return "1"
+	}
+    return "3"
+}
+
+func test3(j int) string {
+    if i := 0; j == 2 {
+        return "3"
+	} else if i := 0; b2 {
+        return "2"
+	} else {
+        return "1"
+	}
+}
+
+func test5(j int) string {
+    switch i := 0; j {
+    case 0:
+        return "3"
+    case 1:
+        return "2"
+    }
+    return "1"
+}
+
+func test6(j int) string {
+    switch i := 0; j {
+    default:
+        return "3"
+    case 0:
+        return "2"
+    case 1:
+        return "1"
+    }
+}
+
 var str = "lol\\"
 
 func main() {
@@ -99,4 +145,8 @@ func main() {
     staticInit()
     goliteMain()
     goliteMain1()
+    println(test2(3))
+    println(test3(2))
+    println(test5(1))
+    println(test6(0))
 }
