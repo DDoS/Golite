@@ -464,10 +464,16 @@ public class IrConverter extends AnalysisAdapter {
         if (node.getInit() != null) {
             node.getInit().apply(this);
         }
-        // Convert the condition
-        node.getValue().apply(this);
-        @SuppressWarnings("unchecked")
-        final Expr<BasicType> switchValue = (Expr<BasicType>) convertedExprs.get(node.getValue());
+        // Convert the condition, or use "true" if missing
+        final Expr<BasicType> switchValue;
+        if (node.getValue() != null) {
+            node.getValue().apply(this);
+            @SuppressWarnings("unchecked")
+            final Expr<BasicType> basicExpr = (Expr<BasicType>) convertedExprs.get(node.getValue());
+            switchValue = basicExpr;
+        } else {
+            switchValue = new BoolLit(true);
+        }
         // For each (non-default) case, create conditional jumps for each equality check
         final List<Label> caseLabels = new ArrayList<>();
         for (PCase pCase : node.getCase()) {
