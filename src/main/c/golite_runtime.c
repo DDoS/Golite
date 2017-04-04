@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+
 #define EQ 0
 #define NEQ 1
 #define LESS 2

@@ -44,8 +44,8 @@ public class StringLit extends Expr<BasicType> {
     public void print(SourcePrinter printer) {
         final StringBuilder escaped = new StringBuilder();
         for (char c : value.toCharArray()) {
-            if (Character.isISOControl(c) || Character.isWhitespace(c)) {
-                escaped.append("\\").append(Integer.toHexString(c));
+            if (Character.isISOControl(c) || (Character.isSpaceChar(c) && c != ' ')) {
+                escaped.append("\\").append(String.format("%02X", (int) c));
             } else if (c == '\"') {
                 escaped.append("\\\"");
             } else {

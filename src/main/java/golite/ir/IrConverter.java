@@ -130,7 +130,6 @@ import golite.node.Node;
 import golite.node.PCase;
 import golite.node.PDecl;
 import golite.node.PExpr;
-import golite.node.PForCondition;
 import golite.node.PIfBlock;
 import golite.node.PStmt;
 import golite.node.Start;
@@ -462,56 +461,78 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseASwitchStmt(ASwitchStmt node) {
-        final List<Label> caseLabels = new ArrayList<>();
-        boolean hasDefault = false;
+        // Convert the init statement, which is the first one
         if (node.getInit() != null) {
             node.getInit().apply(this);
         }
-        node.getValue().apply(this);
-        @SuppressWarnings("unchecked")
-        Expr<BasicType> switchExp = (Expr<BasicType>) convertedExprs.get(node.getValue());
-        BasicType expType = switchExp.getType();
-        for (PCase swc : node.getCase()) {
-            //For each (non-default) case, create conditional jumps for each equality check
-            if (swc instanceof AExprCase) {
-                final AExprCase c = (AExprCase) swc;
-                //Add one label per case
-                final Label caseLabel = newLabel("case");
-                caseLabels.add(caseLabel);
-                for (PExpr e : c.getExpr()) {
-                    //Add a jump to the same label for each expr in a case
-                    e.apply(this);
-                    @SuppressWarnings("unchecked")
-                    Expr<BasicType> caseExp = (Expr<BasicType>) convertedExprs.get(e);
-                    Expr<BasicType> cmp = convertEqual(false, switchExp, caseExp);
-                    functionStmts.add(new JumpCond(caseLabel, cmp));
-                } 
-            } else {
-                hasDefault = true;
+        // Convert the condition, or use "true" if missing
+        final Expr<BasicType> condition;
+        if (node.getValue() != null) {
+            node.getValue().apply(this);
+            @SuppressWarnings("unchecked")
+            final Expr<BasicType> basicExpr = (Expr<BasicType>) convertedExprs.get(node.getValue());
+            condition = basicExpr;
+        } else {
+            condition = new BoolLit(true);
+        }
+        // Assign the condition to a temporary variable to prevent re-evaluation on each case
+        final Variable<BasicType> switchVar = newVariable(condition.getType(), "switchVar");
+        final VariableDecl<BasicType> switchValue = new VariableDecl<>(switchVar);
+        final Assignment switchValueInit = new Assignment(new Identifier<>(switchVar), condition);
+        functionStmts.add(switchValue);
+        functionStmts.add(switchValueInit);
+        // For each (non-default) case, create conditional jumps for each equality check
+        final List<Label> caseLabels = new ArrayList<>();
+        for (PCase pCase : node.getCase()) {
+            if (pCase instanceof ADefaultCase) {
+                continue;
+            }
+            final AExprCase case_ = (AExprCase) pCase;
+            // Add one label per case
+            final Label caseLabel = newLabel("ifCase");
+            caseLabels.add(caseLabel);
+            for (PExpr expr : case_.getExpr()) {
+                // Add a jump to the same label for each expr in a case
+                expr.apply(this);
+                @SuppressWarnings("unchecked")
+                final Expr<BasicType> caseValue = (Expr<BasicType>) convertedExprs.get(expr);
+                final Expr<BasicType> equal = convertEqual(false, new Identifier<>(switchVar), caseValue);
+                functionStmts.add(new JumpCond(caseLabel, equal));
             }
         }
-        final Label defaultLabel = newLabel("defaultCase");
-        if (hasDefault) {
-            functionStmts.add(new Jump(defaultLabel));
-        }
-        Label endLabel = newLabel("endLabel");
-        functionStmts.add(new Jump(endLabel));
+        // Use an unconditional jump for the default case
+        final Label defaultLabel = newLabel("elseCase");
+        functionStmts.add(new Jump(defaultLabel));
+        // Create the end label, and add it to then end labels for using in conversion of break statements
+        final Label endLabel = newLabel("endIf");
         loopEndLabels.push(endLabel);
-        int i = 0; //Use this to keep track of labels
-        for (PCase swc : node.getCase()) {
-            if (swc instanceof AExprCase) {
-                functionStmts.add(caseLabels.get(i));
-                final AExprCase c = (AExprCase) swc;
-                c.getStmt().forEach(stmt -> stmt.apply(this));
-                i++;
+        // Convert the body of each case
+        boolean implicitDefault = true;
+        int labelIndex = 0;
+        for (PCase pCase : node.getCase()) {
+            // Start by placing the label
+            final List<PStmt> stmts;
+            if (pCase instanceof AExprCase) {
+                functionStmts.add(caseLabels.get(labelIndex++));
+                stmts = ((AExprCase) pCase).getStmt();
             } else {
-                final ADefaultCase c = (ADefaultCase) swc;
+                implicitDefault = false;
                 functionStmts.add(defaultLabel);
-                c.getStmt().forEach(stmt -> stmt.apply(this));
+                stmts = ((ADefaultCase) pCase).getStmt();
             }
+            // Then convert the body of the case
+            stmts.forEach(stmt -> stmt.apply(this));
+            // Finally end with the end label
             functionStmts.add(new Jump(endLabel));
         }
+        // If the default case is implicit (missing), then make it explicit and empty (makes codegen easier)
+        if (implicitDefault) {
+            functionStmts.add(defaultLabel);
+            functionStmts.add(new Jump(endLabel));
+        }
+        // The last statement is the end label
         functionStmts.add(endLabel);
+        // Don't forget to pop the end label from the stack
         loopEndLabels.pop();
     }
 
