@@ -540,19 +540,18 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAForStmt(AForStmt node) {
         final PForCondition pCondition = node.getForCondition();
-
+        // First, generate the init statement in a clause for-loop
         if (pCondition instanceof AClauseForCondition) {
             final AClauseForCondition condition = (AClauseForCondition) pCondition;
             if (condition.getInit() != null) {
                 condition.getInit().apply(this);
             }
         }
-
+        // Then add the label that begins the loop
         final Label startLabel = newLabel("startFor");
         functionStmts.add(startLabel);
-
+        // Now create the end label, and a jump to it, if the condition is false (or never jump if we don't have one)
         final Label endLabel = newLabel("endFor");
-
         if (pCondition instanceof AClauseForCondition) {
             final AClauseForCondition condition = (AClauseForCondition) pCondition;
             if (condition.getCond() != null) {
@@ -568,28 +567,28 @@ public class IrConverter extends AnalysisAdapter {
             final Expr<BasicType> conditionValue = (Expr<BasicType>) convertedExprs.get(condition.getExpr());
             functionStmts.add(new JumpCond(endLabel, new LogicNot(conditionValue)));
         }
-
+        // Now add a label that the continue statements can jump to
         final Label continueLabel = newLabel("continueFor");
         loopContinueLabels.push(continueLabel);
-
+        // Break statements will jump to the end label
         flowBreakLabels.push(endLabel);
-
+        // Convert the body of the for-loop
         node.getStmt().forEach(stmt -> stmt.apply(this));
-
+        // Remove the labels from the stacks now that the body is complete
         loopContinueLabels.pop();
         flowBreakLabels.pop();
-
+        // The continue label is at the end of the loop, but before the post statement
         functionStmts.add(continueLabel);
-
+        // Now we can convert the post statement, if any
         if (pCondition instanceof AClauseForCondition) {
             final AClauseForCondition condition = (AClauseForCondition) pCondition;
             if (condition.getPost() != null) {
                 condition.getPost().apply(this);
             }
         }
-
+        // Finally we add a jump back to the start
         functionStmts.add(new Jump(startLabel));
-
+        // The last statement is the end label
         functionStmts.add(endLabel);
     }
 
