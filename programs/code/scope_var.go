@@ -1,17 +1,10 @@
 // Checking Variable Scopes
-
 package main
 
-var f int = 1
+var f float64 = 1.0
 
 func main() {
-	f = 2%1
-f = 2/1
-f = 2*1
-f = 2-1
-f = 2+1
+	f := 2
 
-f = f << 1
-f = f >> 1
-	
+	print("Value of f is", f)
 }
