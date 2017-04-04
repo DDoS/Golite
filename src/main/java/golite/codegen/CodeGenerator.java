@@ -701,55 +701,61 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitLogicAnd(LogicAnd logicAnd) {
-        // Add two new basic blocks: evaluating the right side, and merging the values
+        // Add two new basic blocks: short-circuiting, and evaluating the right side
         final LLVMBasicBlockRef andFull = LLVMAppendBasicBlock(currentFunction, "andFull");
         LLVMMoveBasicBlockAfter(andFull, currentBlock);
         final LLVMBasicBlockRef andEnd = LLVMAppendBasicBlock(currentFunction, "andEnd");
         LLVMMoveBasicBlockAfter(andEnd, andFull);
+        // Allocate a variable to store the result, and initialize it to false
+        final LLVMValueRef andResultPtr = LLVMBuildAlloca(builder, LLVMInt1Type(), "andResultPtr");
+        LLVMBuildStore(builder, LLVMConstInt(LLVMInt1Type(), 0, 0), andResultPtr);
         // Evaluate the left side in the current block, if it's true, then jump to the block for the right side
         logicAnd.getLeft().visit(this);
         final LLVMValueRef left = getExprValue(logicAnd.getLeft());
         LLVMBuildCondBr(builder, left, andFull, andEnd);
-        // Start a new block and evaluate the right side in it, then jump to the end to merge the values
+        // Start the block for the right side
         LLVMPositionBuilderAtEnd(builder, andFull);
         currentBlock = andFull;
+        // Evaluate the right and store its value as the result, then jump to the end
         logicAnd.getRight().visit(this);
-        final LLVMValueRef fullValue = getExprValue(logicAnd.getRight());
+        final LLVMValueRef right = getExprValue(logicAnd.getRight());
+        LLVMBuildStore(builder, right, andResultPtr);
         LLVMBuildBr(builder, andEnd);
-        // Use a phi node to merge the values from the short-circuit and full evaluation
+        // Start the end block
         LLVMPositionBuilderAtEnd(builder, andEnd);
         currentBlock = andEnd;
-        final LLVMValueRef andResult = LLVMBuildPhi(builder, LLVMInt1Type(), "andResult");
-        final LLVMValueRef[] phiValues = {LLVMConstInt(LLVMInt1Type(), 0, 0), fullValue};
-        final LLVMBasicBlockRef[] phiBlocks = {LLVMGetInstructionParent(left), LLVMGetInstructionParent(fullValue)};
-        LLVMAddIncoming(andResult, new PointerPointer<>(phiValues), new PointerPointer<>(phiBlocks), phiValues.length);
+        // Return the value in the result variable
+        final LLVMValueRef andResult = LLVMBuildLoad(builder, andResultPtr, "andResult");
         exprValues.put(logicAnd, andResult);
     }
 
     @Override
     public void visitLogicOr(LogicOr logicOr) {
-        // Add two new basic blocks: evaluating the right side, and merging the values
+        // Add two new basic blocks: short-circuiting, and evaluating the right side
         final LLVMBasicBlockRef orFull = LLVMAppendBasicBlock(currentFunction, "orFull");
         LLVMMoveBasicBlockAfter(orFull, currentBlock);
         final LLVMBasicBlockRef orEnd = LLVMAppendBasicBlock(currentFunction, "orEnd");
         LLVMMoveBasicBlockAfter(orEnd, orFull);
+        // Allocate a variable to store the result, and initialize it to true
+        final LLVMValueRef orResultPtr = LLVMBuildAlloca(builder, LLVMInt1Type(), "orResultPtr");
+        LLVMBuildStore(builder, LLVMConstInt(LLVMInt1Type(), 1, 0), orResultPtr);
         // Evaluate the left side in the current block, if it's false, then jump to the block for the right side
         logicOr.getLeft().visit(this);
         final LLVMValueRef left = getExprValue(logicOr.getLeft());
         LLVMBuildCondBr(builder, left, orEnd, orFull);
-        // Start a new block and evaluate the right side in it, then jump to the end to merge the values
+        // Start the block for the right side
         LLVMPositionBuilderAtEnd(builder, orFull);
         currentBlock = orFull;
+        // Evaluate the right and store its value as the result, then jump to the end
         logicOr.getRight().visit(this);
-        final LLVMValueRef fullValue = getExprValue(logicOr.getRight());
+        final LLVMValueRef right = getExprValue(logicOr.getRight());
+        LLVMBuildStore(builder, right, orResultPtr);
         LLVMBuildBr(builder, orEnd);
-        // Use a phi node to merge the values from the short-circuit and full evaluation
+        // Start the end block
         LLVMPositionBuilderAtEnd(builder, orEnd);
         currentBlock = orEnd;
-        final LLVMValueRef orResult = LLVMBuildPhi(builder, LLVMInt1Type(), "orResult");
-        final LLVMValueRef[] phiValues = {LLVMConstInt(LLVMInt1Type(), 1, 0), fullValue};
-        final LLVMBasicBlockRef[] phiBlocks = {LLVMGetInstructionParent(left), LLVMGetInstructionParent(fullValue)};
-        LLVMAddIncoming(orResult, new PointerPointer<>(phiValues), new PointerPointer<>(phiBlocks), phiValues.length);
+        // Return the value in the result variable
+        final LLVMValueRef orResult = LLVMBuildLoad(builder, orResultPtr, "orResult");
         exprValues.put(logicOr, orResult);
     }
 

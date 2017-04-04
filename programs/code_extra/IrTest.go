@@ -35,7 +35,7 @@ type Person struct {
 var person Person
 
 func agePerson(person Person) Person {
-    //person.age += 40
+    person.age += 40
     person.name = "Uncle " + person.name
     println(person.name, ' ', person.age)
     return person

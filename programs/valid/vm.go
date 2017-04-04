@@ -451,7 +451,7 @@ func main() {
     rom[rpc] = -536870896 ; rpc++
     rom[rpc] = -516947968 ; rpc++
     // Set the argument to the program, which will calculate the factorial of R0
-    registers[R0] = 6
+    registers[R0] = 8
     // Initialize the program counter to the begining of memory
     registers[PC] = 0
     // Initialize the stack pointer to the top of the memory
