@@ -20,6 +20,6 @@ public class LiteralUtil {
         } else {
             throw new IllegalArgumentException(intLit.getClass() + " is not an int literal node");
         }
-        return Integer.decode(text);
+        return Long.decode(text).intValue();
     }
 }
