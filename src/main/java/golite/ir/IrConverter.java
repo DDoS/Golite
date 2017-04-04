@@ -86,6 +86,7 @@ import golite.node.ADivExpr;
 import golite.node.AEmptyStmt;
 import golite.node.AEqExpr;
 import golite.node.AExprCase;
+import golite.node.AExprForCondition;
 import golite.node.AExprStmt;
 import golite.node.AFloatExpr;
 import golite.node.AForStmt;
@@ -517,59 +518,73 @@ public class IrConverter extends AnalysisAdapter {
     @Override
     public void caseAForStmt(AForStmt node) {
 
+        AClauseForCondition forCondition  = null;
+        AExprForCondition forExprCondition = null;
+
+        //Start Label
+        final Label forStartLabel = newLabel("forCase");
+        //EndLabel
+        final Label endLabel = newLabel("endFor");
+        // Place a start label in Statements and allocate an end label
+        // Labels
+        final List<Label> forLabels = new ArrayList<>();
+
+
         if (!(node.getForCondition() instanceof golite.node.AEmptyForCondition)) {
-            AClauseForCondition forCondition = (AClauseForCondition) node.getForCondition();
+
+            if (node.getForCondition() instanceof AClauseForCondition) {
+                forCondition = (AClauseForCondition) node.getForCondition();
+
+            } else if (node.getForCondition() instanceof AExprForCondition) {
+                forExprCondition = (AExprForCondition) node.getForCondition();
+            }
 
             // Start by converting the init statement 
-            if (forCondition.getInit() != null) {
-                forCondition.getInit().apply(this);
-            } 
-
-            //Start Label
-            final Label forStartLabel = newLabel("forCase");
-            //EndLabel
-            final Label endLabel = newLabel("endFor");
-            // Place a start label in Statements and allocate an end label
-            // Labels
-            final List<Label> forLabels = new ArrayList<>();
-
+            if (forCondition != null) {
+                if (forCondition.getInit() != null) {
+                    forCondition.getInit().apply(this);
+                }
+            }              
             functionStmts.add(forStartLabel);
             loopStartLabels.push(forStartLabel);
             loopEndLabels.push(endLabel);
 
 
             // Next we create a jump to the end label if the condition isn't true
-            if (forCondition.getCond() != null) {
-                forCondition.getCond().apply(this);
-                @SuppressWarnings("unchecked")
-                final Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(forCondition.getCond());
+            if (forCondition != null) {
 
-                functionStmts.add(new JumpCond(endLabel, new LogicNot(cond)));
+                if ( forCondition.getCond() != null) {
+                    forCondition.getCond().apply(this);
+                    @SuppressWarnings("unchecked")
+                    final Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(forCondition.getCond());
+                    functionStmts.add(new JumpCond(endLabel, new LogicNot(cond)));
 
-            } 
+                } 
+            } else if (forExprCondition != null) {
+
+                if (forExprCondition.getExpr() != null) {
+                    forExprCondition.getExpr().apply(this);
+                    @SuppressWarnings("unchecked")
+                    final Expr<BasicType> condition = (Expr<BasicType>) convertedExprs.get(forExprCondition.getExpr());
+                    functionStmts.add(new JumpCond(endLabel, new LogicNot(condition)));
+                }
+            }
+
             //Body of the loop
             final List<PStmt> forBlock = node.getStmt();
             for (int i = 0; i < forBlock.size(); i++) {
 
                 forBlock.forEach(stmt -> stmt.apply(this));
                 // Post stmt i++
-                forCondition.getPost().apply(this);
+                if (forCondition != null)
+                    forCondition.getPost().apply(this);
 
                 // Back to start Label
                 functionStmts.add(new Jump(forStartLabel));
             }
-            // Finally add the end label to the stmts
-            functionStmts.add(endLabel);
-            loopStartLabels.pop();
-            loopEndLabels.pop();
 
         } else {
 
-            // Labels
-            final Label forStartLabel = newLabel("forCase");
-            final Label endLabel = newLabel("endFor");
-
-            //Jump to start label
             functionStmts.add(forStartLabel);
             loopStartLabels.push(forStartLabel);
             loopEndLabels.push(endLabel);
@@ -580,13 +595,14 @@ public class IrConverter extends AnalysisAdapter {
 
                 functionStmts.add(new Jump(forStartLabel));
             }
-            functionStmts.add(endLabel);
-            loopStartLabels.pop();
-            loopEndLabels.pop();
         }
 
+        // Finally add the end label to the stmts
+        functionStmts.add(endLabel);
+        loopStartLabels.pop();
+        loopEndLabels.pop();
     }
-       
+    
 
     @Override
     public void caseADeclStmt(ADeclStmt node) {
