@@ -225,7 +225,7 @@ func main() {
     if code(); assemble() == 0 {
         println("rpc := 0")
         for i := 0; i < lInstCount; i++ {
-            println("rom[rpc] =", lInsts[i].inst, "; rpc++")
+            println("rom[rpc] = ", lInsts[i].inst, "; rpc++")
         }
     }
 }

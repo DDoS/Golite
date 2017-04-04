@@ -701,10 +701,9 @@ public class CodeGenerator implements IrVisitor {
 
     @Override
     public void visitLogicAnd(LogicAnd logicAnd) {
-        // Get the current basic block, and add two new ones: evaluating the right side, and merging the values
-        final LLVMBasicBlockRef andShort = currentBlock;
+        // Add two new basic blocks: evaluating the right side, and merging the values
         final LLVMBasicBlockRef andFull = LLVMAppendBasicBlock(currentFunction, "andFull");
-        LLVMMoveBasicBlockAfter(andFull, andShort);
+        LLVMMoveBasicBlockAfter(andFull, currentBlock);
         final LLVMBasicBlockRef andEnd = LLVMAppendBasicBlock(currentFunction, "andEnd");
         LLVMMoveBasicBlockAfter(andEnd, andFull);
         // Evaluate the left side in the current block, if it's true, then jump to the block for the right side
@@ -722,17 +721,16 @@ public class CodeGenerator implements IrVisitor {
         currentBlock = andEnd;
         final LLVMValueRef andResult = LLVMBuildPhi(builder, LLVMInt1Type(), "andResult");
         final LLVMValueRef[] phiValues = {LLVMConstInt(LLVMInt1Type(), 0, 0), fullValue};
-        final LLVMBasicBlockRef[] phiBlocks = {andShort, andFull};
+        final LLVMBasicBlockRef[] phiBlocks = {LLVMGetInstructionParent(left), LLVMGetInstructionParent(fullValue)};
         LLVMAddIncoming(andResult, new PointerPointer<>(phiValues), new PointerPointer<>(phiBlocks), phiValues.length);
         exprValues.put(logicAnd, andResult);
     }
 
     @Override
     public void visitLogicOr(LogicOr logicOr) {
-        // Get the current basic block, and add two new ones: evaluating the right side, and merging the values
-        final LLVMBasicBlockRef orShort = currentBlock;
+        // Add two new basic blocks: evaluating the right side, and merging the values
         final LLVMBasicBlockRef orFull = LLVMAppendBasicBlock(currentFunction, "orFull");
-        LLVMMoveBasicBlockAfter(orFull, orShort);
+        LLVMMoveBasicBlockAfter(orFull, currentBlock);
         final LLVMBasicBlockRef orEnd = LLVMAppendBasicBlock(currentFunction, "orEnd");
         LLVMMoveBasicBlockAfter(orEnd, orFull);
         // Evaluate the left side in the current block, if it's false, then jump to the block for the right side
@@ -750,7 +748,7 @@ public class CodeGenerator implements IrVisitor {
         currentBlock = orEnd;
         final LLVMValueRef orResult = LLVMBuildPhi(builder, LLVMInt1Type(), "orResult");
         final LLVMValueRef[] phiValues = {LLVMConstInt(LLVMInt1Type(), 1, 0), fullValue};
-        final LLVMBasicBlockRef[] phiBlocks = {orShort, orFull};
+        final LLVMBasicBlockRef[] phiBlocks = {LLVMGetInstructionParent(left), LLVMGetInstructionParent(fullValue)};
         LLVMAddIncoming(orResult, new PointerPointer<>(phiValues), new PointerPointer<>(phiBlocks), phiValues.length);
         exprValues.put(logicOr, orResult);
     }
