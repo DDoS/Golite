@@ -204,9 +204,15 @@ public class IrConverter extends AnalysisAdapter {
                 convertedFunctions.get(decl).ifPresent(functions::add);
             }
         }
+        // Add an empty main if none was declared
+        final FunctionType noParamNoReturnFunc = new FunctionType(Collections.emptyList(), null);
+        if (functions.stream().noneMatch(FunctionDecl::isMain)) {
+            final Function main = new Function(0, 0, 0, 0, "main", noParamNoReturnFunc,
+                    Collections.emptyList());
+            functions.add(new FunctionDecl(main, Collections.emptyList(), Collections.singletonList(new VoidReturn()), false));
+        }
         // Add the static initialization function for the global variables
-        final FunctionType staticInitType = new FunctionType(Collections.emptyList(), null);
-        final Function staticInit = new Function(0, 0, 0, 0, "staticInit", staticInitType,
+        final Function staticInit = new Function(0, 0, 0, 0, "staticInit", noParamNoReturnFunc,
                 Collections.emptyList());
         final FunctionDecl staticInitFunction = new FunctionDecl(staticInit, Collections.emptyList(), staticInitialization, true);
         IrFlowSanitizer.sanitize(staticInitFunction);

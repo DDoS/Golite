@@ -155,23 +155,18 @@ public class TypeChecker extends AnalysisAdapter {
 
         node.getDecl().forEach(decl -> decl.apply(this));
         // Check that the main has the proper signature (no parameters or return type)
-        boolean mainDefined = false;
         for (Entry<AFuncDecl, Function> entry : funcSymbols.entrySet()) {
             final Function function = entry.getValue();
-            if (function.getName().equals("main")) {
-                if (function.getType().getReturnType().isPresent()) {
-                    throw new TypeCheckerException(entry.getKey(), "The main function should not have a return type");
-                }
-                if (!function.getType().getParameters().isEmpty()) {
-                    throw new TypeCheckerException(entry.getKey(), "The main function shouldn't have any parameters");
-                }
-                mainDefined = true;
-                break;
+            if (!function.getName().equals("main")) {
+                continue;
             }
-        }
-
-        if (!mainDefined) {
-            throw new TypeCheckerException(node, "The main function must be defined");
+            if (function.getType().getReturnType().isPresent()) {
+                throw new TypeCheckerException(entry.getKey(), "The main function should not have a return type");
+            }
+            if (!function.getType().getParameters().isEmpty()) {
+                throw new TypeCheckerException(entry.getKey(), "The main function shouldn't have any parameters");
+            }
+            break;
         }
     }
 
