@@ -162,8 +162,8 @@ public class IrConverter extends AnalysisAdapter {
     private final Map<PExpr, Expr<?>> convertedExprs = new HashMap<>();
     private final Map<Variable<?>, String> uniqueVarNames = new HashMap<>();
     private final Map<Label, String> uniqueLabelNames = new HashMap<>();
-    private final Deque<Label> loopEndLabels = new ArrayDeque<>();
-    private final Deque<Label> loopStartLabels = new ArrayDeque<>();
+    private final Deque<Label> loopContinueLabels = new ArrayDeque<>();
+    private final Deque<Label> flowBreakLabels = new ArrayDeque<>();
 
     public IrConverter(SemanticData semantics) {
         this.semantics = semantics;
@@ -236,7 +236,7 @@ public class IrConverter extends AnalysisAdapter {
         }
         // Create the function and apply the flow sanitizer to help with codegen later on
         final FunctionDecl functionDecl = new FunctionDecl(symbol, uniqueParamNames, new ArrayList<>(functionStmts));
-        //IrFlowSanitizer.sanitize(functionDecl);
+        IrFlowSanitizer.sanitize(functionDecl);
         convertedFunctions.put(node, Optional.of(functionDecl));
     }
 
@@ -409,12 +409,12 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseABreakStmt(ABreakStmt node) {
-        functionStmts.add(new Jump(loopEndLabels.peek()));
+        functionStmts.add(new Jump(flowBreakLabels.peek()));
     }
 
     @Override
     public void caseAContinueStmt(AContinueStmt node) {
-        functionStmts.add(new Jump(loopStartLabels.peek()));
+        functionStmts.add(new Jump(loopContinueLabels.peek()));
     }
 
     @Override
@@ -506,7 +506,7 @@ public class IrConverter extends AnalysisAdapter {
         functionStmts.add(new Jump(defaultLabel));
         // Create the end label, and add it to then end labels for using in conversion of break statements
         final Label endLabel = newLabel("endIf");
-        loopEndLabels.push(endLabel);
+        flowBreakLabels.push(endLabel);
         // Convert the body of each case
         boolean implicitDefault = true;
         int labelIndex = 0;
@@ -534,7 +534,7 @@ public class IrConverter extends AnalysisAdapter {
         // The last statement is the end label
         functionStmts.add(endLabel);
         // Don't forget to pop the end label from the stack
-        loopEndLabels.pop();
+        flowBreakLabels.pop();
     }
 
     @Override
@@ -548,7 +548,7 @@ public class IrConverter extends AnalysisAdapter {
             }
         }
 
-        final Label startLabel = newLabel("forStart");
+        final Label startLabel = newLabel("startFor");
         functionStmts.add(startLabel);
 
         final Label endLabel = newLabel("endFor");
@@ -569,13 +569,17 @@ public class IrConverter extends AnalysisAdapter {
             functionStmts.add(new JumpCond(endLabel, new LogicNot(conditionValue)));
         }
 
-        loopStartLabels.push(startLabel);
-        loopEndLabels.push(endLabel);
+        final Label continueLabel = newLabel("continueFor");
+        loopContinueLabels.push(continueLabel);
+
+        flowBreakLabels.push(endLabel);
 
         node.getStmt().forEach(stmt -> stmt.apply(this));
 
-        loopStartLabels.pop();
-        loopEndLabels.pop();
+        loopContinueLabels.pop();
+        flowBreakLabels.pop();
+
+        functionStmts.add(continueLabel);
 
         if (pCondition instanceof AClauseForCondition) {
             final AClauseForCondition condition = (AClauseForCondition) pCondition;

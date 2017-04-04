@@ -85,8 +85,14 @@ func test2(j int) string {
     if i := 0; j == 2 {
         for i := 0; i < 10; i++ {
             var r = 'l'
-            continue
+            if i == 5 {
+                print(r)
+                continue
+            }
+            r = 'e'
+            print(r)
         }
+        print('\n')
         return "2"
 	} else if i := 0; b2 {
         return "1"
@@ -145,7 +151,7 @@ func main() {
     staticInit()
     goliteMain()
     goliteMain1()
-    println(test2(3))
+    println(test2(2))
     println(test3(2))
     println(test5(1))
     println(test6(0))
