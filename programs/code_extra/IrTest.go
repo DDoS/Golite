@@ -83,10 +83,10 @@ var b2 bool
 
 func test2(j int) string {
     if i := 0; j == 2 {
-        /*for i := 0; i < 10; i++ {
+        for i := 0; i < 10; i++ {
             var r = 'l'
             continue
-        }*/
+        }
         return "2"
 	} else if i := 0; b2 {
         return "1"

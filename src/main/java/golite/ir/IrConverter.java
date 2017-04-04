@@ -130,6 +130,7 @@ import golite.node.Node;
 import golite.node.PCase;
 import golite.node.PDecl;
 import golite.node.PExpr;
+import golite.node.PForCondition;
 import golite.node.PIfBlock;
 import golite.node.PStmt;
 import golite.node.Start;
@@ -163,7 +164,7 @@ public class IrConverter extends AnalysisAdapter {
     private final Map<Label, String> uniqueLabelNames = new HashMap<>();
     private final Deque<Label> loopEndLabels = new ArrayDeque<>();
     private final Deque<Label> loopStartLabels = new ArrayDeque<>();
-    
+
     public IrConverter(SemanticData semantics) {
         this.semantics = semantics;
     }
@@ -235,7 +236,7 @@ public class IrConverter extends AnalysisAdapter {
         }
         // Create the function and apply the flow sanitizer to help with codegen later on
         final FunctionDecl functionDecl = new FunctionDecl(symbol, uniqueParamNames, new ArrayList<>(functionStmts));
-        IrFlowSanitizer.sanitize(functionDecl);
+        //IrFlowSanitizer.sanitize(functionDecl);
         convertedFunctions.put(node, Optional.of(functionDecl));
     }
 
@@ -538,92 +539,55 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseAForStmt(AForStmt node) {
+        final PForCondition pCondition = node.getForCondition();
 
-        AClauseForCondition forCondition  = null;
-        AExprForCondition forExprCondition = null;
-
-        //Start Label
-        final Label forStartLabel = newLabel("forCase");
-        //EndLabel
-        final Label endLabel = newLabel("endFor");
-        // Place a start label in Statements and allocate an end label
-        // Labels
-        final List<Label> forLabels = new ArrayList<>();
-
-
-        if (!(node.getForCondition() instanceof golite.node.AEmptyForCondition)) {
-
-            if (node.getForCondition() instanceof AClauseForCondition) {
-                forCondition = (AClauseForCondition) node.getForCondition();
-
-            } else if (node.getForCondition() instanceof AExprForCondition) {
-                forExprCondition = (AExprForCondition) node.getForCondition();
-            }
-
-            // Start by converting the init statement 
-            if (forCondition != null) {
-                if (forCondition.getInit() != null) {
-                    forCondition.getInit().apply(this);
-                }
-            }              
-            functionStmts.add(forStartLabel);
-            loopStartLabels.push(forStartLabel);
-            loopEndLabels.push(endLabel);
-
-
-            // Next we create a jump to the end label if the condition isn't true
-            if (forCondition != null) {
-
-                if ( forCondition.getCond() != null) {
-                    forCondition.getCond().apply(this);
-                    @SuppressWarnings("unchecked")
-                    final Expr<BasicType> cond = (Expr<BasicType>) convertedExprs.get(forCondition.getCond());
-                    functionStmts.add(new JumpCond(endLabel, new LogicNot(cond)));
-
-                } 
-            } else if (forExprCondition != null) {
-
-                if (forExprCondition.getExpr() != null) {
-                    forExprCondition.getExpr().apply(this);
-                    @SuppressWarnings("unchecked")
-                    final Expr<BasicType> condition = (Expr<BasicType>) convertedExprs.get(forExprCondition.getExpr());
-                    functionStmts.add(new JumpCond(endLabel, new LogicNot(condition)));
-                }
-            }
-
-            //Body of the loop
-            final List<PStmt> forBlock = node.getStmt();
-            for (int i = 0; i < forBlock.size(); i++) {
-
-                forBlock.forEach(stmt -> stmt.apply(this));
-                // Post stmt i++
-                if (forCondition != null)
-                    forCondition.getPost().apply(this);
-
-                // Back to start Label
-                functionStmts.add(new Jump(forStartLabel));
-            }
-
-        } else {
-
-            functionStmts.add(forStartLabel);
-            loopStartLabels.push(forStartLabel);
-            loopEndLabels.push(endLabel);
-
-            final List<PStmt> forBlock = node.getStmt();
-            for (int i = 0; i < forBlock.size(); i++) {
-                forBlock.forEach(stmt -> stmt.apply(this));
-
-                functionStmts.add(new Jump(forStartLabel));
+        if (pCondition instanceof AClauseForCondition) {
+            final AClauseForCondition condition = (AClauseForCondition) pCondition;
+            if (condition.getInit() != null) {
+                condition.getInit().apply(this);
             }
         }
 
-        // Finally add the end label to the stmts
-        functionStmts.add(endLabel);
+        final Label startLabel = newLabel("forStart");
+        functionStmts.add(startLabel);
+
+        final Label endLabel = newLabel("endFor");
+
+        if (pCondition instanceof AClauseForCondition) {
+            final AClauseForCondition condition = (AClauseForCondition) pCondition;
+            if (condition.getCond() != null) {
+                condition.getCond().apply(this);
+                @SuppressWarnings("unchecked")
+                final Expr<BasicType> conditionValue = (Expr<BasicType>) convertedExprs.get(condition.getCond());
+                functionStmts.add(new JumpCond(endLabel, new LogicNot(conditionValue)));
+            }
+        } else if (pCondition instanceof AExprForCondition) {
+            final AExprForCondition condition = (AExprForCondition) pCondition;
+            condition.getExpr().apply(this);
+            @SuppressWarnings("unchecked")
+            final Expr<BasicType> conditionValue = (Expr<BasicType>) convertedExprs.get(condition.getExpr());
+            functionStmts.add(new JumpCond(endLabel, new LogicNot(conditionValue)));
+        }
+
+        loopStartLabels.push(startLabel);
+        loopEndLabels.push(endLabel);
+
+        node.getStmt().forEach(stmt -> stmt.apply(this));
+
         loopStartLabels.pop();
         loopEndLabels.pop();
+
+        if (pCondition instanceof AClauseForCondition) {
+            final AClauseForCondition condition = (AClauseForCondition) pCondition;
+            if (condition.getPost() != null) {
+                condition.getPost().apply(this);
+            }
+        }
+
+        functionStmts.add(new Jump(startLabel));
+
+        functionStmts.add(endLabel);
     }
-    
 
     @Override
     public void caseADeclStmt(ADeclStmt node) {
@@ -649,10 +613,10 @@ public class IrConverter extends AnalysisAdapter {
 
     @Override
     public void caseADecrStmt(ADecrStmt node) {
-    	node.getExpr().apply(this);
+        node.getExpr().apply(this);
         @SuppressWarnings("unchecked")
         final Expr<BasicType> expr = (Expr<BasicType>) convertedExprs.get(node.getExpr());
-        functionStmts.add(new Assignment(expr, new BinArInt(expr, new IntLit(1), BinArInt.Op.SUB)));		
+        functionStmts.add(new Assignment(expr, new BinArInt(expr, new IntLit(1), BinArInt.Op.SUB)));
     }
 
     @Override
@@ -660,7 +624,7 @@ public class IrConverter extends AnalysisAdapter {
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
-        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft()); 
+        final Expr<BasicType> left = (Expr<BasicType>) convertedExprs.get(node.getLeft());
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         final Expr<BasicType> mul = convertMul(left, right);
@@ -740,7 +704,7 @@ public class IrConverter extends AnalysisAdapter {
     }
 
     @Override
-    public void caseAAssignAddStmt(AAssignAddStmt node) {  
+    public void caseAAssignAddStmt(AAssignAddStmt node) {
         node.getLeft().apply(this);
         node.getRight().apply(this);
         @SuppressWarnings("unchecked")
@@ -970,13 +934,12 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertMul(left, right));
     }
-    
-    
-    private Expr<BasicType> convertMul(Expr<BasicType> left, Expr<BasicType> right) {        
+
+    private Expr<BasicType> convertMul(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
-        	return new BinArInt(left, right, BinArInt.Op.MUL);
+            return new BinArInt(left, right, BinArInt.Op.MUL);
         } else if (left.getType() == BasicType.FLOAT64) {
-        	return new BinArFloat64(left, right, BinArFloat64.Op.MUL);
+            return new BinArFloat64(left, right, BinArFloat64.Op.MUL);
         } else {
             throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
@@ -992,12 +955,12 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertDiv(left, right));
     }
-        
+
     private Expr<BasicType> convertDiv(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.FLOAT64) {
-        	return new BinArFloat64(left, right, BinArFloat64.Op.DIV);
+            return new BinArFloat64(left, right, BinArFloat64.Op.DIV);
         } else if (left.getType() == BasicType.INT) {
-        	return new BinArInt(left, right, BinArInt.Op.DIV);
+            return new BinArInt(left, right, BinArInt.Op.DIV);
         } else {
             throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
@@ -1032,10 +995,10 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertLshift(left, right));
     }
-        
+
     private Expr<BasicType> convertLshift(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
-        	return new BinArInt(left, right, BinArInt.Op.LSHIFT);
+            return new BinArInt(left, right, BinArInt.Op.LSHIFT);
         } else {
             throw new IllegalStateException("Expected integer-typed expressions");
         }
@@ -1051,10 +1014,10 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertRshift(left, right));
     }
-        
+
     private Expr<BasicType> convertRshift(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
-        	return new BinArInt(left, right, BinArInt.Op.RSHIFT);
+            return new BinArInt(left, right, BinArInt.Op.RSHIFT);
         } else {
             throw new IllegalStateException("Expected integer-typed expressions");
         }
@@ -1070,9 +1033,8 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertBitAnd(left, right));
     }
-    
 
-    private Expr<BasicType> convertBitAnd(Expr<BasicType> left, Expr<BasicType> right) {    
+    private Expr<BasicType> convertBitAnd(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
             return new BinArInt(left, right, BinArInt.Op.BIT_AND);
         } else {
@@ -1089,10 +1051,9 @@ public class IrConverter extends AnalysisAdapter {
         @SuppressWarnings("unchecked")
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertBitAndNot(left, right));
-        
     }
-    
-    private Expr<BasicType> convertBitAndNot(Expr<BasicType> left, Expr<BasicType> right) {  
+
+    private Expr<BasicType> convertBitAndNot(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
             return new BinArInt(left, right, BinArInt.Op.BIT_AND_NOT);
         } else {
@@ -1110,17 +1071,15 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertAdd(left, right));
     }
-    
 
-    private Expr<BasicType> convertAdd (Expr<BasicType> left, Expr<BasicType> right) {   
+    private Expr<BasicType> convertAdd(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.STRING) {
-        	return new ConcatString(left, right);
-           
+            return new ConcatString(left, right);
         }
         if (left.getType() == BasicType.FLOAT64) {
-        	return new BinArFloat64(left, right, BinArFloat64.Op.ADD);
+            return new BinArFloat64(left, right, BinArFloat64.Op.ADD);
         } else if (left.getType() == BasicType.INT) {
-        	return new BinArInt(left, right, BinArInt.Op.ADD);
+            return new BinArInt(left, right, BinArInt.Op.ADD);
         } else {
             throw new IllegalStateException("Expected integer, float64, or string-typed expressions");
         }
@@ -1136,12 +1095,12 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertSub(left, right));
     }
-        
+
     private Expr<BasicType> convertSub(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.FLOAT64) {
-        	return new BinArFloat64(left, right, BinArFloat64.Op.SUB);
+            return new BinArFloat64(left, right, BinArFloat64.Op.SUB);
         } else if (left.getType() == BasicType.INT) {
-        	return new BinArInt(left, right, BinArInt.Op.SUB);
+            return new BinArInt(left, right, BinArInt.Op.SUB);
         } else {
             throw new IllegalStateException("Expected integer or float64-typed expressions");
         }
@@ -1157,8 +1116,7 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertBitOr(left, right));
     }
-     
-    
+
     private Expr<BasicType> convertBitOr(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
             return new BinArInt(left, right, BinArInt.Op.BIT_OR);
@@ -1177,11 +1135,10 @@ public class IrConverter extends AnalysisAdapter {
         final Expr<BasicType> right = (Expr<BasicType>) convertedExprs.get(node.getRight());
         convertedExprs.put(node, convertBitXor(left, right));
     }
-     
-    
+
     private Expr<BasicType> convertBitXor(Expr<BasicType> left, Expr<BasicType> right) {
         if (left.getType() == BasicType.INT) {
-        	return new BinArInt(left, right, BinArInt.Op.BIT_XOR);
+            return new BinArInt(left, right, BinArInt.Op.BIT_XOR);
         } else {
             throw new IllegalStateException("Expected integer-typed expressions");
         }
