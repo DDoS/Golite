@@ -164,12 +164,22 @@ init {
 As you can see a lot of the implicit semantics are made explicit, such as: zero values, temporary variable in multiple
 assignments, and void returns at the end of functions. All the control flow is re-written as branches and labels.
 Most statements are simplified into multiple ones, such as one print per expression, and one declaration per variable.
-Operators are also made type specific; for example comparing integers uses `==`, but strings use `==$`. All of the
-non-declaration statements use a new notation in the form of `stmtName(symbols and values)`, which is more verbose but
-easier to work with.
+Operators are also made type specific; for example comparing integers uses `==`, but strings use `==$`. More complex
+operations, like struct and array equality are expanded to many lines of code.
+
+All of the non-declaration statements use a new notation in the form of `stmtName(symbols and values)`, which is more
+verbose but easier to work with.
+
+Type declarations are ignored, and all types and symbol have their aliases removed. This can make things a bit verbose
+when large structures are used, but it's much simpler to work with. It's difficult to keep structure names because Go
+doesn't actually have named types, instead it has named aliases to types. We would have to remove all the aliasing
+layer except the last one on structs, then create a new named structure type, and update all the references to it. This
+is a lot of error prone work, which we opted not to do.
 
 The last function is a special one, which is called before `main`, and is used to initialize the global variables.
-Since the program has no global variables, it is empty.
+Since the program has no global variables, it is empty. Otherwise it would contain assignments.
+
+If the Golite program does not provide a `main` function, then an empty one is generated.
 
 The IR conversion also prepares the control flow for conversion to LLVM IR by removing any constructs that would violate
 the validation rules. This mostly means removing code after `return`, `break` and `continue`. The basic blocks are also
@@ -303,9 +313,75 @@ It might not be obvious how this transformation solve the problem with the `endI
 void-returning function never have this issue, since they always end with a `return` statement (we make it explicit).
 Thus there always is a statement at the very end of the function. For value-returning functions, we have to remember that
 we valid the return paths in the type-checker. This means that there will always be terminator(s) in the path to `endIf`.
-Then all we need to do is to remove the unreachable statements until those terminator(s) is the last block(s).
+Then all we need to do is to remove the unreachable statements until those terminator(s) are the last block(s).
+
+### Runtime
+
+There are a few operation in Golite which are rather complicated to implement in LLVM IR directly. Some of them are simply
+too verbose. Instead we can implement them in C (or any other compiled language) to make our lives easier. In the file
+`src/main/c/golite_runtime`, we implemented the following functionality: printing to `stdout`, bounds checking, slice
+appending, string concatenation, and string comparison.
+
+The printing functionality is implemented in C mostly because:
+- Boolean are printed as "true" or "false" instead of 0 or 1
+- Strings are not null-terminated in Go, which means that we need to print each character at a time using a loop
+
+The other print functions are just there for consistency.
+
+The remaining operations are implemented in C for readability and conciseness.
+
+Notice that the integer types used have exact sizes. This is for better compatibility with LLVM, which also uses strictly
+defined sizes for integers.
+
+Another important declaration in the runtime is the structure type `goliteRtSlice`. It is a length field and a pointer
+to a memory buffer. As the name suggests, it is the backing data structure for slices, but is also used for strings. Using
+this we can implement the pass-by-reference semantics of slices. String are immutable, so the pass-by semantics do not
+matter.
+
+Finally, at the end of the file, are two prototypes: `void staticInit(void)` and `void goliteMain(void)`. These are
+implemented by the code generator. The first contains code for initializing global variables, and the second is the
+actual Golite `main` entry point. The last declaration of the runtime is the C `main`, which simply calls `staticInit`
+followed by `goliteMain`.
 
 ### Final conversion to LLVM IR
+
+By using a custom IR, we can significantly reduce the number of different nodes we need to code-generate, and also make
+them more compatible with LLVM IR.
+
+The first step in converting a program is to declare the external functions that are implemented in the runtime. We also
+declare a named structure type for `goliteRtSlice`.
+
+Next we declare the global variables. Then we can generate the functions one after the other. One important thing here
+is to prevent the function in the Golite program for interfering with the pre-defined names for linking with the runtime.
+This means that we need to ensure that only the `main` function is called `goliteMain`, and that none have the name
+`staticInit`. We can simply append a '1' to the name, and let LLVM figure out any further naming conflicts.
+
+As we traverse the custom IR, we generate the corresponding LLVM IR. Most of this is rather straight forward, and based
+off the LLVM documentation.
+
+To code-generate a function, we first declare one basic block per label. This is done to solve the issue of forward
+references to labels (like at the end of a loop). Then we position an instruction builder at the end of the current label,
+and append instructions.
+
+For every function parameter, we allocate memory on the stack and copy the value into it. We then save a pointer
+to the memory corresponding to the variable. This is done so we can assign new values to parameters (which doesn't
+change the caller's arguments).
+
+Variable declarations simply allocate stack memory and save the pointer to it.
+
+Boolean, integer and float literals are converted to LLVM constant values. String literals are added to a
+constant pool, then a pointer to the constant is taken and is returned with the string length in a `goliteRtSlice`.
+
+Identifiers are simply converted to a pointer to the variable's memory.
+
+Select expressions get a pointer to the field inside the struct.
+
+Index expressions are a bit more complicated: first we compute a pointer to the value and the index. Then we need to find
+the length of the data. For an array, we just use the type, since it is constant. For slices, we need to access the length
+field in the struct. Next we call the bounds checking function in the runtime. Finally we can get a pointer in the memory
+are the index.
+
+Note how the identifier, select and index expressions return pointers instead of values.
 
 ## Conclusion
 
