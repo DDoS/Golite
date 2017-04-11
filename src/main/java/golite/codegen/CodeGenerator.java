@@ -34,7 +34,6 @@ import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
-import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Select;
@@ -71,7 +70,6 @@ public class CodeGenerator implements IrVisitor {
     private LLVMValueRef memsetFunction;
     private LLVMValueRef printBoolFunction;
     private LLVMValueRef printIntFunction;
-    private LLVMValueRef printRuneFunction;
     private LLVMValueRef printFloat64Function;
     private LLVMValueRef printStringFunction;
     private LLVMValueRef checkBoundsFunction;
@@ -225,11 +223,6 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitPrintInt(PrintInt printInt) {
         generatePrintStmt(printInt.getValue(), printIntFunction);
-    }
-
-    @Override
-    public void visitPrintRune(PrintRune printRune) {
-        generatePrintStmt(printRune.getValue(), printRuneFunction);
     }
 
     @Override
@@ -883,7 +876,6 @@ public class CodeGenerator implements IrVisitor {
         // Runtime functions
         printBoolFunction = createFunction(true, RUNTIME_PRINT_BOOL, LLVMVoidType(), LLVMInt8Type());
         printIntFunction = createFunction(true, RUNTIME_PRINT_INT, LLVMVoidType(), LLVMInt32Type());
-        printRuneFunction = createFunction(true, RUNTIME_PRINT_RUNE, LLVMVoidType(), LLVMInt32Type());
         printFloat64Function = createFunction(true, RUNTIME_PRINT_FLOAT64, LLVMVoidType(), LLVMDoubleType());
         printStringFunction = createFunction(true, RUNTIME_PRINT_STRING, LLVMVoidType(), sliceRuntimeType);
         checkBoundsFunction = createFunction(true, RUNTIME_CHECK_BOUNDS, LLVMVoidType(), LLVMInt32Type(),
@@ -899,7 +891,6 @@ public class CodeGenerator implements IrVisitor {
     private static final String RUNTIME_SLICE = "goliteRtSlice";
     private static final String RUNTIME_PRINT_BOOL = "goliteRtPrintBool";
     private static final String RUNTIME_PRINT_INT = "goliteRtPrintInt";
-    private static final String RUNTIME_PRINT_RUNE = "goliteRtPrintRune";
     private static final String RUNTIME_PRINT_FLOAT64 = "goliteRtPrintFloat64";
     private static final String RUNTIME_PRINT_STRING = "goliteRtPrintString";
     private static final String RUNTIME_CHECK_BOUNDS = "goliteRtCheckBounds";

@@ -23,11 +23,6 @@ void goliteRtPrintInt(int32_t i) {
     printf("%i", i);
 }
 
-void goliteRtPrintRune(int32_t rune) {
-    int32_t str[2] = {rune, 0};
-    printf("%ls", str);
-}
-
 void goliteRtPrintFloat64(double d) {
     printf("%f", d);
 }

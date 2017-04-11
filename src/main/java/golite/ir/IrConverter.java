@@ -43,7 +43,6 @@ import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
-import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Select;
@@ -387,10 +386,8 @@ public class IrConverter extends AnalysisAdapter {
             final Stmt printStmt;
             if (type == BasicType.BOOL) {
                 printStmt = new PrintBool(converted);
-            } else if (type == BasicType.INT) {
+            } else if (type.isInteger()) {
                 printStmt = new PrintInt(converted);
-            } else if (type == BasicType.RUNE) {
-                printStmt = new PrintRune(converted);
             } else if (type == BasicType.FLOAT64) {
                 printStmt = new PrintFloat64(converted);
             } else if (type == BasicType.STRING) {

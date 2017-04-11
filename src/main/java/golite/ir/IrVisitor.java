@@ -27,7 +27,6 @@ import golite.ir.node.MemsetZero;
 import golite.ir.node.PrintBool;
 import golite.ir.node.PrintFloat64;
 import golite.ir.node.PrintInt;
-import golite.ir.node.PrintRune;
 import golite.ir.node.PrintString;
 import golite.ir.node.Program;
 import golite.ir.node.Select;
@@ -55,8 +54,6 @@ public interface IrVisitor {
     void visitPrintBool(PrintBool printBool);
 
     void visitPrintInt(PrintInt printInt);
-
-    void visitPrintRune(PrintRune printRune);
 
     void visitPrintFloat64(PrintFloat64 printFloat64);
 
