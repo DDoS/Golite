@@ -186,7 +186,7 @@ data is stored for better debug information.
 
 ### Type checking
 The `TypeChecker` class extends `AnalysisAdapter` and overrides methods for visiting each
-node of our AST. The type checker keeps contains `HashMap`s that map nodes in our AST to
+node of our AST. The type checker contains `HashMap`s that map nodes in our AST to
 our custom `Type` and `Symbol` classes, which are used and updated by the visitor methods.
 Below is an overview of the implementation of each section of `TypeChecker`.
 
