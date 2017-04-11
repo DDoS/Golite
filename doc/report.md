@@ -437,3 +437,7 @@ removal), and control-flow graph simplification. This is a safe and rather basic
 ## Conclusion
 
 ## Contributions
+
+Aleksi Sapon took care of the project lead, architecture and design. He also implemented symbols, types and contexts,
+and most of the conversion from the custom IR to LLVM IR. Otherwise he also helped with every other aspect of the compiler.
+Finally he took care of the overall code quality and consistency.
