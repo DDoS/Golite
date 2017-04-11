@@ -185,6 +185,77 @@ parent. It's used for everything else: "if-else", "for" and "switch" statements 
 data is stored for better debug information.
 
 ### Type checking
+The `TypeChecker` class extends `AnalysisAdapter` and overrides methods for visiting each
+node of our AST. The type checker keeps contains `HashMap`s that map nodes in our AST to
+our custom `Type` and `Symbol` classes, which are used and updated by the visitor methods.
+Below is an overview of the implementation of each section of `TypeChecker`.
+
+#### Declarations
+Type declarations create a new `DeclaredType` in the context. The type is an alias of 
+the declared one, using the name of the declaration. This is declared in the current
+context.
+
+Variable declarations are an implementation of the specification. When no type is given, 
+we use the type of the given value, otherwise it is the same as the given type. The variables
+are declared in the context, which will throw an exception if the name has already been used.
+
+Function declarations open a new `FunctionContext`, then declares the parameters as variables
+in the context. After type-checking the body, it is checked for a terminating statement at
+the end. This is done with a separate `AnalysisAdapter` implementation in `TerminatingStmt`
+that ensures that functions return on all paths by visiting all function statements.
+
+Short variable declarations result in at least one new identifier being declared in the current
+context. The type-checker ensures that at least one identifier on the left-hand side has not 
+been previously declared by looking the identifier up in the current context's symbols. If this
+condition is met and all of the expressions on the right-hand side are well-typed then all
+previously undeclared identifiers are declared in the current context.
+
+#### Statements
+Empty statements, `continue` and `break` are trivially well-tyed and are handled by overriding
+the visitor methods for these nodes with empty methods.
+
+Return statements with an expressions result in the expression being type-checked and its type
+being compared with that of the enclosing funciton type. If the types are the same, then the
+return statement is well-typed. If no return expression is given, a check is done to ensure 
+that the function doesn't have a return type.
+
+Assignment statements are dealt with by ensuring that all the identifiers on the left-hand side
+have been declared (or are the blank identifier) and type-chcking the right-hand side to ensure
+that all given expressions are valid. Then the identifier and expression lists are traversed to
+ensure that each identifier-expression pair has the same type.
+
+The `print` and `println` statements result in a type-check of all given expressions to ensure
+that any `AliasTypes` resolve to a `BasicType`. If no expressions are given, this is trivially
+well-typed.
+
+Declarations and short declarations are type-checked as per the rules in the 'Declarations'
+section above.
+
+For-loop statements result in the creation of a `CodeBlockContext` in which the for-loop initialization
+condition and/or statements are placed. Thus if any new variables are created during initialization or
+if variable values are updated, the changes will be reflected within the `CodeBlockContext` for the 
+loop body. The initialization statements and expressions are then type-checked and we check that the
+loop condition (if given) resolves to `boolean`. A `CodeBlockContext` is then created for the loop body
+and all the statements within the loop body are type-checked. Once this is done, the context for the
+"for" body and the outer context are closed.
+
+If-statements result in the creation of `CodeBlockContext` for the initialization, and, if given, the
+statement and expression are type-checked and a check is done to ensure the condition expression 
+resolves to a `boolean`. A `CodeBlockContext` is then opened for the if-body. 
+
+Switch-statements result in the creation of `CodeBlockContext` for the initialization, in which
+we type-check the initialization statement and/or expression (if given) and the type of the switch
+expression is stored to ensure that the case expressions have the same type. If no expression is
+given, we store the type as `boolean`. We then open a `CodeBlockContext` for each case, and ensure
+that the case expression types are the same as the switch expression type. After type-checking the
+body of a case, we close the context for the current case and repeat the process for all given cases.
+Once this is done, we close the outer context.
+
+For op-assignments, we type-check the left and right sides and check that they have the same type, 
+otherwise an exception is thrown. We then check that the operation is valid for the given type as
+per the rules in the GoLite type-checking specifications.
+
+#### Expressions (TODO)
 
 ### Other validation
 
