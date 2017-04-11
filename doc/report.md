@@ -181,12 +181,12 @@ Like validating the main?
 
 ### Target language
 
-We have chosen to to targert low-level code: LLVM IR. More specifically,
+We have chosen to to target low-level code: LLVM IR. More specifically,
 we first convert Golite to a simpler custom IR before converting it to LLVM IR using the LLVM C API.
 
-We used LLVM because as a backend, as it's used by several popular
-languages like Rust, Swift, C, C++, D, etc. It can compile to many different targets and offers optimization passed for free.
-LLVM IR is comparatively easy to work with, and due to its popularity is rather well documented
+We used LLVM as a backend, because it's used by several popular languages like Rust, Swift, C, C++, D, etc.
+It can compile to many different targets and offers optimization passes for free.
+LLVM IR is relatively easy to work with, and due to its popularity is rather well documented
 and standardized, meaning that if we get stuck somewhere we have documentation to help us.
 
 It also has a proper API to generate it using objects, which is a lot nicer than trying to print a language like C.
@@ -196,16 +196,16 @@ If there's a conflict, LLVM will take care of generating new names when printing
 It has a major disadvantage: it is comparatively more difficult to implement than higher level languages
 like C/C++, but we wanted to take on this challenging task and in the process learn more about LLVM.
 
-Using LLVM allows us to get experience with using a powerful framework and toolchain, that powers a vast number of compilers
-used in research and enterprise.
+Using LLVM allows us to get experience with a major framework and toolchain that powers a vast number of
+compilers used in research and enterprise.
 
 ### First conversion to custom IR
 
 After type-checking, we run the AST and `SemanticData` produced by our type-checker through our `IrConverter`.
 The `IrConverter` visits AST nodes and converts them to our custom node types (found in `golite.ir.node`)
 to facilitate conversion to LLVM IR. The `Program` class contains all the relevant information required
-for code generation: the package name, global variables, and functions (through which enclosed statements
-can be accessed). The conversion allows for complicated statements to be split up into multiple simple statements.
+for code generation: the package name, global variables, and functions (through which statements can be accessed).
+The conversion allows for complicated statements to be split up into multiple simpler ones.
 
 The IR also directly integrates the semantic data, meaning that we no longer have to carry it around in a separate
 `SemanticData` class. It is thus better suited for the final compilation passes.
@@ -312,22 +312,22 @@ init {
 }
 ```
 
-As you can see a lot of the implicit semantics are made explicit, such as: zero values, temporary variable in multiple
+As you can see, a lot of the implicit semantics are made explicit, such as: zero values, temporary variable in multiple
 assignments, and void returns at the end of functions. All the control flow is re-written as branches and labels.
-Most statements are simplified into multiple ones, such as one print per expression, and one declaration per variable.
+Most statements are simplified into multiple ones, such as one print per expression, and one variable per declaration.
 Operators are also made type specific; for example comparing integers uses `==`, but strings use `==$`. More complex
 operations, like struct and array equality are expanded to many lines of code.
 
 All of the non-declaration statements use a new notation in the form of `stmtName(symbols and values)`, which is more
 verbose but easier to work with.
 
-Type declarations are ignored, and all types and symbol have their aliases removed. This can make things a bit verbose
+Type declarations are ignored, and all types and symbols have their aliases removed. This can make things a bit verbose
 when large structures are used, but it's much simpler to work with. It's difficult to keep structure names because Go
 doesn't actually have named types, instead it has named aliases to types. We would have to remove all the aliasing
-layer except the last one on structs, then create a new named structure type, and update all the references to it. This
+layers except the last one on structs, then create a new named structure type, and update all the references to it. This
 is a lot of error prone work, which we opted not to do.
 
-The last function is a special one, which is called before `main`, and is used to initialize the global variables.
+The last function is a special one, which is called before the `main`, and is used to initialize the global variables.
 Since the program has no global variables, it is empty. Otherwise it would contain assignments.
 
 If the Golite program does not provide a `main` function, then an empty one is generated.
@@ -402,7 +402,7 @@ init {
 }
 ```
 
-Notice how the `abs` function has a label without any statements underneath it (an empty basic block)? In LLVM
+Notice how the `abs` function has a label without any statements underneath it (an empty basic block). In LLVM
 this would violate the rule that each basic block must end with a terminator (branch, return or exception handling).
 Both the `ifCase` and `elseCase` blocks also violate a rule: a terminator must be the last in the block; yet a return
 appears before a branch. Same issue in the `main`'s `startFor` block. Another less obvious issue is the implicit
@@ -410,7 +410,7 @@ fall-through from `main`'s entry block to `startFor`, which is invalid due to th
 
 We fix these issues in five steps:
 - First we convert the statement list of a function into basic blocks, which are separated by labels
-- Then we add a jump to the next block to any block that doesn't end with a terminator
+- Then we add a jump to the next block for any block that doesn't end with a terminator
 - Next we remove all the statements that come after the first terminator in a block (unreachable)
 - The previous step will make some blocks unreachable by removing jumps, so we now remove them
 - Lastly we recombine the blocks into a statement list
@@ -460,18 +460,20 @@ init {
 As you can see, the `endIf` block was made unreachable and was removed. The unreachable statements in `startFor` were
 also removed. The `main`'s first block now explicitly jumps to the next.
 
-It might not be obvious how this transformation solve the problem with the `endIf` block. First we have to observe that
-void-returning function never have this issue, since they always end with a `return` statement (we make it explicit).
+It might not be obvious how this transformation solves the problem of the `endIf` block. First we have to observe that
+void-returning functions never have this issue, since they always end with a `return` statement (we make it explicit).
 Thus there always is a statement at the very end of the function. For value-returning functions, we have to remember that
-we valid the return paths in the type-checker. This means that there will always be terminator(s) in the path to `endIf`.
-Then all we need to do is to remove the unreachable statements until those terminator(s) are the last block(s).
+we validated the return paths in the type-checker. This means that there will always be terminator(s) in the path to
+`endIf`. Then all we need to do is to remove the unreachable statements until those terminator(s) are the last block(s).
 
 ### Runtime
 
 There are a few operation in Golite which are rather complicated to implement in LLVM IR directly. Some of them are simply
-too verbose. Instead we can implement them in C (or any other compiled language) to make our lives easier. In the file
-`src/main/c/golite_runtime`, we implemented the following functionality: printing to `stdout`, bounds checking, slice
-appending, string concatenation, and string comparison.
+too verbose. Instead we can implement them in C (or any other compiled language) to make our lives easier. During the
+compilation process, we link the program object file to the runtime one.
+
+In the file `src/main/c/golite_runtime`, we implemented the following functionality: printing to `stdout`, bounds checking,
+slice appending, string concatenation, and string comparison.
 
 The printing functionality is implemented in C mostly because:
 - Boolean are printed as "true" or "false" instead of 0 or 1
@@ -484,12 +486,12 @@ The remaining operations are implemented in C for readability and conciseness.
 Notice that the integer types used have exact sizes. This is for better compatibility with LLVM, which also uses strictly
 defined sizes for integers.
 
-Another important declaration in the runtime is the structure type `goliteRtSlice`. It is a length field and a pointer
+Another important declaration in the runtime is the structure type `goliteRtSlice`. It has a length field and a pointer
 to a memory buffer. As the name suggests, it is the backing data structure for slices, but is also used for strings. Using
 this we can implement the pass-by-reference semantics of slices. String are immutable, so the pass-by semantics do not
-matter.
+matter. Arrays are implemented as a value type, just like in C.
 
-Finally, at the end of the file, are two prototypes: `void staticInit(void)` and `void goliteMain(void)`. These are
+Finally, at the end of the file are two prototypes: `void staticInit(void)` and `void goliteMain(void)`. These are
 implemented by the code generator. The first contains code for initializing global variables, and the second is the
 actual Golite `main` entry point. The last declaration of the runtime is the C `main`, which simply calls `staticInit`
 followed by `goliteMain`.
@@ -503,7 +505,7 @@ The first step in converting a program is to declare the external functions that
 declare a named structure type for `goliteRtSlice`.
 
 Next we declare the global variables. Then we can generate the functions one after the other. One important thing here
-is to prevent the function in the Golite program for interfering with the pre-defined names for linking with the runtime.
+is to prevent the functions in the Golite program for interfering with the pre-defined names for linking with the runtime.
 This means that we need to ensure that only the `main` function is called `goliteMain`, and that none have the name
 `staticInit`. We can simply append a '1' to the name, and let LLVM figure out any further naming conflicts.
 
@@ -511,8 +513,7 @@ As we traverse the custom IR, we generate the corresponding LLVM IR. Most of thi
 off the LLVM documentation.
 
 To code-generate a function, we first declare one basic block per label. This is done to solve the issue of forward
-references to labels (like at the end of a loop). Then we position an instruction builder at the end of the current label,
-and append instructions.
+references to labels. Then we position an instruction builder at the end of the current label, and append instructions.
 
 For every function parameter, we allocate memory on the stack and copy the value into it. We then save a pointer
 to the memory corresponding to the variable. This is done so we can assign new values to parameters (which doesn't
@@ -521,13 +522,13 @@ change the caller's arguments).
 Variable declarations simply allocate stack memory and save the pointer to it.
 
 Boolean, integer and float literals are converted to LLVM constant values. String literals are added to a
-constant pool, then a pointer to the constant is taken and is returned with the string length in a `goliteRtSlice`.
+constant pool, then a pointer to the character array is taken and is returned with the string length in a `goliteRtSlice`.
 
 Identifiers are simply converted to a pointer to the variable's memory.
 
 Select expressions get a pointer to the field inside the struct.
 
-Index expressions are a bit more complicated: first we compute a pointer to the value and the index. Then we need to find
+Index expressions are a bit more complicated: first we compute a pointer to the value, and the index. Then we need to find
 the length of the data. For an array, we just use the type, since it is constant. For slices, we need to access the length
 field in the struct. Next we call the bounds checking function in the runtime. Finally we can get a pointer in the memory
 are the index.
@@ -535,14 +536,14 @@ are the index.
 Note how the identifier, select and index expressions return pointers instead of values. This is because these expressions
 are assignable. This means that we need a reference to the memory into which a value should be copied. But we also need
 to use them as values in many cases. Sometimes we also want to have values as pointers instead (for passing the data to
-the slice append function for example). To do this we use access values and pointers through the `getExprValue()` and
-`getExprPtr()` methods. These take care of loading a pointer when trying to access it as a value, and of storing a value
-on the stack when trying to access a value as a pointer.
+the slice append function for example). To do this we access values and pointers through the `getExprValue()` and
+`getExprPtr()` methods. These take care of adding the instructions to load a pointer when trying to access it as a value,
+and to store a value on the stack when trying to access a value as a pointer.
 
-The append expression will compute the size of the item being appended in bytes, then will store it in the stack. It
+The append expression will compute the size in bytes of the item being appended, then will store it in the stack. It
 then calls the runtime function with the slice, data pointer and size. The returned value is a slice pointing to
 a new memory buffer, which contains the original slice data followed by the appended data. This is really a concatenation
-of one item.
+of a single item.
 
 String concatenation is basically the same, since strings also use slices, and the runtime function for appending can
 also do concatenation.
@@ -551,7 +552,7 @@ String comparison is simply done by calling a runtime function. We pass an integ
 slices.
 
 The logical AND and OR are a lot more complicated than the other operators because of short-circuiting. We need to
-generate two new basic blocks, and insert them in the proper location. This also implies updating the instruction builder
+generate two new basic blocks, and insert them in the proper locations. This also implies updating the instruction builder
 to append at the correct block. The basic idea it to compute the left value first; then branch to the end, or compute
 the right value then branch to the end; then return the value based on which branch we took. We could do this with a
 phi node, but it's quite difficult to do when the left or right is a global variable. This is because we need to specify
@@ -563,14 +564,14 @@ The remaining expression all translate directly to a single LLVM instruction. Wi
 
 Return statements also translate to a single instruction.
 
-The print statements are simply converted to a call to the runtime, with the value as an argument.
+The print statements are simply converted to a call to the runtime, with the value as the argument.
 
-The memset statement is converted to a call to the LLVM memset intrinsic. The first argument is a pointer to
+The memset 0 statement is converted to a call to the LLVM memset intrinsic. The first argument is a pointer to
 the data being cleared. The second is the size to clear. In our case, the data is a variable pointer, and the size is
 given by the type. There's a trick to compute this size: create a null pointer to the variable type, then treat it as an
 array and get a pointer to the second element. Now we just convert this to an int. Since the pointer is null, the first
 index is `0`, and the second is `sizeof(type)`. When optimizing, LLVM will replace these instructions by a constant
-integer, taking care of calculating the data size and padding for us.
+integer, taking care of calculating the data size with padding for us.
 
 Assignments are simply converted to storing the right side value into the memory pointed by the left side.
 
@@ -581,7 +582,7 @@ An unconditional jump is just a branch in LLVM. A conditional one is also a bran
 specifies the `true` destination, the `false` one being the instruction right after the jump. LLVM requires both. This
 can be solved by adding a new basic block after the jump, using it as the `false` destination.
 
-The very last step if to apply optimization passes to the generated LLVM IR. We picked the following ones: constant
+The very last step is to apply optimization passes to the generated LLVM IR. We picked the following ones: constant
 propagation, instruction combination, memory-to-register promotion, global value numbering (redundant instruction
 removal), and control-flow graph simplification. This is a safe and rather basic set of optimizations.
 
