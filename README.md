@@ -2,8 +2,8 @@
 
 ## Team members
 
-Aleksi Sapon-Cousineau - 260581670
-Rohit Verma - 260710711
+Aleksi Sapon-Cousineau - 260581670  
+Rohit Verma - 260710711  
 Ayesha Krishnamurthy - 260559114
 
 ## Project structure

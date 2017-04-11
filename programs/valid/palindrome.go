@@ -11,7 +11,7 @@ func findPalidrome() {
     var temp, num int
     rem, sum = 0, 0
 
-    //Number to be checked for palindrome  
+    //Number to be checked for palindrome
 
     num = 56788765
 
@@ -20,7 +20,7 @@ func findPalidrome() {
     // Run the actual loop
 
     for num > 0 {
-        rem = num % 10 //Remainder  
+        rem = num % 10 //Remainder
         sum = (sum * 10) + rem
         num = num / 10
     }
@@ -28,9 +28,9 @@ func findPalidrome() {
     //Print the messages
 
     if temp == sum {
-        print("num is a palidrome")
+        println("num is a palidrome")
     } else {
-        print("num is NOT a palidrome")
+        println("num is NOT a palidrome")
     }
 }
 
