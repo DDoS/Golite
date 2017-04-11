@@ -211,16 +211,16 @@ condition is met and all of the expressions on the right-hand side are well-type
 previously undeclared identifiers are declared in the current context.
 
 #### Statements
-Empty statements, `continue` and `break` are trivially well-tyed and are handled by overriding
+Empty statements, `continue` and `break` are trivially well-tpyed and are handled by overriding
 the visitor methods for these nodes with empty methods.
 
-Return statements with an expressions result in the expression being type-checked and its type
+Return statements with an expression result in the expression being type-checked and its type
 being compared with that of the enclosing funciton type. If the types are the same, then the
 return statement is well-typed. If no return expression is given, a check is done to ensure 
 that the function doesn't have a return type.
 
 Assignment statements are dealt with by ensuring that all the identifiers on the left-hand side
-have been declared (or are the blank identifier) and type-chcking the right-hand side to ensure
+have been declared (or are the blank identifier) and type-checking the right-hand side to ensure
 that all given expressions are valid. Then the identifier and expression lists are traversed to
 ensure that each identifier-expression pair has the same type.
 
