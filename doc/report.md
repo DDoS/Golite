@@ -381,7 +381,58 @@ the length of the data. For an array, we just use the type, since it is constant
 field in the struct. Next we call the bounds checking function in the runtime. Finally we can get a pointer in the memory
 are the index.
 
-Note how the identifier, select and index expressions return pointers instead of values.
+Note how the identifier, select and index expressions return pointers instead of values. This is because these expressions
+are assignable. This means that we need a reference to the memory into which a value should be copied. But we also need
+to use them as values in many cases. Sometimes we also want to have values as pointers instead (for passing the data to
+the slice append function for example). To do this we use access values and pointers through the `getExprValue()` and
+`getExprPtr()` methods. These take care of loading a pointer when trying to access it as a value, and of storing a value
+on the stack when trying to access a value as a pointer.
+
+The append expression will compute the size of the item being appended in bytes, then will store it in the stack. It
+then calls the runtime function with the slice, data pointer and size. The returned value is a slice pointing to
+a new memory buffer, which contains the original slice data followed by the appended data. This is really a concatenation
+of one item.
+
+String concatenation is basically the same, since strings also use slices, and the runtime function for appending can
+also do concatenation.
+
+String comparison is simply done by calling a runtime function. We pass an integer ID for the kind of comparison, and both
+slices.
+
+The logical AND and OR are a lot more complicated than the other operators because of short-circuiting. We need to
+generate two new basic blocks, and insert them in the proper location. This also implies updating the instruction builder
+to append at the correct block. The basic idea it to compute the left value first; then branch to the end, or compute
+the right value then branch to the end; then return the value based on which branch we took. We could do this with a
+phi node, but it's quite difficult to do when the left or right is a global variable. This is because we need to specify
+which basic block the value originates from, yet globals don't belong to any. Instead it's much simpler to allocate stack
+memory and store the intermediate results there. Later we will run optimization passes and let LLVM convert this to a phi
+instruction.
+
+The remaining expression all translate directly to a single LLVM instruction. With similar names and semantics.
+
+Return statements also translate to a single instruction.
+
+The print statements are simply converted to a call to the runtime, with the value as an argument.
+
+The memset statement is converted to a call to the LLVM memset intrinsic. The first argument is a pointer to
+the data being cleared. The second is the size to clear. In our case, the data is a variable pointer, and the size is
+given by the type. There's a trick to compute this size: create a null pointer to the variable type, then treat it as an
+array and get a pointer to the second element. Now we just convert this to an int. Since the pointer is null, the first
+index is `0`, and the second is `sizeof(type)`. When optimizing, LLVM will replace these instructions by a constant
+integer, taking care of calculating the data size and padding for us.
+
+Assignments are simply converted to storing the right side value into the memory pointed by the left side.
+
+Labels were converted to basic blocks earlier. Now when we encounter one, we just have to move the instruction builder
+to the block, and start appending instruction there.
+
+An unconditional jump is just a branch in LLVM. A conditional one is also a branch, but it's a bit different. Our IR only
+specifies the `true` destination, the `false` one being the instruction right after the jump. LLVM requires both. This
+can be solved by adding a new basic block after the jump, using it as the `false` destination.
+
+The very last step if to apply optimization passes to the generated LLVM IR. We picked the following ones: constant
+propagation, instruction combination, memory-to-register promotion, global value numbering (redundant instruction
+removal), and control-flow graph simplification. This is a safe and rather basic set of optimizations.
 
 ## Conclusion
 

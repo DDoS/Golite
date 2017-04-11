@@ -285,7 +285,7 @@ public class CodeGenerator implements IrVisitor {
         // Add a new basic block after the current one, which is where flow will resume if the condition is false
         final LLVMBasicBlockRef falseTarget = LLVMAppendBasicBlock(currentFunction, label.getName() + "False");
         LLVMMoveBasicBlockAfter(falseTarget, currentBlock);
-        // The build the conditional break instruction, to the true label, or to the block just after the jump
+        // Then build the conditional break instruction, to the true label or to the block just after the jump
         jumpCond.getCondition().visit(this);
         final LLVMValueRef condition = getExprValue(jumpCond.getCondition());
         LLVMBuildCondBr(builder, condition, trueTarget, falseTarget);
