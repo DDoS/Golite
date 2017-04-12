@@ -46,8 +46,8 @@ section.
 
 We wrote a specification file for GoLite, using the syntax described above. After compilation
 of the file, SableCC outputs the lexer and parser for our grammar. The lexer simply ensures
-that the input to the program consists of the tokens that were in our 'Tokens' section,
-and ignores the 'Ignored Tokens' which consist of comments and white space tokens.
+that the input program strings match tokens that were in our 'Tokens' section,
+and ignores things that match our 'Ignored Tokens' which consist of comments and white space tokens.
 
 ### Parsing
 
