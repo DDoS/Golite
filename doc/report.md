@@ -223,7 +223,8 @@ we use the type of the given value, otherwise it is the same as the given type. 
 are declared in the context, which will throw an exception if the name has already been used.
 
 Function declarations open a new `FunctionContext`, then declares the parameters as variables
-in the context. After type-checking the body, it is checked for a terminating statement at
+in the context. After the function body has been type-checked, the function context is closed.
+After type-checking the body, it is checked for a terminating statement at
 the end. This is done with a separate `AnalysisAdapter` implementation in `TerminatingStmt`
 that ensures that functions return on all paths by visiting all function statements.
 
@@ -319,7 +320,12 @@ For struct types, we create the fields first, then wrap them in a `StructType`.
 
 ### Other validation
 
-Like validating the main?
+After type-checking the body of a function, it is checked for a terminating statement at the end. 
+This is done with a separate `AnalysisAdapter` implementation in `TerminatingStmtChecker`
+that ensures that functions return on all paths by visiting all function statements.
+
+When type-checking a program, we first ensure that if the main function exists, it has no parameters
+and no return type. Once this check is done, we then proceed with type-checking the program.
 
 ## Code generation
 
