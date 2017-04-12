@@ -14,7 +14,12 @@ We chose to use Java 8 as it is now widely supported and offers a lot of useful 
 for instance, we used the `forEach()` method extensively to iterate over lists of nodes in
 our Abstract Syntax Tree.
 
-TODO: mention Gradle
+As our teammates would be building the project over different platforms, we opted to use Gradle
+as a build tool. We used a plugin to integrate SableCC as part of the build process. The only
+caveat was that we had to make our own plugin, and so it had to be bundled with the project. 
+Otherwise, Gradle downloads dependencies, compilers, tests and runs the project with a few
+simple commands. Gradle doesn't need to be installed on the machine either, thanks to the Gradle
+Wrapper.
 
 ## Syntax
 
@@ -255,7 +260,42 @@ For op-assignments, we type-check the left and right sides and check that they h
 otherwise an exception is thrown. We then check that the operation is valid for the given type as
 per the rules in the GoLite type-checking specifications.
 
-#### Expressions (TODO)
+#### Expressions
+The literal expressions simply return their associated type.
+
+For identifiers, we look up the symbol. It must exist and be either a variable or function, otherwise
+an exception is thrown. Functions are treated as callable values, but since no other operation supports
+function types, they can't be used for anything else.
+
+Select expressions type-check if the value is a struct type and has a field of the selected name. If it 
+does then the field type is returned, otherwise an exception is thrown.
+
+Index expressions check that the value is an array or slice (`IndexableType`) and that the index
+resolves to an `int`.
+
+Calls have a special case for casts. If the value being called is an identifier expression and
+the identifier references a type symbol, then we type-check it as a cast instead. Otherwise we check
+that the value has a function type, and that it has a return type. If the arguments are assignable to
+the parameters, then the expression has the same type as the return type.
+
+For casts, we check that both the symbol and argument (which there should only be one of) resolve to
+basic types, and that they are valid for casting (we check casting from and to). The type is then the
+same as the casting type.
+
+For appends, the first argument must be a slice and the second must be the same as the component type.
+
+For unary and binary operators, we check that the resolved type(s) are of the proper category
+(integer, numeric, etc.) for the operator. Additionally, for binary types, we have to check that the
+unresolved types are the same. The resulting type depends on the operator.
+
+#### Types
+
+Named types just return the type of the `DeclaredType` symbol they reference.
+
+For slice types, we wrap the component type in `SliceType`. Same for arrays, but we also include the
+length, which we obtain by evaluating the integer literal.
+
+For struct types, we create the fields first, then wrap them in a `StructType`.
 
 ### Other validation
 
