@@ -267,6 +267,7 @@ otherwise an exception is thrown. We then check that the operation is valid for 
 per the rules in the GoLite type-checking specifications.
 
 #### Expressions
+
 The literal expressions simply return their associated type.
 
 For identifiers, we look up the symbol. It must exist and be either a variable or function, otherwise
