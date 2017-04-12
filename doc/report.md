@@ -760,3 +760,8 @@ Finally he took care of the overall code quality and consistency.
 Ayesha Krishnamurthy contributed to parts of the grammar, weeder, type-checker, IR-generator, and code-generator, with a focus
 on statements. She also contributed to fixing bugs in all parts of the compiler (that she admittedly sometimes created in the
 first place) and contributed test cases for milestones.
+
+Rohit Verma contributed at all stages of the project including the scanner, parser, weeder, type-checker, the IR and 
+CodeGenerator. He also thoroughly tested the code at all milestones to ensure the code passed all of the checks and usually
+discovered bizzare bugs towards the end. Finally he contributed to other parts of the milstones equally with the required 
+artifacts like sample programs for testing.
