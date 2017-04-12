@@ -1,5 +1,11 @@
 # Report
 
+## Team 9
+
+Aleksi Sapon-Cousineau - 260581670  
+Rohit Verma - 260710711  
+Ayesha Krishnamurthy - 260559114
+
 ## Introduction
 
 Go is a simple language inspired by C. While opinions on it can vary quite a lot
@@ -320,7 +326,7 @@ For struct types, we create the fields first, then wrap them in a `StructType`.
 
 ### Other validation
 
-After type-checking the body of a function, it is checked for a terminating statement at the end. 
+After type-checking the body of a function, it is checked for a terminating statement at the end.
 This is done with a separate `AnalysisAdapter` implementation in `TerminatingStmtChecker`
 that ensures that functions return on all paths by visiting all function statements.
 
@@ -738,12 +744,12 @@ removal), and control-flow graph simplification. This is a safe and rather basic
 
 ## Conclusion
 Our experience working on the project was pretty fascinating, and even though most of our work was implemented in
-Java which we'd all worked with before, we still had plenty to learn. Understanding Go syntax and semantics was 
+Java which we'd all worked with before, we still had plenty to learn. Understanding Go syntax and semantics was
 part of the challenge, as well learning how to use the LLVM C API. Using LLVM was possibly the biggest "difficult"
 decision we made, as we were worried we wouldn't get it working in time for the due date, but we pulled through and
 seeing our code generator work was really cool.
 
-When Aleksi was asked about what he wanted to add to this section of the report, he said, "I guess it went well. It works."
+"I guess it went well. It works." - Aleksi Sapon-Cousineau
 
 ## Contributions
 
