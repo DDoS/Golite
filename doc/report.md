@@ -737,6 +737,13 @@ propagation, instruction combination, memory-to-register promotion, global value
 removal), and control-flow graph simplification. This is a safe and rather basic set of optimizations.
 
 ## Conclusion
+Our experience working on the project was pretty fascinating, and even though most of our work was implemented in
+Java which we'd all worked with before, we still had plenty to learn. Understanding Go syntax and semantics was 
+part of the challenge, as well learning how to use the LLVM C API. Using LLVM was possibly the biggest 'difficult'
+decision we made, as we were worried we wouldn't get it working in time for the due date, but we pulled through and
+seeing our code generator work was really cool.
+
+When Aleksi was asked about what he wanted to add to this section of the report, he said, "I guess it went well. It works."
 
 ## Contributions
 
