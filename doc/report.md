@@ -743,3 +743,7 @@ removal), and control-flow graph simplification. This is a safe and rather basic
 Aleksi Sapon took care of the project lead, architecture and design. He also implemented symbols, types and contexts,
 and most of the conversion from the custom IR to LLVM IR. Otherwise he also helped with every other aspect of the compiler.
 Finally he took care of the overall code quality and consistency.
+
+Ayesha Krishnamurthy contributed to parts of the grammar, weeder, type-checker, IR-generator, and code-generator, with a focus
+on statements. She also contributed to fixing bugs in all parts of the compiler (that she admittedly sometimes created in the
+first place) and contributed test cases for milestones.
