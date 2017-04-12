@@ -2,6 +2,19 @@
 
 ## Introduction
 
+Go is a simple language inspired by C. While opinions on it can vary quite a lot
+(source: every reddit.com/r/programming thread on Go), it is still very popular and
+has been adopted by many companies for their products. Most importantly, Google, who
+have been sponsoring the language since its inception. Golite is mostly a subset of
+Go, which is focused on its C-like elements (types, expressions and statements). With
+the exception of the garbage collector, it is rather simple to implement. Yet it has
+a few twists, making it a good choice for a compiler design project. The Go specification
+and playground are also rather well made and accessible.
+
+In this document, we will discuss our project design, from our implementation tools
+to the syntax, semantic and code generation phases. We will discuss the architecture
+and the various challenges we faced.
+
 ## Language and tools
 
 We chose SableCC over Flex and Bison as our "compiler-compiler" as we had worked with
@@ -102,7 +115,7 @@ and ordered), and an abstract method for the "resolve" operation. For each type,
 and `toString()` are implemented. The latter prints types in the Go format, which is useful
 for debugging and error messages.
 
-We have 7 implementations of this abstract class:
+We have seven implementations of this abstract class:
 
 1. `BasicType` - the Go basic types are singletons of this class. The private constructor of this
 class takes in the name of the Go type.  The resolve method simply returns the `BasicType`
@@ -146,7 +159,7 @@ information, which helps with providing better error messages. To obtain the sou
 a utility interface `SourcePositioned` was created. `Symbol` implements this interface, which provides
 helper methods for printing out position information.
 
-We have 3 kinds of symbols:
+We have three kinds of symbols:
 
 1. `DeclaredType` is used for type declarations. While type declarations are normally always aliases,
 this isn't the case for the pre-declared basic types in the universal context. For this reason, the
