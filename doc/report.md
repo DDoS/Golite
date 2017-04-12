@@ -14,12 +14,15 @@ We chose to use Java 8 as it is now widely supported and offers a lot of useful 
 for instance, we used the `forEach()` method extensively to iterate over lists of nodes in
 our Abstract Syntax Tree.
 
-As our teammates would be building the project over different platforms, we opted to use Gradle
-as a build tool. We used a plugin to integrate SableCC as part of the build process. The only
-caveat was that we had to make our own plugin, and so it had to be bundled with the project. 
-Otherwise, Gradle downloads dependencies, compilers, tests and runs the project with a few
-simple commands. Gradle doesn't need to be installed on the machine either, thanks to the Gradle
-Wrapper.
+For a build system we opted to use Gradle. It's a task based tool designed original for Java.
+It's fast compared to other ones like Maven, and easily extensible. It also manages
+dependencies for us, such as the Apache CLI library and the LLVM 3.9 bindings. We made
+a custom plugin to include the SableCC grammar processing as a build task. Through the
+configuration code, we also added more tasks to compile the runtime, and generate bash files
+for running our compiler and compiling the code generation output. It runs our tests on every
+build too. With it we've automated nearly every build step in the project.
+
+Gradle doesn't need to be installed on the machine either, thanks to the Gradle Wrapper.
 
 ## Syntax
 
@@ -190,17 +193,19 @@ parent. It's used for everything else: "if-else", "for" and "switch" statements 
 data is stored for better debug information.
 
 ### Type checking
+
 The `TypeChecker` class extends `AnalysisAdapter` and overrides methods for visiting each
 node of our AST. The type checker contains `HashMap`s that map nodes in our AST to
 our custom `Type` and `Symbol` classes, which are used and updated by the visitor methods.
 Below is an overview of the implementation of each section of `TypeChecker`.
 
 #### Declarations
-Type declarations create a new `DeclaredType` in the context. The type is an alias of 
+
+Type declarations create a new `DeclaredType` in the context. The type is an alias of
 the declared one, using the name of the declaration. This is declared in the current
 context.
 
-Variable declarations are an implementation of the specification. When no type is given, 
+Variable declarations are an implementation of the specification. When no type is given,
 we use the type of the given value, otherwise it is the same as the given type. The variables
 are declared in the context, which will throw an exception if the name has already been used.
 
@@ -210,18 +215,19 @@ the end. This is done with a separate `AnalysisAdapter` implementation in `Termi
 that ensures that functions return on all paths by visiting all function statements.
 
 Short variable declarations result in at least one new identifier being declared in the current
-context. The type-checker ensures that at least one identifier on the left-hand side has not 
+context. The type-checker ensures that at least one identifier on the left-hand side has not
 been previously declared by looking the identifier up in the current context's symbols. If this
 condition is met and all of the expressions on the right-hand side are well-typed then all
 previously undeclared identifiers are declared in the current context.
 
 #### Statements
+
 Empty statements, `continue` and `break` are trivially well-tpyed and are handled by overriding
 the visitor methods for these nodes with empty methods.
 
 Return statements with an expression result in the expression being type-checked and its type
 being compared with that of the enclosing funciton type. If the types are the same, then the
-return statement is well-typed. If no return expression is given, a check is done to ensure 
+return statement is well-typed. If no return expression is given, a check is done to ensure
 that the function doesn't have a return type.
 
 Assignment statements are dealt with by ensuring that all the identifiers on the left-hand side
@@ -238,15 +244,15 @@ section above.
 
 For-loop statements result in the creation of a `CodeBlockContext` in which the for-loop initialization
 condition and/or statements are placed. Thus if any new variables are created during initialization or
-if variable values are updated, the changes will be reflected within the `CodeBlockContext` for the 
+if variable values are updated, the changes will be reflected within the `CodeBlockContext` for the
 loop body. The initialization statements and expressions are then type-checked and we check that the
 loop condition (if given) resolves to `boolean`. A `CodeBlockContext` is then created for the loop body
 and all the statements within the loop body are type-checked. Once this is done, the context for the
 "for" body and the outer context are closed.
 
 If-statements result in the creation of `CodeBlockContext` for the initialization, and, if given, the
-statement and expression are type-checked and a check is done to ensure the condition expression 
-resolves to a `boolean`. A `CodeBlockContext` is then opened for the if-body. 
+statement and expression are type-checked and a check is done to ensure the condition expression
+resolves to a `boolean`. A `CodeBlockContext` is then opened for the if-body.
 
 Switch-statements result in the creation of `CodeBlockContext` for the initialization, in which
 we type-check the initialization statement and/or expression (if given) and the type of the switch
@@ -256,7 +262,7 @@ that the case expression types are the same as the switch expression type. After
 body of a case, we close the context for the current case and repeat the process for all given cases.
 Once this is done, we close the outer context.
 
-For op-assignments, we type-check the left and right sides and check that they have the same type, 
+For op-assignments, we type-check the left and right sides and check that they have the same type,
 otherwise an exception is thrown. We then check that the operation is valid for the given type as
 per the rules in the GoLite type-checking specifications.
 
@@ -267,7 +273,7 @@ For identifiers, we look up the symbol. It must exist and be either a variable o
 an exception is thrown. Functions are treated as callable values, but since no other operation supports
 function types, they can't be used for anything else.
 
-Select expressions type-check if the value is a struct type and has a field of the selected name. If it 
+Select expressions type-check if the value is a struct type and has a field of the selected name. If it
 does then the field type is returned, otherwise an exception is thrown.
 
 Index expressions check that the value is an array or slice (`IndexableType`) and that the index
