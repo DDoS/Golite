@@ -152,7 +152,6 @@ public class TypeChecker extends AnalysisAdapter {
         context = new TopLevelContext();
         nextContextID++;
         contextNodes.put(context, node);
-
         node.getDecl().forEach(decl -> decl.apply(this));
         // Check that the main has the proper signature (no parameters or return type)
         for (Entry<AFuncDecl, Function> entry : funcSymbols.entrySet()) {
@@ -243,7 +242,7 @@ public class TypeChecker extends AnalysisAdapter {
             if (optVar.isPresent() && optVar.get() instanceof Variable<?>) {
                 final Symbol<?> var = optVar.get();
                 final Type leftType = var.getType();
-                if (!leftType.equals(rightType)) {
+                if (!leftType.equals(rightType) || leftType instanceof FunctionType) {
                     throw new TypeCheckerException(node, "Cannot assign type " + rightType + " to type " + leftType);
                 }
                 exprNodeTypes.put(leftNode, leftType);
@@ -380,7 +379,7 @@ public class TypeChecker extends AnalysisAdapter {
             }
             final Type leftType = exprNodeTypes.get(left);
             final Type rightType = exprNodeTypes.get(node.getRight().get(i));
-            if (!leftType.equals(rightType)) {
+            if (!leftType.equals(rightType) || leftType instanceof FunctionType) {
                 throw new TypeCheckerException(node, "Cannot assign type " + rightType + " to type " + leftType);
             }
         }
