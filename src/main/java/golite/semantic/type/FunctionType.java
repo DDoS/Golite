@@ -1,6 +1,7 @@
 package golite.semantic.type;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -51,7 +52,7 @@ public class FunctionType extends Type {
             return false;
         }
         final FunctionType functionType = (FunctionType) other;
-        return parameters.equals(functionType.parameters) && returnType.equals(functionType.returnType);
+        return parameters.equals(functionType.parameters) && Objects.equals(returnType, functionType.returnType);
     }
 
     @Override
