@@ -54,7 +54,7 @@ Helpers
 
     letter = alpha | underscore;
     alpha_num = letter | num_ch ;
-    comment_singleln = '//' not_endln* endln;
+    comment_singleln = '//' not_endln* endln?;
     comment_multiln = '/*' not_star* '*'+ (not_star_not_slash not_star* '*'+)* '/';
 
     string_ch = no_carr_nl_bsl_dlq | backslash double_quot | escapes;
