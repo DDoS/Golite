@@ -616,7 +616,13 @@ public class IrConverter extends AnalysisAdapter {
         node.getExpr().apply(this);
         @SuppressWarnings("unchecked")
         final Expr<BasicType> expr = (Expr<BasicType>) convertedExprs.get(node.getExpr());
-        functionStmts.add(new Assignment(expr, new BinArInt(expr, new IntLit(1), BinArInt.Op.ADD)));
+        if (expr.getType().isInteger()) {
+            functionStmts.add(new Assignment(expr, new BinArInt(expr, new IntLit(1), BinArInt.Op.ADD)));
+        } else if (expr.getType() == BasicType.FLOAT64) {
+            functionStmts.add(new Assignment(expr, new BinArFloat64(expr, new Float64Lit(1), BinArFloat64.Op.ADD)));
+        } else {
+            throw new IllegalStateException("Expected integer or float64-typed expressions");
+        }
     }
 
     @Override
@@ -624,7 +630,13 @@ public class IrConverter extends AnalysisAdapter {
         node.getExpr().apply(this);
         @SuppressWarnings("unchecked")
         final Expr<BasicType> expr = (Expr<BasicType>) convertedExprs.get(node.getExpr());
-        functionStmts.add(new Assignment(expr, new BinArInt(expr, new IntLit(1), BinArInt.Op.SUB)));
+        if (expr.getType().isInteger()) {
+            functionStmts.add(new Assignment(expr, new BinArInt(expr, new IntLit(1), BinArInt.Op.SUB)));
+        } else if (expr.getType() == BasicType.FLOAT64) {
+            functionStmts.add(new Assignment(expr, new BinArFloat64(expr, new Float64Lit(1), BinArFloat64.Op.SUB)));
+        } else {
+            throw new IllegalStateException("Expected integer or float64-typed expressions");
+        }
     }
 
     @Override
