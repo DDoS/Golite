@@ -255,8 +255,13 @@ public class IrConverter extends AnalysisAdapter {
         final List<PExpr> exprs = node.getExpr();
         for (int i = 0; i < idenfs.size(); i++) {
             final String variableName = idenfs.get(i).getText();
-            // Ignore blank variables
+            // For blank variables, we create a temporary one if it has an initializer, so it gets evaluated
             if (variableName.equals("_")) {
+                if (!exprs.isEmpty()) {
+                    final PExpr right = exprs.get(i);
+                    right.apply(this);
+                    createTmpAssignVar(functionStmts, convertedExprs.get(right));
+                }
                 continue;
             }
             // Find the symbol for the variable that was declared
@@ -275,27 +280,40 @@ public class IrConverter extends AnalysisAdapter {
         final List<PExpr> lefts = node.getLeft();
         final List<PExpr> rights = node.getRight();
         final List<Variable<?>> tmpVars = new ArrayList<>();
-        for (int i = 0; i < lefts.size(); i++) {
-            final Variable<?> variable = variables.get(i);
+        int variableIndex = 0;
+        for (PExpr leftExpr : lefts) {
+            final AIdentExpr left = (AIdentExpr) leftExpr;
+            // We handle blank variables like assignments, so the the right expression is evaluated
+            final boolean isBlank = left.getIdenf().getText().equals("_");
+            final Variable<?> variable = isBlank ? null : variables.get(variableIndex);
             if (variable == null) {
                 // Just an assignment, so handle it the same way
-                final PExpr right = rights.get(i);
+                final PExpr right = rights.get(variableIndex);
                 right.apply(this);
-                createTmpAssignVar(functionStmts, tmpVars, convertedExprs.get(right));
+                tmpVars.add(createTmpAssignVar(functionStmts, convertedExprs.get(right)));
             } else {
                 // New variable declaration
-                convertVariableDecl(functionStmts, variable, rights.get(i));
+                convertVariableDecl(functionStmts, variable, rights.get(variableIndex));
+            }
+            // Blanks don't have variables, so don't increment the index
+            if (!isBlank) {
+                variableIndex++;
             }
         }
         // Then we assign the intermediate variables to the right expressions
-        for (int i = 0, j = 0; i < lefts.size(); i++) {
-            if (variables.get(i) != null) {
-                // Not an assignment: skip it
+        variableIndex = 0;
+        int tempVariableIndex = 0;
+        for (PExpr leftExpr : lefts) {
+            final AIdentExpr left = (AIdentExpr) leftExpr;
+            // Ignore blank identifiers, since they don't have any variable
+            if (left.getIdenf().getText().equals("_")) {
                 continue;
             }
-            final PExpr left = lefts.get(i);
-            left.apply(this);
-            functionStmts.add(createAssignFromVar(convertedExprs.get(left), tmpVars.get(j++)));
+            // We only need to assign the temporary variable to the right expression
+            if (variables.get(variableIndex++) == null) {
+                left.apply(this);
+                functionStmts.add(createAssignFromVar(convertedExprs.get(left), tmpVars.get(tempVariableIndex++)));
+            }
         }
     }
 
@@ -345,7 +363,7 @@ public class IrConverter extends AnalysisAdapter {
         // For multiple assignments, we first need to assign each right to a new intermediate variable
         final List<Variable<?>> tmpVars = new ArrayList<>();
         for (int i = 0; i < lefts.size(); i++) {
-            createTmpAssignVar(functionStmts, tmpVars, convertedExprs.get(rights.get(i)));
+            tmpVars.add(createTmpAssignVar(functionStmts, convertedExprs.get(rights.get(i))));
         }
         // Then we assign the intermediate variables to the right expressions
         for (int i = 0; i < lefts.size(); i++) {
@@ -353,12 +371,12 @@ public class IrConverter extends AnalysisAdapter {
         }
     }
 
-    private <T extends Type> void createTmpAssignVar(List<Stmt> stmts, List<Variable<?>> tmpVars, Expr<T> right) {
+    private <T extends Type> Variable<T> createTmpAssignVar(List<Stmt> stmts, Expr<T> right) {
         final Variable<T> leftVar = newVariable(right.getType(), "assignTmp");
-        tmpVars.add(leftVar);
         stmts.add(new VariableDecl<>(leftVar));
         final Identifier<T> left = new Identifier<>(leftVar);
         stmts.add(new Assignment(left, right));
+        return leftVar;
     }
 
     private <T extends Type> Assignment createAssignFromVar(Expr<?> left, Variable<T> variable) {
