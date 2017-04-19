@@ -656,22 +656,22 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef result;
         switch (cmpFloat64.getOp()) {
             case EQ:
-                result = LLVMBuildICmp(builder, LLVMRealOEQ, leftValue, rightValue, "float64Eq");
+                result = LLVMBuildFCmp(builder, LLVMRealOEQ, leftValue, rightValue, "float64Eq");
                 break;
             case NEQ:
-                result = LLVMBuildICmp(builder, LLVMRealONE, leftValue, rightValue, "float64Neq");
+                result = LLVMBuildFCmp(builder, LLVMRealONE, leftValue, rightValue, "float64Neq");
                 break;
             case LESS:
-                result = LLVMBuildICmp(builder, LLVMRealOLT, leftValue, rightValue, "float64Less");
+                result = LLVMBuildFCmp(builder, LLVMRealOLT, leftValue, rightValue, "float64Less");
                 break;
             case LESS_EQ:
-                result = LLVMBuildICmp(builder, LLVMRealOLE, leftValue, rightValue, "float64LessEq");
+                result = LLVMBuildFCmp(builder, LLVMRealOLE, leftValue, rightValue, "float64LessEq");
                 break;
             case GREAT:
-                result = LLVMBuildICmp(builder, LLVMRealOGT, leftValue, rightValue, "float64Great");
+                result = LLVMBuildFCmp(builder, LLVMRealOGT, leftValue, rightValue, "float64Great");
                 break;
             case GREAT_EQ:
-                result = LLVMBuildICmp(builder, LLVMRealOGE, leftValue, rightValue, "float64GreatEq");
+                result = LLVMBuildFCmp(builder, LLVMRealOGE, leftValue, rightValue, "float64GreatEq");
                 break;
             default:
                 throw new UnsupportedOperationException(cmpFloat64.getOp().name());
