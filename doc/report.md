@@ -671,6 +671,11 @@ off the LLVM documentation.
 To code-generate a function, we first declare one basic block per label. This is done to solve the issue of forward
 references to labels. Then we position an instruction builder at the end of the current label, and append instructions.
 
+The first basic block of the function is reserved for stack allocations. This is because we don't want to to allocate
+inside loops, since the memory is only freed at the end of the function. Otherwise we'd grow the stack on each loop
+iteration and leak memory like crazy. With this we can guarantee that memory is allocated only once. The actually function
+body starts after this block. This the same strategy used by Clang. LLMV will optimize later on the stack memory usage.
+
 For every function parameter, we allocate memory on the stack and copy the value into it. We then save a pointer
 to the memory corresponding to the variable. This is done so we can assign new values to parameters (which doesn't
 change the caller's arguments).
