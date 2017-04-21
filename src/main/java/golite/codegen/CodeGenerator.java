@@ -81,6 +81,7 @@ public class CodeGenerator implements IrVisitor {
     private final Map<Function, LLVMValueRef> functions = new HashMap<>();
     private LLVMValueRef currentFunction;
     private LLVMBuilderRef builder;
+    private LLVMBuilderRef allocaBuilder;
     private final Map<Expr<?>, LLVMValueRef> exprValues = new HashMap<>();
     private final Map<Expr<?>, LLVMValueRef> exprPtrs = new HashMap<>();
     private final Map<Variable<?>, LLVMValueRef> globalVariables = new HashMap<>();
@@ -166,22 +167,27 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef function = createFunction(external, name, llvmReturn, llvmParams);
         functions.put(symbol, function);
         currentFunction = function;
-        // Create the builder for the function
+        // Create the builders for the function
         builder = LLVMCreateBuilder();
-        // Start the function body
-        final LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
-        LLVMPositionBuilderAtEnd(builder, entry);
-        currentBlock = entry;
+        allocaBuilder = LLVMCreateBuilder();
+        // Start the function with a block for all stack allocations
+        final LLVMBasicBlockRef allocs = LLVMAppendBasicBlock(function, "allocs");
+        LLVMPositionBuilderAtEnd(allocaBuilder, allocs);
         // Place the variables values for the parameters on the stack
         final List<Variable<?>> paramVariables = symbol.getParameters();
         final List<String> paramUniqueNames = functionDecl.getParamUniqueNames();
         for (int i = 0; i < paramVariables.size(); i++) {
+            // Create a stack allocation for the variable
             final Variable<?> variable = paramVariables.get(i);
-            final LLVMValueRef varPtr = allocateStackVariable(variable, paramUniqueNames.get(i));
+            final LLVMValueRef varPtr = LLVMBuildAlloca(allocaBuilder, createType(variable.getType()), paramUniqueNames.get(i));
             functionVariables.put(variable, varPtr);
             // Store the parameter in the stack variable
-            LLVMBuildStore(builder, LLVMGetParam(function, i), varPtr);
+            LLVMBuildStore(allocaBuilder, LLVMGetParam(function, i), varPtr);
         }
+        // Start the function body
+        final LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
+        LLVMPositionBuilderAtEnd(builder, entry);
+        currentBlock = entry;
         // Generate all the basic blocks the the labels in advance
         final List<Stmt> statements = functionDecl.getStatements();
         functionBlocks.clear();
@@ -191,8 +197,11 @@ public class CodeGenerator implements IrVisitor {
                 .forEach(label -> functionBlocks.put(label, LLVMAppendBasicBlock(function, label.getName())));
         // Codegen the body
         statements.forEach(stmt -> stmt.visit(this));
+        // Now that all the allocations are generated, add a branch at the end to the entry block
+        LLVMBuildBr(allocaBuilder, entry);
         // Dispose of the builder
         LLVMDisposeBuilder(builder);
+        LLVMDisposeBuilder(allocaBuilder);
         // Clear the function's variables as we exit it
         functionVariables.clear();
     }
@@ -200,7 +209,7 @@ public class CodeGenerator implements IrVisitor {
     @Override
     public void visitVariableDecl(VariableDecl<?> variableDecl) {
         final Variable<?> variable = variableDecl.getVariable();
-        final LLVMValueRef varPtr = allocateStackVariable(variable, variableDecl.getUniqueName());
+        final LLVMValueRef varPtr = LLVMBuildAlloca(allocaBuilder, createType(variable.getType()), variableDecl.getUniqueName());
         functionVariables.put(variable, varPtr);
     }
 
@@ -700,7 +709,7 @@ public class CodeGenerator implements IrVisitor {
         final LLVMBasicBlockRef andEnd = LLVMAppendBasicBlock(currentFunction, "andEnd");
         LLVMMoveBasicBlockAfter(andEnd, andFull);
         // Allocate a variable to store the result, and initialize it to false
-        final LLVMValueRef andResultPtr = LLVMBuildAlloca(builder, LLVMInt1Type(), "andResultPtr");
+        final LLVMValueRef andResultPtr = LLVMBuildAlloca(allocaBuilder, LLVMInt1Type(), "andResultPtr");
         LLVMBuildStore(builder, LLVMConstInt(LLVMInt1Type(), 0, 0), andResultPtr);
         // Evaluate the left side in the current block, if it's true, then jump to the block for the right side
         logicAnd.getLeft().visit(this);
@@ -730,7 +739,7 @@ public class CodeGenerator implements IrVisitor {
         final LLVMBasicBlockRef orEnd = LLVMAppendBasicBlock(currentFunction, "orEnd");
         LLVMMoveBasicBlockAfter(orEnd, orFull);
         // Allocate a variable to store the result, and initialize it to true
-        final LLVMValueRef orResultPtr = LLVMBuildAlloca(builder, LLVMInt1Type(), "orResultPtr");
+        final LLVMValueRef orResultPtr = LLVMBuildAlloca(allocaBuilder, LLVMInt1Type(), "orResultPtr");
         LLVMBuildStore(builder, LLVMConstInt(LLVMInt1Type(), 1, 0), orResultPtr);
         // Evaluate the left side in the current block, if it's false, then jump to the block for the right side
         logicOr.getLeft().visit(this);
@@ -771,7 +780,7 @@ public class CodeGenerator implements IrVisitor {
         }
         // Otherwise we need to store the value and return a pointer to the memory
         final LLVMValueRef value = exprValues.get(expr);
-        final LLVMValueRef memory = LLVMBuildAlloca(builder, createType(expr.getType()),
+        final LLVMValueRef memory = LLVMBuildAlloca(allocaBuilder, createType(expr.getType()),
                 IrNode.toString(expr) + "Ptr");
         LLVMBuildStore(builder, value, memory);
         return memory;
@@ -781,11 +790,6 @@ public class CodeGenerator implements IrVisitor {
         final LLVMValueRef[] indices = {LLVMConstInt(LLVMInt64Type(), 0, 0), index};
         return LLVMBuildInBoundsGEP(builder, valuePtr, new PointerPointer<>(indices), indices.length,
                 memberName + "Ptr");
-    }
-
-    private LLVMValueRef allocateStackVariable(Variable<?> variable, String uniqueName) {
-        final LLVMTypeRef type = createType(variable.getType());
-        return LLVMBuildAlloca(builder, type, uniqueName);
     }
 
     private LLVMValueRef calculateSizeOfType(Type type) {

@@ -2,10 +2,10 @@
 
 package main
 
-var  SIZE int = 75000
-var intArr [75000]int
+var  SIZE int = 750
+var intArr [750]int
 
- func selectionSort(arr [75000]int){  
+ func selectionSort(arr [750]int){
  var low int
  var index int
         for i := 0; i < SIZE - 1; i++  {  
