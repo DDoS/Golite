@@ -41,6 +41,7 @@ import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
 import golite.node.AEmptyForCondition;
 import golite.node.AEmptyStmt;
+import golite.node.AEnclosedExpr;
 import golite.node.AEqExpr;
 import golite.node.AExprCase;
 import golite.node.AExprForCondition;
@@ -702,6 +703,11 @@ public class TypeChecker extends AnalysisAdapter {
     @Override
     public void caseAStringRawExpr(AStringRawExpr node) {
         exprNodeTypes.put(node, BasicType.STRING);
+    }
+
+    @Override
+    public void caseAEnclosedExpr(AEnclosedExpr node) {
+        throw new IllegalStateException("Enclosed expressions should have been removed earlier");
     }
 
     @Override

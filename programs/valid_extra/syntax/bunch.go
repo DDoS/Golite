@@ -28,6 +28,8 @@ func hey(a, b int) {
     a, _ := 0, 1
     b = 2
     _ = 3
+    (_) = 1
+    ((_)) = 2
     f, _ = 4, 5
     var (
         _ = 4
@@ -62,7 +64,9 @@ func hey(a, b int) {
         print("stuff")
     } else if no - end + in / sight {
         for i < 0 {
-            (somtimes())
+            (sometimes())
+            ((somtimes()))
+            ((((somtimes()))))
         }
     }
 

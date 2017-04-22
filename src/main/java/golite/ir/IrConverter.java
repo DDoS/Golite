@@ -83,6 +83,7 @@ import golite.node.ADecrStmt;
 import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
 import golite.node.AEmptyStmt;
+import golite.node.AEnclosedExpr;
 import golite.node.AEqExpr;
 import golite.node.AExprCase;
 import golite.node.AExprForCondition;
@@ -853,6 +854,11 @@ public class IrConverter extends AnalysisAdapter {
             expr = new Identifier<>(variable, uniqueVarNames.get(variable));
         }
         convertedExprs.put(node, expr);
+    }
+
+    @Override
+    public void caseAEnclosedExpr(AEnclosedExpr node) {
+        throw new IllegalStateException("Enclosed expressions should have been removed earlier");
     }
 
     @Override

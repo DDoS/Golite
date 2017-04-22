@@ -14,6 +14,7 @@ import golite.semantic.SemanticData;
 import golite.semantic.SemanticException;
 import golite.semantic.check.TypeChecker;
 import golite.semantic.check.TypeCheckerException;
+import golite.syntax.EnclosedExprRemover;
 import golite.syntax.GoliteLexer;
 import golite.syntax.SyntaxException;
 import golite.syntax.print.PrettyPrinter;
@@ -34,6 +35,7 @@ public final class Golite {
         try {
             final Start ast = parser.parse();
             ast.apply(new Weeder());
+            EnclosedExprRemover.removedEnclosed(ast);
             return ast;
         } catch (LexerException exception) {
             throw new SyntaxException(exception);

@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import golite.semantic.SemanticData;
-import golite.util.SourcePrinter;
 import golite.analysis.AnalysisAdapter;
 import golite.node.AAddExpr;
 import golite.node.AAppendExpr;
@@ -44,6 +42,7 @@ import golite.node.ADefaultCase;
 import golite.node.ADivExpr;
 import golite.node.AEmptyForCondition;
 import golite.node.AEmptyStmt;
+import golite.node.AEnclosedExpr;
 import golite.node.AEqExpr;
 import golite.node.AExprCase;
 import golite.node.AExprForCondition;
@@ -99,6 +98,8 @@ import golite.node.PStmt;
 import golite.node.PStructField;
 import golite.node.Start;
 import golite.node.TIdenf;
+import golite.semantic.SemanticData;
+import golite.util.SourcePrinter;
 
 /**
  * The pretty printer.
@@ -230,6 +231,11 @@ public class PrettyPrinter extends AnalysisAdapter {
     public void caseAStringRawExpr(AStringRawExpr node) {
         printer.print(node.getRawStringLit().getText());
         printTypeComment(node);
+    }
+
+    @Override
+    public void caseAEnclosedExpr(AEnclosedExpr node) {
+        throw new IllegalStateException("Enclosed expressions should have been removed earlier");
     }
 
     @Override
@@ -793,11 +799,11 @@ public class PrettyPrinter extends AnalysisAdapter {
     private void printExpr(Class<? extends PExpr> parent, PExpr child, boolean right) {
         final Integer parentPrecedence = EXPR_PRECEDENCE.get(parent);
         if (parentPrecedence == null) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Unsupported AST node: " + parent.getCanonicalName());
         }
         final Integer childPrecedence = EXPR_PRECEDENCE.get(child.getClass());
         if (childPrecedence == null) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Unsupported AST node: " + child.getClass().getCanonicalName());
         }
         // Add parenthesis around lower precedence children
         // If the children is on the right, also do so for the same precedence to respect left associativity

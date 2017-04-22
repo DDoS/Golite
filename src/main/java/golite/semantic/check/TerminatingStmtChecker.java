@@ -11,6 +11,7 @@ import golite.node.ABreakStmt;
 import golite.node.AClauseForCondition;
 import golite.node.ADefaultCase;
 import golite.node.AEmptyForCondition;
+import golite.node.AEnclosedExpr;
 import golite.node.AExprCase;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
@@ -99,6 +100,11 @@ public class TerminatingStmtChecker extends AnalysisAdapter {
     }
 
     @Override
+    public void caseAEnclosedExpr(AEnclosedExpr node) {
+        throw new IllegalStateException("Enclosed expressions should have been removed earlier");
+    }
+
+    @Override
     public void caseADefaultCase(ADefaultCase node) {
         // Anything else isn't a terminating stmt
     }
@@ -130,6 +136,11 @@ public class TerminatingStmtChecker extends AnalysisAdapter {
         @Override
         public void caseASwitchStmt(ASwitchStmt node) {
             // Don't enter switches, since the break only affects the inner most switch or for-loop
+        }
+
+        @Override
+        public void caseAEnclosedExpr(AEnclosedExpr node) {
+            throw new IllegalStateException("Enclosed expressions should have been removed earlier");
         }
 
         private static boolean breaks(List<PStmt> stmts) {

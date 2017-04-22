@@ -358,7 +358,7 @@ Productions
             | {string} expr_string
                     {-> expr_string.expr}
             | {enclosed} lf_paren expr rht_paren
-                    {-> expr.expr};
+                    {-> New expr.enclosed(expr.expr)};
 
     // Arguments are comma separated
     exprs_list {-> expr*} = {single} expr
@@ -532,6 +532,7 @@ Abstract Syntax Tree
             | {rune} rune_lit
             | {string_intr} interpreted_string_lit
             | {string_raw} raw_string_lit
+            | {enclosed} expr
             | {select} [value]:expr idenf
             | {index} [value]:expr [index]:expr
             | {call} [value]:expr [args]:expr*

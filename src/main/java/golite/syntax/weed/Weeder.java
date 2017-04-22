@@ -30,6 +30,7 @@ import golite.node.AContinueStmt;
 import golite.node.ADeclVarShortStmt;
 import golite.node.ADecrStmt;
 import golite.node.ADefaultCase;
+import golite.node.AEnclosedExpr;
 import golite.node.AExprStmt;
 import golite.node.AForStmt;
 import golite.node.AFuncDecl;
@@ -47,6 +48,7 @@ import golite.node.ASwitchStmt;
 import golite.node.ATypeDecl;
 import golite.node.AVarDecl;
 import golite.node.Node;
+import golite.node.PExpr;
 import golite.node.TIdenf;
 import golite.node.Token;
 
@@ -234,8 +236,12 @@ public class Weeder extends DepthFirstAdapter {
 
     @Override
     public void outAExprStmt(AExprStmt node) {
-        if (node.getExpr().getClass() != ACallExpr.class) {
-            throw new WeederException(node.getExpr(), "Expected a call expression");
+        PExpr expr = node.getExpr();
+        while (expr instanceof AEnclosedExpr) {
+            expr = ((AEnclosedExpr) expr).getExpr();
+        }
+        if (expr.getClass() != ACallExpr.class) {
+            throw new WeederException(expr, "Expected a call expression");
         }
     }
 
@@ -300,9 +306,13 @@ public class Weeder extends DepthFirstAdapter {
         }
         // Valid if used in an identifier expression on the left side of a regular assignment variable or short declaration
         if (parent instanceof AIdentExpr) {
-            final AIdentExpr expr = (AIdentExpr) parent;
-            final Node exprParent = expr.parent();
+            // When used as an expression we can ignore the enclosing parenthesis
+            PExpr expr = (AIdentExpr) parent;
+            while (expr.parent() instanceof AEnclosedExpr) {
+                expr = (AEnclosedExpr) expr.parent();
+            }
             // The expression must be on the left side of the assignment or variable short declaration
+            final Node exprParent = expr.parent();
             if (exprParent instanceof AAssignStmt && ((AAssignStmt) exprParent).getLeft().contains(expr)) {
                 return;
             }
@@ -341,6 +351,12 @@ public class Weeder extends DepthFirstAdapter {
         @Override
         public void caseAIdentExpr(AIdentExpr node) {
             // Always valid, don't throw
+        }
+
+        @Override
+        public void caseAEnclosedExpr(AEnclosedExpr node) {
+            // We can ignore parenthesis: apply to the expression
+            node.getExpr().apply(INSTANCE);
         }
 
         @Override
