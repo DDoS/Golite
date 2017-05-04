@@ -206,7 +206,7 @@ public class Cli {
         }
     }
 
-    public static File setFileExtension(File file, String extension) {
+    private static File setFileExtension(File file, String extension) {
         final String inputName = file.getName();
         final int index = inputName.lastIndexOf('.');
         final String outputName;

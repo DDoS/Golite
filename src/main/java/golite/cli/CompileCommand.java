@@ -19,7 +19,7 @@ public class CompileCommand extends Command {
     private static final String NO_LINK_OPTION = "c";
     private static final String RUNTIME_PATH = "l";
     private static final String RUN_OPTION = "r";
-    public static final File DEFAULT_RUNTIME_PATH = new File("build/objs/golite_runtime.o");
+    private static final File DEFAULT_RUNTIME_PATH = new File("build/objs/golite_runtime.o");
     private final CodeGenerateCommand codeGenerate = new CodeGenerateCommand();
     private File runtimePath;
     private ByteBuffer nativeCode;
@@ -93,7 +93,7 @@ public class CompileCommand extends Command {
         }
     }
 
-    public static void compileAndLink(ByteBuffer nativeCode, File runtimePath, File ouputFile) {
+    private static void compileAndLink(ByteBuffer nativeCode, File runtimePath, File ouputFile) {
         // Create a temporary file for the program object
         final File programObjectFile;
         try {

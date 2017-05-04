@@ -71,10 +71,6 @@ jar {
     }
 }
 
-distZip.enabled = false
-distTar.enabled = false
-startScripts.enabled = false
-
 run {
     standardInput = System.in
     if (project.hasProperty("appArgs")) {
@@ -117,38 +113,8 @@ task compileRuntime {
     }
 }
 
-task createRunScripts {
-    def outputDir = "$projectDir/"
-    def outputRunScript = outputDir + 'run.sh'
-    def outputCompileScript = outputDir + 'compile.sh'
-
-    outputs.files outputRunScript, outputCompileScript
-
-    def createScript = { String outputPath, mainClassName, goliteCommand ->
-        def script = new File(outputPath)
-        script.setText '#!/usr/bin/env bash\n\n'
-        script << 'if [[ $1 == "-v" ]]; then\n' +
-                '    echo "Team 9 Golite compiler"\n' +
-                '    echo "v1.0.0-rc"\n' +
-                '    exit 0\n' +
-                'fi\n\n'
-        script << "MAIN_CLASS=\"$mainClassName\"\n"
-        script << "GOLITE_CMD=\"$goliteCommand\"\n\n"
-        script << 'java -classpath "'
-        script << sourceSets.main.runtimeClasspath.asPath
-        script << '" $MAIN_CLASS $GOLITE_CMD $*\n'
-        script.setExecutable(true)
-    }
-
-    doLast {
-        createScript(outputRunScript, mainClassName, "codegen")
-        createScript(outputCompileScript, "golite.Compile", "")
-    }
-}
-
 build {
     dependsOn compileRuntime
-    dependsOn createRunScripts
 }
 
 run {
