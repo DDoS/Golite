@@ -10,7 +10,7 @@ apply plugin: 'license'
 // Basic project information
 group = 'ca.sapon'
 archivesBaseName = 'golite'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0'
 mainClassName = "golite.App"
 
 // Extended project information

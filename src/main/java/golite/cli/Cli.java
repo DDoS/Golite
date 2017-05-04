@@ -209,7 +209,7 @@ public class Cli {
             throw new CommandException("Unexpected argument(s): " + commandLine.getArgList());
         }
         final HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp(100, "./run.sh", command.getHelp() + '\n',
+        formatter.printHelp(100, "./run.sh " + command.getName(), command.getHelp() + '\n',
                 options, "", true);
     }
 

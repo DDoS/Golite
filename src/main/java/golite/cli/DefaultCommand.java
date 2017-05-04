@@ -51,7 +51,7 @@ public class DefaultCommand extends Command {
     @Override
     public void execute(CommandLine commandLine) {
         System.out.println("Team 9 Golite compiler");
-        System.out.println("v1.0.0-rc");
+        System.out.println("v1.0.0");
         if (!commandLine.hasOption(VERSION_OPTION)) {
             System.out.println(getHelp());
         }
