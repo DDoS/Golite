@@ -24,8 +24,7 @@ They will be downloaded for the first build.
 
 ## Building
 
-Use `./build.sh` for the first build. Afterwards it's better to
-use `gradlew` for incremental builds.
+Building is done with gradle. Use `./gradlew` to invoke the wrapper.
 
 ## Runtime
 
