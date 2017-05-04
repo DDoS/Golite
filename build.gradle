@@ -71,26 +71,27 @@ license {
     strictCheck true
     mapping {
         java = 'SLASHSTAR_STYLE'
+        c = 'SLASHSTAR_STYLE'
+        sablecc = 'SLASHSTAR_STYLE'
     }
 }
 
 task licenseFormatGenerated(type: License) {
     source = fileTree(dir: "$buildDir/generated-sources").include('**/*.java')
-    mapping {
-        java = 'SLASHSTAR_STYLE'
-    }
     dependsOn sableccGrammars
+}
+
+task licenseFormatSableCC(type: License) {
+    source = fileTree(dir: 'src/main/sablecc').include('**/*.sablecc')
 }
 
 task licenseFormatC(type: License) {
     source = fileTree(dir: 'src/main/c').include('**/*.c')
-    mapping {
-        c = 'SLASHSTAR_STYLE'
-    }
 }
 
 licenseFormatMain {
     dependsOn licenseFormatGenerated
+    dependsOn licenseFormatSableCC
     dependsOn licenseFormatC
 }
 
