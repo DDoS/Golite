@@ -74,6 +74,25 @@ license {
     }
 }
 
+task licenseFormatGenerated(type: License) {
+    source = fileTree(dir: "$buildDir/generated-sources").include('**/*.java')
+    mapping {
+        java = 'SLASHSTAR_STYLE'
+    }
+    dependsOn sableccGrammars
+}
+
+task licenseFormatC(type: License) {
+    source = fileTree(dir: 'src/main/c').include('**/*.c')
+    mapping {
+        c = 'SLASHSTAR_STYLE'
+    }
+}
+
+licenseFormatMain {
+    dependsOn licenseFormatGenerated
+    dependsOn licenseFormatC
+}
 
 // Source compiler configuration
 configure([compileJava, compileTestJava]) {
