@@ -1,23 +1,21 @@
 # Golite compiler
 
-## Team members
+McGill COMP 520 - Compiler Design, Winter 2017.
 
-Aleksi Sapon-Cousineau - 260581670  
-Rohit Verma - 260710711  
-Ayesha Krishnamurthy - 260559114
+Golite project source code for team 9.
 
-## Project structure
+Licensed under [MIT](LICENSE.txt).
 
-We followed the required project structure. Additionally, we
-used Gradle to manage building. This means that we have extra
-files in the project root to configure the tool. We also have
-a couple of `gradlew` scripts to run the build without requiring
-a Gradle installation. The `gradle` directory contains the wrapper
-and a plugin for SableCC support.
+## Team 9 members
 
-We decided to bundle our extra test cases. They can be found in
-the directories `programs/valid_extra`, `programs/invalid_extra`
-and `programs/code_extra`.
+[Aleksi Sapon-Cousineau](https://github.com/DDoS)  
+[Rohit Verma](https://github.com/RohitVMcGill)  
+[Ayesha Krishnamurthy](https://github.com/ayeshakr)
+
+## Golite
+
+Golite is mostly a subset of Go developed for the COMP 520 course.
+You can find example programs in the `programs` directory.
 
 ## Dependencies
 
@@ -26,7 +24,7 @@ They will be downloaded for the first build.
 
 ## Building
 
-Use `build.sh` for the first build. Afterwards it's better to
+Use `./build.sh` for the first build. Afterwards it's better to
 use `gradlew` for incremental builds.
 
 ## Runtime
@@ -46,34 +44,8 @@ The runtime source can be found along side the Java code, under
 
 ## Running
 
-After building, a `run.sh` file will be created. It can be used to
-run the compiler directly, without waiting for Gradle. If you want
-to automatically rebuild before each run, use `run_gradle.sh`.
-
-The `run.sh` script is configured to execute the `codegen` command.
+Use the `run.sh` script to invoke Gradle and pass the command line arguments.
 
 ## Command line usage
 
 Run with the `-h` option for help.
-
-## LLVM compatibility issues
-
-Our project uses LLVM 3.9.1, which is the only version we could find
-with up-to-date working Java bindings. The `ubuntu.cs.mcgill.ca` server
-provides LLVM 3.8.0, which isn't fully compatible. This isn't an issue
-for running our compiler, since the bindings provide their own binaries
-instead of using the system ones.
-
-The problem is with compiling the LLVM IR that the `codegen` command outputs.
-It is not compatible between the two versions. Fortunately, since we provide
-the 3.9.1 binaries, we can use those instead.
-
-We provide an `compile.sh` script, which can input LLVM IR in text or bitcode
-form, and output an executable. It takes care of linking with the runtime.
-The script is rather simple, it only takes one argument (the file path) and
-output the executable in the same directory, but with the `.out` extension.
-
-Alternatively, you can use the `compile` command to go from a Golite source file
-straight to an executable. But since the `run.sh` script uses the codegen command,
-you will have to modify it. All that needs to be changed is the `GOLITE_CMD` variable.
-Since the script is automatically generated, modifications will be lost on rebuild.

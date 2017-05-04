@@ -1,10 +1,11 @@
 // Default tasks
-defaultTasks 'build'
+defaultTasks 'licenseFormatMain', 'licenseFormatTest', 'build'
 
 // Apply plugins
 apply plugin: 'application'
 apply plugin: 'java'
 apply plugin: 'sablecc-gradle-plugin'
+apply plugin: 'license'
 
 // Basic project information
 group = 'ca.sapon'
@@ -17,7 +18,7 @@ ext.projectName = 'GoLite'
 ext.inceptionYear = '2017'
 ext.currentYear = '2017'
 ext.packaging = 'jar'
-ext.url = 'https://github.com/Sable/comp520-2017-09'
+ext.url = 'https://github.com/DDoS/Golite'
 ext.description = 'GoLite project for COMP 520'
 ext.author = 'Aleksi Sapon, Rohit Verma, Ayesha Krishnamurthy'
 
@@ -38,6 +39,7 @@ buildscript {
     }
     dependencies {
         classpath 'ca.sapon:sablecc-gradle-plugin:0.0.1-SNAPSHOT'
+        classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.7.0'
     }
 }
 
@@ -51,6 +53,27 @@ dependencies {
     compile 'org.bytedeco.javacpp-presets:llvm-platform:3.9.0-1.3'
     testCompile 'junit:junit:4.8.2'
 }
+
+// License header formatting
+import nl.javadude.gradle.plugins.license.License
+
+tasks.withType(License).each { licenseTask ->
+    licenseTask.exclude '**/*.dat'
+}
+
+license {
+    ext.name = projectName
+    ext.author = author
+    ext.url = url
+    ext.year = inceptionYear == currentYear ? inceptionYear : inceptionYear + '-' + currentYear
+    header rootProject.file('HEADER.txt')
+    ignoreFailures true
+    strictCheck true
+    mapping {
+        java = 'SLASHSTAR_STYLE'
+    }
+}
+
 
 // Source compiler configuration
 configure([compileJava, compileTestJava]) {
