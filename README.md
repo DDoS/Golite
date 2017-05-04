@@ -35,8 +35,7 @@ which can be found at `build/objs/golite_runtime.o`. It must
 be linked into the object file resulting from the code generation
 phase to create the final executable.
 
-We provide a script to do all of this automatically. It is detailed
-bellow.
+Linking is done automatically when using the `compile` command.
 
 The runtime source can be found along side the Java code, under
 `src/main/c`.
